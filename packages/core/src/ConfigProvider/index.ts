@@ -4,6 +4,7 @@ export {
   injectConfigProviderContext,
 } from './ConfigProvider.vue'
 export {
+  createDateSegmentTranslations,
   defaultTranslations,
   type TranslationKey,
   type TranslationParams,

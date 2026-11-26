@@ -7,7 +7,7 @@ import {
 } from '@internationalized/date'
 import { computed } from 'vue'
 import { getDaysInMonth, toDate } from '@/date'
-import { getActiveElement, getDateSegmentLabel, snapValueToStep, useKbd, useTranslations } from '@/shared'
+import { getActiveElement, snapValueToStep, useKbd, useTranslations } from '@/shared'
 import { isAcceptableSegmentKey, isNumberString, isSegmentNavigationKey } from './segment'
 
 const DIGIT_REG = /^\d$/
@@ -68,7 +68,7 @@ function daySegmentAttrs(props: SegmentAttrProps) {
 
   return {
     ...commonSegmentAttrs(props),
-    'aria-label': getDateSegmentLabel(props.t, 'day', props.formatter.getLocale()),
+    'aria-label': props.t('dateFieldDay'),
     'aria-valuemin': valueMin,
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
@@ -90,7 +90,7 @@ function monthSegmentAttrs(props: SegmentAttrProps) {
 
   return {
     ...commonSegmentAttrs(props),
-    'aria-label': getDateSegmentLabel(props.t, 'month', props.formatter.getLocale()),
+    'aria-label': props.t('dateFieldMonth'),
     'contenteditable': true,
     'aria-valuemin': valueMin,
     'aria-valuemax': valueMax,
@@ -111,7 +111,7 @@ function yearSegmentAttrs(props: SegmentAttrProps) {
 
   return {
     ...commonSegmentAttrs(props),
-    'aria-label': getDateSegmentLabel(props.t, 'year', props.formatter.getLocale()),
+    'aria-label': props.t('dateFieldYear'),
     'aria-valuemin': valueMin,
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
@@ -134,7 +134,7 @@ function hourSegmentAttrs(props: SegmentAttrProps) {
 
   return {
     ...commonSegmentAttrs(props),
-    'aria-label': getDateSegmentLabel(props.t, 'hour', props.formatter.getLocale()),
+    'aria-label': props.t('dateFieldHour'),
     'aria-valuemin': valueMin,
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
@@ -158,7 +158,7 @@ function minuteSegmentAttrs(props: SegmentAttrProps) {
 
   return {
     ...commonSegmentAttrs(props),
-    'aria-label': getDateSegmentLabel(props.t, 'minute', props.formatter.getLocale()),
+    'aria-label': props.t('dateFieldMinute'),
     'aria-valuemin': valueMin,
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
@@ -182,7 +182,7 @@ function secondSegmentAttrs(props: SegmentAttrProps) {
 
   return {
     ...commonSegmentAttrs(props),
-    'aria-label': getDateSegmentLabel(props.t, 'second', props.formatter.getLocale()),
+    'aria-label': props.t('dateFieldSecond'),
     'aria-valuemin': valueMin,
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
@@ -204,7 +204,7 @@ function dayPeriodSegmentAttrs(props: SegmentAttrProps) {
   return {
     ...commonSegmentAttrs(props),
     'inputmode': 'text',
-    'aria-label': getDateSegmentLabel(props.t, 'dayPeriod', props.formatter.getLocale()),
+    'aria-label': props.t('dateFieldDayPeriod'),
     'aria-valuemin': valueMin,
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
@@ -222,7 +222,7 @@ function literalSegmentAttrs(_props: SegmentAttrProps) {
 function timeZoneSegmentAttrs(props: SegmentAttrProps) {
   return {
     'role': 'textbox',
-    'aria-label': getDateSegmentLabel(props.t, 'timeZoneName', props.formatter.getLocale()),
+    'aria-label': props.t('dateFieldTimeZoneName'),
     'data-readonly': true,
     'data-segment': 'timeZoneName',
     'tabindex': props.disabled ? undefined : 0,
@@ -240,7 +240,7 @@ function eraSegmentAttrs(props: SegmentAttrProps) {
 
   return {
     ...commonSegmentAttrs(props),
-    'aria-label': getDateSegmentLabel(props.t, 'era', props.formatter.getLocale()),
+    'aria-label': props.t('dateFieldEra'),
     'aria-valuemin': valueMin,
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,

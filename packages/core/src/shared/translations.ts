@@ -3,7 +3,7 @@
  * descriptions and announcements that no prop or slot sets. A `{name}` in a
  * message is replaced by the value of that name.
  */
-export const defaultTranslations = {
+export const defaultTranslations = /* @__PURE__ */ Object.freeze({
   /** Calendar, RangeCalendar: the calendar's name, read before the visible month. */
   calendarLabel: 'Event Date',
   /** CalendarPrev, RangeCalendarPrev. */
@@ -55,7 +55,7 @@ export const defaultTranslations = {
 
   /**
    * DateField, TimeField, DateRangeField, TimeRangeField and the date pickers: the name of a segment.
-   * In a locale other than English a segment is named by `Intl.DisplayNames` unless its message is set.
+   * `createDateSegmentTranslations(locale)` builds these from the names the locale has.
    */
   dateFieldDay: 'day,',
   dateFieldMonth: 'month, ',
@@ -138,7 +138,7 @@ export const defaultTranslations = {
   yearPickerPrev: 'Previous page',
   /** YearPickerNext, YearRangePickerNext. */
   yearPickerNext: 'Next page',
-} as const satisfies Record<string, string>
+} as const satisfies Record<string, string>)
 
 export type TranslationKey = keyof typeof defaultTranslations
 
@@ -171,24 +171,28 @@ export type Translate = <K extends TranslationKey>(
 
 const PLACEHOLDER = /\{(\w+)\}/g
 
-function format(message: string | ((params: any) => string), params?: Record<string, unknown>): string {
+function format(key: string, message: string | ((params: any) => string), params: Record<string, unknown> = {}): string {
   if (typeof message === 'function')
-    return message(params ?? {})
-  return params
-    ? message.replace(PLACEHOLDER, (placeholder, name) => name in params ? String(params[name]) : placeholder)
-    : message
+    return message(params)
+  return message.replace(PLACEHOLDER, (placeholder, name) => {
+    if (name in params)
+      return String(params[name])
+    if (process.env.NODE_ENV !== 'production')
+      console.warn(`[reka-ui] The \`${key}\` message has the placeholder ${placeholder}, which it is not given a value for. Its values are: ${Object.keys(params).join(', ') || 'none'}.`)
+    return placeholder
+  })
 }
 
-export const defaultTranslate: Translate = (key, ...params) => format(defaultTranslations[key], params[0])
+export const defaultTranslate: Translate = (key, ...params) => format(key, defaultTranslations[key], params[0])
 
 /**
- * A translate function over `messages`. A key they leave out is looked up in
- * `parent`, which ends at the built-in English.
+ * A translate function over `messages`. A key they leave out, or set to
+ * `undefined` or `null`, is looked up in `parent`, which ends at the built-in English.
  */
 export function createTranslate(messages: () => Partial<Translations> | undefined, parent: Translate = defaultTranslate): Translate {
   return (key, ...params) => {
     const message = messages()?.[key]
-    return message === undefined ? parent(key, ...params) : format(message, params[0])
+    return message == null ? parent(key, ...params) : format(key, message, params[0])
   }
 }
 
@@ -198,37 +202,40 @@ export function translationKey<Prefix extends string, Name extends string>(prefi
 }
 
 /** The parts of a date or time field, which are also the field codes of `Intl.DisplayNames`. */
-export type DateSegmentName = 'day' | 'month' | 'year' | 'hour' | 'minute' | 'second' | 'dayPeriod' | 'timeZoneName' | 'era'
+const DATE_SEGMENTS = ['day', 'month', 'year', 'hour', 'minute', 'second', 'dayPeriod', 'timeZoneName', 'era'] as const
 
-const ENGLISH = /^en(?:-|$)/i
-const fieldNames = new Map<string, Intl.DisplayNames | null>()
-
-function getFieldNames(locale: string) {
-  let names = fieldNames.get(locale)
-  if (names === undefined) {
-    try {
-      names = new Intl.DisplayNames(locale, { type: 'dateTimeField' })
-      // A locale the runtime has no data for resolves to its default one.
-      if (ENGLISH.test(names.resolvedOptions().locale))
-        names = null
-    }
-    catch {
-      names = null
-    }
-    fieldNames.set(locale, names)
+function getLanguage(locale: string) {
+  try {
+    return new Intl.Locale(locale).language
   }
-  return names
+  catch {
+    return locale.split('-')[0].toLowerCase()
+  }
 }
 
 /**
- * The name of a date or time segment: its message when one is set, else in
- * English the built-in string, and in any other locale the name
- * `Intl.DisplayNames` has for that field ("Tag" for `day` in German).
+ * The names of the date and time segments in `locale`, as messages for the
+ * `translations` of `ConfigProvider`: `createDateSegmentTranslations('de')` is
+ * `{ dateFieldDay: 'Tag', dateFieldMonth: 'Monat', … }`.
+ *
+ * The names come from `Intl.DisplayNames`. The result is empty, which leaves
+ * the built-in text in place, where the runtime has no such names or has none
+ * for the language of `locale` (it would answer in its own default language).
  */
-export function getDateSegmentLabel(t: Translate, part: DateSegmentName, locale: string): string {
-  const key = translationKey('dateField', part)
-  const label = t(key)
-  if (label !== defaultTranslations[key] || ENGLISH.test(locale))
-    return label
-  return getFieldNames(locale)?.of(part) || label
+export function createDateSegmentTranslations(locale: string): Partial<Translations> {
+  const messages: Partial<Translations> = {}
+  try {
+    const names = new Intl.DisplayNames(locale, { type: 'dateTimeField' })
+    if (getLanguage(names.resolvedOptions().locale) !== getLanguage(locale))
+      return messages
+    for (const part of DATE_SEGMENTS) {
+      const name = names.of(part)
+      if (name)
+        messages[translationKey('dateField', part)] = name
+    }
+  }
+  catch {
+    return {}
+  }
+  return messages
 }

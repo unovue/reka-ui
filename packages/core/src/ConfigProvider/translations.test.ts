@@ -6,7 +6,7 @@ import { CalendarDate, JapaneseCalendar, parseZonedDateTime, toCalendar } from '
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, reactive } from 'vue'
-import { createTranslate, defaultTranslate, defaultTranslations, getDateSegmentLabel, translationKey } from '@/shared/translations'
+import { createDateSegmentTranslations, createTranslate, defaultTranslate, defaultTranslations, translationKey } from '@/shared/translations'
 import * as reka from '..'
 
 enableAutoUnmount(afterEach)
@@ -879,7 +879,37 @@ describe('translations on ConfigProvider', () => {
   })
 })
 
+describe('a nested ConfigProvider', () => {
+  // What v2 has always done, which the guide describes: only the translations are inherited.
+  it('goes back to the default locale and dir unless it is given them again', async () => {
+    document.body.innerHTML = ''
+    mount(defineComponent({
+      components: reka as unknown as Record<string, Component>,
+      setup: () => ({ date }),
+      template: `
+        <ConfigProvider locale="de" dir="rtl" :translations="{ calendarLabel: 'Datum' }">
+          <CalendarRoot data-outer :default-placeholder="date" />
+          <ConfigProvider :translations="{ calendarPrev: 'Zurück' }">
+            <CalendarRoot data-inner :default-placeholder="date"><CalendarPrev data-prev /></CalendarRoot>
+          </ConfigProvider>
+        </ConfigProvider>`,
+    }), { attachTo: document.body })
+    await nextTick()
+
+    expect(read(['[data-outer]', 'aria-label', ''])).toBe('Datum, Januar 2024')
+    expect(read(['[data-outer]', 'dir', ''])).toBe('rtl')
+    expect(read(['[data-inner]', 'aria-label', ''])).toBe('Datum, January 2024')
+    expect(read(['[data-inner]', 'dir', ''])).toBe('ltr')
+    expect(read(['[data-prev]', 'aria-label', ''])).toBe('Zurück')
+  })
+})
+
 describe('translate', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('returns the built-in English for a key that is not set', () => {
     const t = createTranslate(() => undefined)
     expect(t('paginationNext')).toBe('Next Page')
@@ -887,9 +917,46 @@ describe('translate', () => {
     expect(defaultTranslate('toastViewportLabel', { hotkey: 'F8' })).toBe('Notifications (F8)')
   })
 
-  it('fills each placeholder, as often as it appears, and leaves unknown ones alone', () => {
-    const t = createTranslate(() => ({ sliderValue: '{index}/{total} ({index}) {other}' }))
-    expect(t('sliderValue', { index: 2, total: 3 })).toBe('2/3 (2) {other}')
+  it('treats undefined and null as not set', () => {
+    const t = createTranslate(() => ({ paginationNext: undefined, paginationPrev: null } as unknown as Partial<Translations>))
+    expect(t('paginationNext')).toBe('Next Page')
+    expect(t('paginationPrev')).toBe('Previous Page')
+  })
+
+  it('keeps a message that equals the default, over the provider above', () => {
+    const outer = createTranslate(() => ({ dateFieldDay: 'Tag' }))
+    const inner = createTranslate(() => ({ dateFieldDay: 'day,' }), outer)
+    expect(inner('dateFieldDay')).toBe('day,')
+  })
+
+  it('fills each placeholder, as often as it appears', () => {
+    const t = createTranslate(() => ({ sliderValue: '{index}/{total} ({index})' }))
+    expect(t('sliderValue', { index: 2, total: 3 })).toBe('2/3 (2)')
+  })
+
+  it('leaves an unknown placeholder alone and warns about it in development', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const t = createTranslate(() => ({ sliderValue: '{index} of {count}', paginationNext: 'Next {page}' }))
+
+    expect(t('sliderValue', { index: 2, total: 3 })).toBe('2 of {count}')
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toContain('`sliderValue`')
+    expect(warn.mock.calls[0][0]).toContain('{count}')
+    expect(warn.mock.calls[0][0]).toContain('index, total')
+
+    expect(t('paginationNext')).toBe('Next {page}')
+    expect(warn).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not warn in production, or for the built-in messages', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    for (const key of Object.keys(defaultTranslations) as (keyof Translations)[])
+      (defaultTranslate as (key: string, params: object) => string)(key, { index: 1, total: 2, page: 1, step: 1, hotkey: 'F8' })
+    expect(warn).not.toHaveBeenCalled()
+
+    vi.stubEnv('NODE_ENV', 'production')
+    expect(createTranslate(() => ({ sliderValue: '{count}' }))('sliderValue', { index: 2, total: 3 })).toBe('{count}')
+    expect(warn).not.toHaveBeenCalled()
   })
 
   it('calls a function message with the values', () => {
@@ -915,88 +982,104 @@ describe('translate', () => {
     expect(translationKey('colorChannel', 'hue')).toBe('colorChannelHue')
     expect(translationKey('dateField', 'timeZoneName')).toBe('dateFieldTimeZoneName')
   })
+
+  it('exports the defaults frozen', () => {
+    expect(Object.isFrozen(defaultTranslations)).toBe(true)
+    expect(() => {
+      (defaultTranslations as Record<string, string>).paginationNext = 'Changed'
+    }).toThrow(TypeError)
+    expect(defaultTranslations.paginationNext).toBe('Next Page')
+  })
 })
 
 describe('date and time segment names', () => {
   const parts = ['day', 'month', 'year', 'hour', 'minute', 'second', 'dayPeriod', 'timeZoneName', 'era'] as const
-  const english = ['day,', 'month, ', 'year, ', 'hour, ', 'minute, ', 'second, ', 'AM/PM', 'timezone, ', 'era']
-  const names = (locale: string, t = defaultTranslate) => parts.map(part => getDateSegmentLabel(t, part, locale))
+  const keys = parts.map(part => translationKey('dateField', part))
+  const english = ['day,', 'month, ', 'year, ', 'hour, ', 'minute, ', 'second, ', 'AM/PM', 'timezone, ']
+  const field = `
+    <DateFieldRoot v-slot="{ segments }" :default-value="zoned" granularity="second" :hour-cycle="12" :locale="locale">
+      <DateFieldInput v-for="item in segments" :key="item.part" :part="item.part" :data-part="item.part">{{ item.value }}</DateFieldInput>
+    </DateFieldRoot>`
+  const labels = () => parts.slice(0, -1).map(part => read([`[data-part="${part}"]`, 'aria-label', '']))
 
   afterEach(() => vi.unstubAllGlobals())
 
-  it.each(['en', 'en-US', 'en-GB', 'EN-au', 'en-u-ca-japanese'])('keeps the built-in strings in %s', (locale) => {
-    expect(names(locale)).toEqual(english)
+  it.each(['en', 'en-GB', 'de', 'ja', 'ar', 'fr-CA'])('are the built-in strings in a %s field when nothing is configured', async (locale) => {
+    await mountFixture({ template: field, defaults: [], data: { zoned, locale } })
+    expect(labels()).toEqual(english)
+    expect(read(['[data-part="month"]', 'aria-valuetext', ''])).not.toBe('Empty')
+  })
+
+  it.each(['de', 'ja', 'ar'])('are the built-in strings under a ConfigProvider with locale %s', async (locale) => {
+    await mountFixture({ template: field, defaults: [], data: { zoned, locale: undefined } }, undefined, { locale })
+    expect(labels()).toEqual(english)
   })
 
   it.each([
     ['de', ['Tag', 'Monat', 'Jahr']],
     ['ja', ['日', '月', '年']],
     ['ar', ['يوم', 'الشهر', 'السنة']],
-  ])('names the segments in %s', (locale, dayMonthYear) => {
+  ])('createDateSegmentTranslations names them in %s', (locale, dayMonthYear) => {
     const intl = new Intl.DisplayNames(locale, { type: 'dateTimeField' })
-    expect(names(locale)).toEqual(parts.map(part => intl.of(part)))
-    expect(names(locale).slice(0, 3)).toEqual(dayMonthYear)
-    expect(names(locale).filter(name => english.includes(name))).toEqual([])
-  })
-
-  it('prefers a message over the name of the locale', () => {
-    const t = createTranslate(() => ({ dateFieldDay: 'Kalendertag' }))
-    expect(getDateSegmentLabel(t, 'day', 'de')).toBe('Kalendertag')
-    expect(getDateSegmentLabel(t, 'month', 'de')).toBe('Monat')
-    expect(getDateSegmentLabel(t, 'day', 'en')).toBe('Kalendertag')
-  })
-
-  it('treats spread defaults as nothing set', () => {
-    const t = createTranslate(() => ({ ...defaultTranslations }))
-    expect(getDateSegmentLabel(t, 'day', 'de')).toBe('Tag')
-  })
-
-  it('keeps the built-in strings where Intl.DisplayNames is missing or has no field names', () => {
-    vi.stubGlobal('Intl', { ...Intl, DisplayNames: undefined })
-    expect(names('fr')).toEqual(english)
-    vi.stubGlobal('Intl', { ...Intl, DisplayNames: class { constructor() { throw new RangeError('Invalid option : type') } } })
-    expect(names('es')).toEqual(english)
-  })
-
-  it('keeps the built-in strings for a locale the runtime resolves to English', () => {
-    vi.stubGlobal('Intl', { ...Intl, DisplayNames: class { resolvedOptions = () => ({ locale: 'en-US' }); of = () => 'day' } })
-    expect(names('tlh')).toEqual(english)
+    const messages = createDateSegmentTranslations(locale)
+    expect(Object.keys(messages)).toEqual(keys)
+    expect(Object.values(messages)).toEqual(parts.map(part => intl.of(part)))
+    expect(Object.values(messages).slice(0, 3)).toEqual(dayMonthYear)
   })
 
   it.each([
-    ['de', 'Tag', 'Monat', 'Stunde'],
-    ['ja', '日', '月', '時'],
-    ['ar', 'يوم', 'الشهر', 'الساعات'],
-  ])('a %s field announces them from its own locale', async (locale, day, month, hour) => {
-    document.body.innerHTML = ''
-    mount(defineComponent({
-      components: reka as unknown as Record<string, Component>,
-      setup: () => ({ zoned, locale }),
-      template: `
-        <DateFieldRoot v-slot="{ segments }" :default-value="zoned" granularity="minute" :locale="locale">
-          <DateFieldInput v-for="item in segments" :key="item.part" :part="item.part" :data-part="item.part">{{ item.value }}</DateFieldInput>
-        </DateFieldRoot>`,
-    }), { attachTo: document.body })
-    await nextTick()
-
-    const intl = new Intl.DisplayNames(locale, { type: 'dateTimeField' })
-    expect(read(['[data-part="day"]', 'aria-label', ''])).toBe(day)
-    expect(read(['[data-part="month"]', 'aria-label', ''])).toBe(month)
-    expect(read(['[data-part="hour"]', 'aria-label', ''])).toBe(intl.of('hour'))
-    expect(intl.of('hour')).toBe(hour)
+    ['de', ['Tag', 'Monat', 'Jahr']],
+    ['ja', ['日', '月', '年']],
+    ['ar', ['يوم', 'الشهر', 'السنة']],
+  ])('a field announces the %s names once they are passed as translations', async (locale, dayMonthYear) => {
+    const messages = createDateSegmentTranslations(locale)
+    await mountFixture({ template: field, defaults: [], data: { zoned, locale } }, undefined, { translations: messages })
+    expect(labels().slice(0, 3)).toEqual(dayMonthYear)
+    expect(labels()).toEqual(keys.slice(0, -1).map(key => messages[key]))
+    expect(labels().filter(label => english.includes(label!))).toEqual([])
   })
 
-  it('follows the locale of the ConfigProvider, and a change of it', async () => {
-    const config = reactive({ locale: 'de' })
-    await mountFixture({ template: `
-      <DateFieldRoot v-slot="{ segments }">
-        <DateFieldInput v-for="item in segments" :key="item.part" :part="item.part" :data-part="item.part">{{ item.value }}</DateFieldInput>
-      </DateFieldRoot>`, defaults: [] }, undefined, config)
-    expect(read(['[data-part="day"]', 'aria-label', ''])).toBe('Tag')
+  it('lets a message set after them win, also one that equals the default', async () => {
+    const translations = { ...createDateSegmentTranslations('de'), dateFieldDay: 'day,', dateFieldMonth: 'Kalendermonat' }
+    await mountFixture({ template: field, defaults: [], data: { zoned, locale: 'de' } }, undefined, { translations })
+    expect(labels().slice(0, 3)).toEqual(['day,', 'Kalendermonat', 'Jahr'])
+  })
 
-    config.locale = 'en'
-    await nextTick()
-    await nextTick()
-    expect(read(['[data-part="day"]', 'aria-label', ''])).toBe('day,')
+  it('is empty for a locale the runtime answers in another language', () => {
+    // What `new Intl.DisplayNames('tlh')` does on a German machine: it resolves to the default locale.
+    vi.stubGlobal('Intl', { ...Intl, Locale: Intl.Locale, DisplayNames: class {
+      resolvedOptions = () => ({ locale: 'de-DE' })
+      of = () => 'Tag'
+    } })
+    expect(createDateSegmentTranslations('tlh')).toEqual({})
+    expect(createDateSegmentTranslations('en-US')).toEqual({})
+    // The same language in another region or script is that language.
+    expect(createDateSegmentTranslations('de-AT').dateFieldDay).toBe('Tag')
+    expect(createDateSegmentTranslations('DE').dateFieldDay).toBe('Tag')
+  })
+
+  it('is empty for an unknown locale on this runtime', () => {
+    expect(createDateSegmentTranslations('tlh')).toEqual({})
+  })
+
+  it('is empty where Intl.DisplayNames is missing or has no field names', () => {
+    vi.stubGlobal('Intl', { ...Intl, DisplayNames: undefined })
+    expect(createDateSegmentTranslations('fr')).toEqual({})
+    vi.stubGlobal('Intl', { ...Intl, DisplayNames: class {
+      constructor() {
+        throw new RangeError('Invalid option : type')
+      }
+    } })
+    expect(createDateSegmentTranslations('es')).toEqual({})
+  })
+
+  it('leaves out a field the runtime has no name for', () => {
+    vi.stubGlobal('Intl', { ...Intl, DisplayNames: class {
+      resolvedOptions = () => ({ locale: 'de' })
+      of = (part: string) => part === 'era' ? undefined : 'Name'
+    } })
+    const messages = createDateSegmentTranslations('de')
+    expect('dateFieldEra' in messages).toBe(false)
+    expect(messages.dateFieldDay).toBe('Name')
   })
 })

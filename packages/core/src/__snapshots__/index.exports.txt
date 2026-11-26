@@ -1,4 +1,4 @@
-# values (539)
+# values (540)
 AccordionContent
 AccordionHeader
 AccordionItem
@@ -435,6 +435,7 @@ convertToHsb
 convertToHsl
 convertToRgb
 createContext
+createDateSegmentTranslations
 createToastManager
 createValidityState
 defaultTranslations
