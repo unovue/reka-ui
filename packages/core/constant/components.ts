@@ -229,7 +229,6 @@ export const components = {
 
   drawer: [
     'DrawerRoot',
-    'DrawerProvider',
     'DrawerTrigger',
     'DrawerPortal',
     'DrawerBackdrop',
@@ -415,7 +414,6 @@ export const components = {
     'ScrollAreaViewport',
     'ScrollAreaVirtualizer',
     'ScrollAreaScrollbar',
-    'ScrollAreaScrollbarGlimpse',
     'ScrollAreaThumb',
     'ScrollAreaCorner',
   ] as const,
