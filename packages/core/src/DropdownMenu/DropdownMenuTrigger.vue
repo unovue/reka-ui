@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { DropdownMenuHandle } from './handle'
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardElement, useId } from '@/shared'
+import { disabledAttr, useForwardElement, useId } from '@/shared'
 
 export interface DropdownMenuTriggerProps<Payload = unknown> extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -107,7 +107,7 @@ const anchor = usePopperAnchor({ consumerAttrs: true, element: triggerElement, e
   <component
     :is="renderAs(as, props.asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps(anchor.consumerAttrs($attrs), { type: as === 'button' ? 'button' : undefined }, attrs)"
+    v-bind="mergeProps(anchor.consumerAttrs($attrs), { type: as === 'button' ? 'button' : undefined }, attrs, { disabled: disabledAttr(attrs.disabled as boolean | undefined, as, props.asChild) })"
   >
     <slot />
   </component>
