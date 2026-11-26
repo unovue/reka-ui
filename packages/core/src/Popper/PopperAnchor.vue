@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ReferenceElement } from '@floating-ui/vue'
-import type { PrimitiveProps } from '@/Primitive'
 import type { PopperScope } from './PopperRootContext'
+import type { PrimitiveProps } from '@/Primitive'
 import { useForwardElement } from '@/shared'
 
 export interface PopperAnchorProps extends PrimitiveProps {

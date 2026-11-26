@@ -42,9 +42,9 @@ function getScopedContext(scope: PopperScope) {
  * @returns The resolved root's anchor state and registration callback.
  * @throws When no matching root provides a context and no fallback is given.
  */
+export function injectPopperRootContext(scope: PopperScope | null | undefined, fallback: null): PopperRootContext | null
 export function injectPopperRootContext(scope?: PopperScope): PopperRootContext
 export function injectPopperRootContext(scope: null): PopperRootContext | null
-export function injectPopperRootContext(scope: PopperScope | null | undefined, fallback: null): PopperRootContext | null
 export function injectPopperRootContext(scope?: PopperScope | null, fallback?: null): PopperRootContext | null {
   const [inject] = scope ? getScopedContext(scope) : defaultContext
   return scope === null || fallback === null ? inject(null) : inject()

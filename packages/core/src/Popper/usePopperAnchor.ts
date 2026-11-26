@@ -1,6 +1,6 @@
 import type { ReferenceElement } from '@floating-ui/vue'
-import { computed, getCurrentInstance, watchPostEffect } from 'vue'
 import type { PopperScope } from './PopperRootContext'
+import { computed, getCurrentInstance, watchPostEffect } from 'vue'
 import { injectPopperRootContext } from './PopperRootContext'
 
 export interface UsePopperAnchorOptions {
