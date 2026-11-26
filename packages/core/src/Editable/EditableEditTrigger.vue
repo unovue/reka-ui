@@ -6,10 +6,12 @@ export interface EditableEditTriggerProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
-import { disabledAttr } from '@/shared'
+import { disabledAttr, useTranslations } from '@/shared'
 import { injectEditableRootContext } from './EditableRoot.vue'
 
 const props = withDefaults(defineProps<EditableEditTriggerProps>(), { as: 'button' })
+
+const t = useTranslations()
 
 const context = injectEditableRootContext()
 </script>
@@ -17,7 +19,7 @@ const context = injectEditableRootContext()
 <template>
   <Primitive
     v-bind="props"
-    aria-label="edit"
+    :aria-label="t('editableEdit')"
     :aria-disabled="context.disabled.value ? '' : undefined"
     :data-disabled="context.disabled.value ? '' : undefined"
     :disabled="disabledAttr(context.disabled.value, props.as, props.asChild)"

@@ -18,11 +18,14 @@ export interface CalendarPrevSlot {
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
-import { disabledAttr } from '@/shared'
+import { disabledAttr, useTranslations } from '@/shared'
 import { injectCalendarRootContext } from './CalendarRoot.vue'
 
 const props = withDefaults(defineProps<CalendarPrevProps>(), { as: 'button', step: 'month' })
+
 defineSlots<CalendarPrevSlot>()
+
+const t = useTranslations()
 
 const disabled = computed(() => rootContext.disabled.value || rootContext.isPrevButtonDisabled(props.prevPage))
 
@@ -37,7 +40,7 @@ function handleClick() {
 
 <template>
   <Primitive
-    aria-label="Previous page"
+    :aria-label="t('calendarPrev')"
     :as="props.as"
     :as-child="props.asChild"
     :type="props.as === 'button' ? 'button' : undefined"
