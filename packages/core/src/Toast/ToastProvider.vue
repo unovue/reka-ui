@@ -4,7 +4,7 @@ import type { GlobalToastManager } from './createToastManager'
 import type { ToastStore } from './useToastStore'
 import type { SwipeDirection } from './utils'
 import { useCollection } from '@/Collection'
-import { createContext, useTranslations } from '@/shared'
+import { createRekaContext, useTranslations } from '@/shared'
 
 export interface ToastProviderContext {
   label: Readonly<Ref<string>>
@@ -105,7 +105,7 @@ export interface ToastProviderProps {
 }
 
 export const [injectToastProviderContext, provideToastProviderContext]
-  = createContext<ToastProviderContext>('ToastProvider')
+  = createRekaContext<ToastProviderContext>('ToastProvider')
 </script>
 
 <script setup lang="ts">

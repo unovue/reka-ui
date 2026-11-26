@@ -6,7 +6,7 @@ import type { SwipeEvent } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason } from '@/shared'
 import { COLLECTION_ITEM_ATTRS, useCollectionItem } from '@/Collection/Collection'
-import { createContext, getActiveElement, useForwardElement } from '@/shared'
+import { createRekaContext, getActiveElement, useForwardElement } from '@/shared'
 
 export type ToastRootImplEmits = {
   /** Event handler called when the escape key is down. It can be prevented by calling `event.preventDefault`. */
@@ -64,7 +64,7 @@ export interface ToastRootContext {
 }
 
 export const [injectToastRootContext, provideToastRootContext]
-  = createContext<ToastRootContext>('ToastRoot')
+  = createRekaContext<ToastRootContext>('ToastRoot')
 </script>
 
 <script setup lang="ts">
