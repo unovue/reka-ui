@@ -1,6 +1,7 @@
+import type { FocusScopeNode } from './utils'
 import type { SplitWrapperAttrs, WrapperSpec } from '@/shared/splitWrapperAttrs'
 import { isClient } from '@vueuse/shared'
-import { computed, getCurrentScope, nextTick, reactive, ref, shallowRef, watch, watchEffect } from 'vue'
+import { computed, getCurrentInstance, getCurrentScope, inject, nextTick, provide, reactive, ref, shallowRef, watch, watchEffect } from 'vue'
 import { containsComposed, getActiveElement, getEventTarget, getOwnerDocument, getRootNode } from '@/shared'
 import { createWrapperEmit } from '@/shared/splitWrapperAttrs'
 import { createFocusScopesStack } from './stack'
@@ -10,9 +11,13 @@ import {
   EVENT_OPTIONS,
   focus,
   focusFirst,
+  focusScopeNodes,
   getTabbableCandidates,
   getTabbableEdges,
+  hasFocusLeftScope,
 } from './utils'
+
+const FOCUS_SCOPE_NODE_KEY = Symbol.for('reka-ui:FocusScopeNode')
 
 export interface UseFocusScopeOptions {
   /** The scope's container: the part's own element. */
@@ -62,6 +67,16 @@ export function useFocusScope(options: UseFocusScopeOptions) {
   watch(() => options.element.value, (value) => {
     element.value = value
   }, { flush: 'post', immediate: true })
+
+  // Lets `hasFocusLeftScope` tell the scopes nested in this one from unrelated ones.
+  const hasInstance = !!getCurrentInstance()
+  const scopeNode: FocusScopeNode = { parent: hasInstance ? inject<FocusScopeNode | undefined>(FOCUS_SCOPE_NODE_KEY, undefined) : undefined }
+  if (hasInstance)
+    provide(FOCUS_SCOPE_NODE_KEY, scopeNode)
+  watch(element, (container) => {
+    if (container)
+      focusScopeNodes.set(container, scopeNode)
+  }, { immediate: true })
 
   const lastFocusedElementRef = ref<HTMLElement | null>(null)
   const focusScopesStack = createFocusScopesStack()
@@ -239,6 +254,7 @@ export function useFocusScope(options: UseFocusScopeOptions) {
       options.onUnmountAutoFocus?.(ev)
     }
     container.addEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)
+    scopeNode.focusLeftAtUnmount = hasFocusLeftScope(container)
     container.dispatchEvent(unmountEvent)
 
     // Signal that blur events fired below are system-initiated (focus trap
@@ -246,7 +262,9 @@ export function useFocusScope(options: UseFocusScopeOptions) {
     container.setAttribute('data-focus-scope-unmounting', '')
 
     setTimeout(() => {
-      if (!unmountEvent.defaultPrevented)
+      // Focus goes back to where it was, unless something else took it meanwhile, e.g. a
+      // layer opened by the click that closed this one.
+      if (!unmountEvent.defaultPrevented && !hasFocusLeftScope(container))
         focus(previouslyFocusedElement ?? getOwnerDocument(container).body, { select: true })
 
       // we need to remove the listener after we `dispatchEvent`
@@ -254,6 +272,7 @@ export function useFocusScope(options: UseFocusScopeOptions) {
 
       focusScopesStack.remove(focusScope)
       container.removeAttribute('data-focus-scope-unmounting')
+      scopeNode.focusLeftAtUnmount = undefined
     }, 0)
   }
 

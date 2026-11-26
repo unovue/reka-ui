@@ -18,7 +18,8 @@ describe('layerStack', () => {
     registerStackLayer(stackLayer())
     registerOutsideSubscriber(subscriber())
     registerOutsideSubscriber(subscriber())
-    expect(add.mock.calls.filter(c => c[0] === 'pointerdown')).toHaveLength(1)
+    // The shared bubble listener, plus the capture one that snapshots the stack at the press (#2741)
+    expect(add.mock.calls.filter(c => c[0] === 'pointerdown')).toHaveLength(2)
     expect(add.mock.calls.filter(c => c[0] === 'focusin')).toHaveLength(1)
     expect(winAdd.mock.calls.filter(c => c[0] === 'keydown')).toHaveLength(1)
     add.mockRestore()
@@ -39,7 +40,7 @@ describe('layerStack', () => {
     off1()
     expect(remove.mock.calls.filter(c => c[0] === 'pointerdown')).toHaveLength(0) // one left
     off2()
-    expect(remove.mock.calls.filter(c => c[0] === 'pointerdown')).toHaveLength(1)
+    expect(remove.mock.calls.filter(c => c[0] === 'pointerdown')).toHaveLength(2)
     remove.mockRestore()
   })
 

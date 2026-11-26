@@ -10,6 +10,7 @@ import { blockPositioningWrapper, mountInternalBackdrop } from './internalBackdr
 import {
   branches,
   highestDisabledIndex,
+  highestDisabledIndexAt,
   indexOfLayer,
   registerStackLayer,
 } from './layerStack'
@@ -92,7 +93,10 @@ export function useDismissableLayer(options: UseDismissableLayerOptions) {
       containsComposed(branch, event.target as Node),
     )
 
-    if (!present() || !isPointerEventsEnabled.value || isPointerDownOnBranch)
+    // Eligibility as of the start of this press: a handler on the target may
+    // already have opened another layer that disables outside pointer events.
+    const isEnabledAtPress = index.value >= highestDisabledIndexAt(event.detail.originalEvent)
+    if (!present() || !isEnabledAtPress || isPointerDownOnBranch)
       return
     options.onPointerDownOutside?.(event)
     options.onInteractOutside?.(event)
