@@ -325,6 +325,12 @@ const nativeOptions = computed(() => {
   return filtered
 })
 
+// The empty selection submits `nullableValue`. A `multiple` model reads `[]`
+// for `null`, but a parent that passes `null` still submits it, as on v2 (#3345).
+function showNullableOption() {
+  return isNullish(modelValue.value) || (props.multiple && props.modelValue === null)
+}
+
 // The native `select` is patched in place (each option's `selected` is bound),
 // never re-keyed: re-creating it on a model change would skip the `change`
 // event `BubbleSelect` dispatches for that change.
@@ -359,7 +365,7 @@ provideFormResetOwner((event: Event) => { resetControllableState(isControlled, e
       :value="modelValue"
     >
       <option
-        v-if="isNullish(modelValue)"
+        v-if="showNullableOption()"
         data-nullable
         :value="nullableValue"
         selected
