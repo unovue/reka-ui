@@ -408,6 +408,29 @@ const userPopover = createPopoverHandle<User>()
 
 The handle itself holds no state. The mounted root owns it, and the root and the triggers only connect to the handle after they mount. A handle created at module scope is therefore safe under SSR: nothing from one request can reach another, and every trigger renders closed on the server. Prefer creating the handle in the `<script setup>` of the component that renders the root and passing it down. Use a module-scope handle when the triggers live in unrelated parts of the app. Use one mounted root per handle: a second root that mounts with the same handle takes it over and closes the first, with a dev warning. A root or trigger kept alive by `<KeepAlive>` disconnects from the handle while it is inactive.
 
+### Keep the content mounted when closed
+
+By default the content is removed when the popover closes. Use `:unmount-on-hide="false"` on `PopoverRoot` to keep it mounted and only hide it, for example to preserve the state of the elements inside it between openings.
+
+While closed, the hidden content does not act as an open popover: it does not trap focus, block pointer events outside of it, track the position of its anchor, lock the body scroll or hide the rest of the page from assistive technologies. Focus still returns to the trigger when it closes. A force-mounted `PopoverContent` is inert in the same way while closed, but its visibility is up to you.
+
+```vue line=6
+<script setup>
+import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
+</script>
+
+<template>
+  <PopoverRoot :unmount-on-hide="false">
+    <PopoverTrigger>Open</PopoverTrigger>
+    <PopoverPortal>
+      <PopoverContent>
+        …
+      </PopoverContent>
+    </PopoverPortal>
+  </PopoverRoot>
+</template>
+```
+
 ## Real-world examples
 
 - [Selection Popover](/examples/popover-selection): A formatting toolbar anchored to the current text selection using a virtual Popper reference.
