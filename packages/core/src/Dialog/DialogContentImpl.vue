@@ -37,7 +37,7 @@ export interface DialogContentImplProps extends DismissableLayerProps {
 </script>
 
 <script setup lang="ts">
-import { computed, getCurrentInstance, mergeProps, onMounted, watch } from 'vue'
+import { computed, getCurrentInstance, mergeProps, onMounted, onUnmounted, shallowRef, watch } from 'vue'
 import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer } from '@/DismissableLayer/useDismissableLayer'
 import { FOCUS_SCOPE_WRAPPER, focusScopeOptions, useFocusScope } from '@/FocusScope/useFocusScope'
 import { renderAs } from '@/Primitive/renderAs'
@@ -104,6 +104,12 @@ const layer = useDismissableLayer(dismissableLayerOptions(contentElement, () => 
 
 onMounted(() => {
   rootContext.contentElement = contentElement
+})
+// The root outlives this content, so hand it back an empty ref: this content's own
+// ref keeps its instance (and its detached element) reachable for as long as it is stored.
+onUnmounted(() => {
+  if (rootContext.contentElement === contentElement)
+    rootContext.contentElement = shallowRef<HTMLElement>()
 })
 
 // Record where focus was on every open, before the content moves it: a

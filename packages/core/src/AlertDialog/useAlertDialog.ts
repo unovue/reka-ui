@@ -116,6 +116,10 @@ export function useAlertDialogContent(): UseAlertDialogContentReturn {
     cancelElement,
     contentContext: {
       onCancelElementChange: (el) => {
+        // A cancel button that unmounts only releases the registered one once it has left the
+        // document, so another cancel button that is still rendered keeps its registration.
+        if (!el && cancelElement.value?.isConnected)
+          return
         cancelElement.value = el
       },
     },
