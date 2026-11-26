@@ -8,7 +8,7 @@ export interface ListboxGroupLabelProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { renderAs } from '@/Primitive/renderAs'
-import { useForwardElement } from '@/shared'
+import { claimReferencedId, useForwardElement } from '@/shared'
 import { injectListboxGroupContext } from './ListboxGroup.vue'
 
 const props = withDefaults(defineProps<ListboxGroupLabelProps>(), {
@@ -16,6 +16,8 @@ const props = withDefaults(defineProps<ListboxGroupLabelProps>(), {
 })
 
 const groupContext = injectListboxGroupContext({ id: '' })
+// A consumer `id` (or one on the asChild child) is the id the group's `aria-labelledby` references.
+claimReferencedId(groupContext, 'id')
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)

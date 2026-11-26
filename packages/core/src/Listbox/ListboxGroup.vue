@@ -20,7 +20,8 @@ import { injectListboxRootContext } from './ListboxRoot.vue'
 defineProps<ListboxGroupProps>()
 
 const id = useId(undefined, 'reka-listbox-group')
-provideListboxGroupContext({ id })
+// The template reads the id through the context, which follows a consumer `id` on the label.
+const context = provideListboxGroupContext({ id })
 
 const rootContext = injectListboxRootContext(null)
 // Hidden (not unmounted, so its items stay registered) while a filter leaves none of its items.
@@ -35,7 +36,7 @@ defineExpose(expose)
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
     role="group"
-    :aria-labelledby="id"
+    :aria-labelledby="context.id"
     :hidden="isFilteredOut || undefined"
   >
     <slot />
