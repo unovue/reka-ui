@@ -50,8 +50,8 @@ function handlePointerDown(event: PointerEvent) {
     // so we remove text selection manually when scrolling
     prevWebkitUserSelectRef.value = getOwnerDocument(scrollbar.value).body.style.webkitUserSelect
     getOwnerDocument(scrollbar.value).body.style.webkitUserSelect = 'none'
-    if (rootContext.viewport)
-      rootContext.viewport.value!.style.scrollBehavior = 'auto'
+    if (rootContext.viewport.value)
+      rootContext.viewport.value.style.scrollBehavior = 'auto'
 
     handleDragScroll(event)
   }
@@ -67,8 +67,8 @@ function handlePointerUp(event: PointerEvent) {
     element.releasePointerCapture(event.pointerId)
 
   getOwnerDocument(scrollbar.value).body.style.webkitUserSelect = prevWebkitUserSelectRef.value
-  if (rootContext.viewport)
-    rootContext.viewport.value!.style.scrollBehavior = ''
+  if (rootContext.viewport.value)
+    rootContext.viewport.value.style.scrollBehavior = ''
 
   rectRef.value = undefined
 }

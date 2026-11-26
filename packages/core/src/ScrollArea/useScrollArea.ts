@@ -208,10 +208,14 @@ export function createScrollAreaScrollbarVisibleContext(
   }
 
   function onDragScroll(payload: number) {
+    const viewport = rootContext.viewport.value
+    // A scrollbar can be dragged before (or without) a mounted viewport
+    if (!viewport)
+      return
     if (isHorizontal())
-      rootContext.viewport.value!.scrollLeft = getScrollPositionFromPointer(payload, pointerOffset.value, sizes.value, rootContext.dir.value)
+      viewport.scrollLeft = getScrollPositionFromPointer(payload, pointerOffset.value, sizes.value, rootContext.dir.value)
     else
-      rootContext.viewport.value!.scrollTop = getScrollPositionFromPointer(payload, pointerOffset.value, sizes.value)
+      viewport.scrollTop = getScrollPositionFromPointer(payload, pointerOffset.value, sizes.value)
   }
 
   function onThumbPositionChange() {

@@ -506,3 +506,27 @@ describe('given a visible scrollbar', () => {
     elementListener.mockRestore()
   })
 })
+
+describe('given a scrollbar dragged before a viewport is mounted', () => {
+  it('does not throw on pointer down and up', async () => {
+    vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} })
+    onTestFinished(() => vi.unstubAllGlobals())
+    const errors: unknown[] = []
+    const wrapper = mount(ScrollAreaRoot, {
+      attachTo: document.body,
+      props: { type: 'always' },
+      slots: { default: () => h(ScrollAreaScrollbar, { orientation: 'vertical' }, () => h(ScrollAreaThumb)) },
+      global: { config: { errorHandler: error => errors.push(error) } },
+    })
+    await nextTick()
+    const scrollbar = wrapper.find('[data-scrollbarimpl]')
+    expect(scrollbar.exists()).toBe(true)
+    const element = scrollbar.element as HTMLElement
+    element.setPointerCapture = () => {}
+    element.hasPointerCapture = () => false
+    await scrollbar.trigger('pointerdown', { button: 0, pointerId: 1 })
+    await scrollbar.trigger('pointerup', { button: 0, pointerId: 1 })
+    expect(errors.map(String)).toEqual([])
+    wrapper.unmount()
+  })
+})
