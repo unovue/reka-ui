@@ -2,7 +2,7 @@
 import type { ComputedRef } from 'vue'
 import type { DateValue } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardElement } from '@/shared'
+import { createRekaContext, useForwardElement } from '@/shared'
 
 export interface CalendarGridProps extends PrimitiveProps {
   /**
@@ -18,7 +18,7 @@ export interface CalendarGridContext {
 }
 
 export const [injectCalendarGridContext, provideCalendarGridContext]
-  = createContext<CalendarGridContext>('CalendarGrid')
+  = createRekaContext<CalendarGridContext>('CalendarGrid')
 </script>
 
 <script setup lang="ts">

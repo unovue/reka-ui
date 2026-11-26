@@ -7,7 +7,7 @@ import type { BaseChangeReason, ChangeEventDetails, Formatter } from '@/shared'
 import type { Translate } from '@/shared/translations'
 import type { Direction } from '@/shared/types'
 import { getWeekStartsOn } from '@/date'
-import { createContext, useDirection, useId, useLocale } from '@/shared'
+import { createRekaContext, useDirection, useId, useLocale } from '@/shared'
 import { handleCalendarInitialFocus, useCalendarViewFocus } from '@/shared/date'
 
 export interface CalendarRootContext {
@@ -151,7 +151,7 @@ export type CalendarRootEmits = {
 }
 
 export const [injectCalendarRootContext, provideCalendarRootContext]
-  = createContext<CalendarRootContext>('CalendarRoot')
+  = createRekaContext<CalendarRootContext>('CalendarRoot')
 </script>
 
 <script setup lang="ts">

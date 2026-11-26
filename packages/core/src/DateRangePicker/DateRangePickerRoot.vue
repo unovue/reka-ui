@@ -8,7 +8,7 @@ import type { RangeCalendarChangeReason, RangeCalendarRootProps } from '@/RangeC
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { DateRange, DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { createContext, getElementByIdFrom, useDirection, useId, useLocale } from '@/shared'
+import { createRekaContext, getElementByIdFrom, useDirection, useId, useLocale } from '@/shared'
 
 export type DateRangePickerRootContext = {
   id: Ref<string | undefined>
@@ -123,7 +123,7 @@ export type DateRangePickerRootEmits = {
 }
 
 export const [injectDateRangePickerRootContext, provideDateRangePickerRootContext]
-  = createContext<DateRangePickerRootContext>('DateRangePickerRoot')
+  = createRekaContext<DateRangePickerRootContext>('DateRangePickerRoot')
 </script>
 
 <script setup lang="ts">

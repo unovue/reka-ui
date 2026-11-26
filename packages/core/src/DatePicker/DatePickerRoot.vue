@@ -8,7 +8,7 @@ import type { PopoverOpenChangeReason, PopoverRootProps } from '@/Popover'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { createContext, getElementByIdFrom, useDirection, useId, useLocale } from '@/shared'
+import { createRekaContext, getElementByIdFrom, useDirection, useId, useLocale } from '@/shared'
 
 export type DatePickerRootContext = {
   id: Ref<string | undefined>
@@ -113,7 +113,7 @@ export type DatePickerRootEmits = {
 }
 
 export const [injectDatePickerRootContext, provideDatePickerRootContext]
-  = createContext<DatePickerRootContext>('DatePickerRoot')
+  = createRekaContext<DatePickerRootContext>('DatePickerRoot')
 </script>
 
 <script setup lang="ts">

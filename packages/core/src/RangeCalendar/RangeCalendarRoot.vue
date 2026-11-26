@@ -8,7 +8,7 @@ import type { DateRange } from '@/shared/date'
 import type { Translate } from '@/shared/translations'
 import type { Direction } from '@/shared/types'
 import { getWeekStartsOn } from '@/date'
-import { createContext, useDirection, useId, useKbd, useLocale } from '@/shared'
+import { createRekaContext, useDirection, useId, useKbd, useLocale } from '@/shared'
 import { handleCalendarInitialFocus, useCalendarViewFocus } from '@/shared/date'
 
 export interface RangeCalendarRootContext {
@@ -174,7 +174,7 @@ export type RangeCalendarRootEmits = {
 }
 
 export const [injectRangeCalendarRootContext, provideRangeCalendarRootContext]
-  = createContext<RangeCalendarRootContext>('RangeCalendarRoot')
+  = createRekaContext<RangeCalendarRootContext>('RangeCalendarRoot')
 </script>
 
 <script setup lang="ts">

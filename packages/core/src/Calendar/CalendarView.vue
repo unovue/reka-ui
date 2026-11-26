@@ -2,7 +2,7 @@
 import type { ComputedRef } from 'vue'
 import type { CalendarGridData, CalendarUnit } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardElement } from '@/shared'
+import { createRekaContext, useForwardElement } from '@/shared'
 
 export interface CalendarViewProps extends PrimitiveProps {
   /** The view this part renders. Its content is shown only while the root's `view` matches. */
@@ -15,7 +15,7 @@ export interface CalendarViewContext {
 }
 
 export const [injectCalendarViewContext, provideCalendarViewContext]
-  = createContext<CalendarViewContext>('CalendarView')
+  = createRekaContext<CalendarViewContext>('CalendarView')
 </script>
 
 <script setup lang="ts">
