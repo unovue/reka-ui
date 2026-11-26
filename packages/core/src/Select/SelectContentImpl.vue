@@ -7,6 +7,8 @@ import { useCollection, useCollectionSlot } from '@/Collection'
 import {
   containsComposed,
   createContext,
+  useContentId,
+  useContentMounted,
   useFocusGuards,
   useForwardElement,
   useForwardProps,
@@ -151,6 +153,10 @@ const { getItems } = useCollection()
 const { forwardRef, currentElement: content, expose } = useForwardElement()
 defineExpose(expose)
 useCollectionSlot(content)
+// A consumer `id` is the content's id, which the trigger's `aria-controls` references
+// while the element is rendered.
+useContentId(rootContext, content)
+useContentMounted(rootContext, content)
 // Scope focus guards to the content's root (shadow-safe).
 useFocusGuards(content)
 useHideOthers(computed(() => present.value ? content.value : undefined))

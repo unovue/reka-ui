@@ -14,6 +14,7 @@ import {
   containsComposed,
   createLabelRegistry,
   createPartSurface,
+  defineReactiveIds,
   disclosureState,
   getActiveElement,
   getEventTarget,
@@ -410,6 +411,8 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
     virtualTypeaheadItems,
     notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
+  // `contentId` follows a consumer `id` on the content (`useContentId`).
+  defineReactiveIds(context, ['contentId'])
 
   return {
     modelValue,
