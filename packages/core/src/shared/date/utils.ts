@@ -1,10 +1,13 @@
 import type { Ref } from 'vue'
 import type { Granularity } from './comparators'
 import type { DateInputType, DateStep, DateValue, HourCycle } from './types'
+import type { Translate } from '@/shared/translations'
 import { defu } from 'defu'
-import { nextTick, watch } from 'vue'
+import { hasInjectionContext, nextTick, watch } from 'vue'
 import { toCalendar, toIsoString } from '@/date/temporal'
 import { getActiveElement } from '@/shared/getActiveElement'
+import { defaultTranslate } from '@/shared/translations'
+import { useTranslations } from '@/shared/useTranslations'
 
 /**
  * The value a range field submits in a form: `start - end` as ISO strings.
@@ -31,6 +34,17 @@ export function withCellTriggerTabindex<T extends Record<string, unknown>>(attrs
   if (attrs.tabindex !== undefined || (primitive.as === 'div' && !primitive.asChild))
     return attrs
   return { ...attrs, tabindex: -1 }
+}
+
+/**
+ * The translate function of the nearest `ConfigProvider` when called in a
+ * component's setup, else the built-in English one, so the date composables
+ * also run outside a component (e.g. in an `effectScope`).
+ *
+ * @internal
+ */
+export function useDateTranslations(): Translate {
+  return hasInjectionContext() ? useTranslations() : defaultTranslate
 }
 
 export function getOptsByGranularity(granularity: Granularity, hourCycle: HourCycle, isTimeValue: boolean = false) {

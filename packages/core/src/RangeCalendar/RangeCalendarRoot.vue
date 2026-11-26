@@ -5,6 +5,7 @@ import type { CalendarGridData, CalendarLayout, CalendarPageFunction, CalendarUn
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails, Formatter } from '@/shared'
 import type { DateRange } from '@/shared/date'
+import type { Translate } from '@/shared/translations'
 import type { Direction } from '@/shared/types'
 import { getWeekStartsOn } from '@/date'
 import { createContext, useDirection, useId, useKbd, useLocale } from '@/shared'
@@ -49,6 +50,8 @@ export interface RangeCalendarRootContext {
   layout: ComputedRef<CalendarLayout>
   headingValue: ComputedRef<string>
   fullCalendarLabel: ComputedRef<string>
+  /** Looks the built-in labels up: the nearest `ConfigProvider`'s translations, else English. */
+  translate: Translate
   isInvalid: ComputedRef<boolean>
   hasSelectedDate: ComputedRef<boolean>
   isSelectedDisabled: ComputedRef<boolean>

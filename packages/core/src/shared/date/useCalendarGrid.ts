@@ -1,10 +1,19 @@
 import type { ComputedRef, MaybeRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { CalendarGridData, CalendarLayout, CalendarPageFunction, CalendarUnit, CalendarUnitAdapter, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { DateValue } from '@/date/types'
+import type { Translate, TranslationKey } from '@/shared/translations'
 import type { DateFormatterOptions, Formatter } from '@/shared/useDateFormatter'
 import { computed, ref, toValue, unref, watch } from 'vue'
 import { clampLayoutCount, compareDateValues, getUnitAdapter, isAfter, isBefore } from '@/date'
 import { useDateFormatter } from '@/shared/useDateFormatter'
+import { useDateTranslations } from './utils'
+
+/** The message that names the calendar in each view, read before the heading. */
+const CALENDAR_LABEL_KEYS = {
+  day: 'calendarLabel',
+  month: 'monthPickerLabel',
+  year: 'yearPickerLabel',
+} as const satisfies Record<CalendarUnit, TranslationKey>
 
 export interface UseCalendarGridProps {
   /** The unit the grid renders: the calendar's active `view`. */
@@ -50,6 +59,8 @@ export interface UseCalendarGridProps {
   isDateDisabled?: MaybeRef<Matcher | undefined>
   isDateUnavailable?: MaybeRef<Matcher | undefined>
   calendarLabel?: MaybeRefOrGetter<string | undefined>
+  /** Looks the built-in labels up. @default the nearest `ConfigProvider`'s, else English */
+  translate?: Translate
   /** Root-level custom paging (the `nextPage` prop). Used only in the `granularity` view. */
   nextPage?: MaybeRef<CalendarPageFunction | undefined>
   /** Root-level custom paging (the `prevPage` prop). Used only in the `granularity` view. */
@@ -69,6 +80,8 @@ export interface UseCalendarGridReturn {
   weekdays: ComputedRef<string[]>
   headingValue: ComputedRef<string>
   fullCalendarLabel: ComputedRef<string>
+  /** The translate function the labels come from. */
+  translate: Translate
   /** Up/down keyboard stride: 7 in the day view, `columns` otherwise. */
   rowLength: ComputedRef<number>
   isOutsideVisibleView: (date: DateValue) => boolean
@@ -218,7 +231,8 @@ export function useCalendarGrid(props: UseCalendarGridProps): UseCalendarGridRet
     return adapter.value.formatHeading(formatter, grid.value, headingFormatOptions.value)
   })
 
-  const fullCalendarLabel = computed(() => `${toValue(props.calendarLabel) ?? adapter.value.defaultLabel}, ${headingValue.value}`)
+  const translate = props.translate ?? useDateTranslations()
+  const fullCalendarLabel = computed(() => `${toValue(props.calendarLabel) ?? translate(CALENDAR_LABEL_KEYS[unit.value])}, ${headingValue.value}`)
 
   const weekdays = computed(() => {
     if (unit.value !== 'day' || !grid.value.length)
@@ -256,6 +270,7 @@ export function useCalendarGrid(props: UseCalendarGridProps): UseCalendarGridRet
     weekdays,
     headingValue,
     fullCalendarLabel,
+    translate,
     rowLength,
     isOutsideVisibleView,
     isDateDisabled,
