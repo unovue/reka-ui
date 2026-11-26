@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { clamp, createRekaContext, useForwardExpose } from '@/shared'
+import { clamp, createRekaContext, useForwardExpose, useTranslations } from '@/shared'
 
 type PaginationRootContext = {
   page: Ref<number>
@@ -60,6 +60,7 @@ const props = withDefaults(defineProps<PaginationRootProps>(), {
   defaultPage: 1,
   showEdges: false,
 })
+
 const emits = defineEmits<PaginationRootEmits>()
 
 defineSlots<{
@@ -70,10 +71,13 @@ defineSlots<{
     pageCount: typeof pageCount.value
   }) => any
 }>()
+
+const t = useTranslations()
+
 // A `<nav>` is a landmark, and landmarks need a name to be told apart. The default steps aside for a
 // consumer `aria-label` (it falls through and wins) or `aria-labelledby`, and is only set on the `<nav>` itself.
 const attrs = useAttrs()
-const ariaLabel = computed(() => (props.as === 'nav' && !props.asChild && !attrs['aria-labelledby']) ? 'pagination' : undefined)
+const ariaLabel = computed(() => (props.as === 'nav' && !props.asChild && !attrs['aria-labelledby']) ? t('paginationLabel') : undefined)
 
 const { siblingCount, disabled, showEdges } = toRefs(props)
 
