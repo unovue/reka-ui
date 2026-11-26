@@ -8,16 +8,14 @@ import { getActiveElement } from '@/shared/getActiveElement'
 
 /**
  * The value a range field submits in a form: `start - end` as ISO strings.
- * A missing endpoint is empty (`2024-01-01 - `), and an empty range is an
- * empty string, so `required` sees it as missing.
+ * Only a complete range is a value: while either end is missing it is an
+ * empty string, so `required` reports `valueMissing`.
  *
  * @internal
  */
 export function toRangeFormValue(range: { start?: DateValue | Temporal.PlainTime | null, end?: DateValue | Temporal.PlainTime | null }): string {
   const { start, end } = range
-  if (!start && !end)
-    return ''
-  return `${start ? toIsoString(start) : ''} - ${end ? toIsoString(end) : ''}`
+  return start && end ? `${toIsoString(start)} - ${toIsoString(end)}` : ''
 }
 
 export function getOptsByGranularity(granularity: Granularity, hourCycle: HourCycle, isTimeValue: boolean = false) {

@@ -43,8 +43,7 @@ describe('timeRangeField native validation', () => {
     expect(getFormData()).toEqual([['range', '']])
   })
 
-  // TODO(v3-port): #3228 v3's toRangeFormValue submits a half-filled range ("09:30:00 - ") instead of an empty value
-  it.skip.each([
+  it.each([
     { label: 'only a start', modelValue: { start, end: undefined } },
     { label: 'only an end', modelValue: { start: undefined, end } },
   ])('blocks submission of a required field with $label', async ({ modelValue }) => {

@@ -383,9 +383,9 @@ describe('timeField', () => {
 describe('coderabbit review (#3088)', () => {
   const hiddenInput = (container: Element) => container.querySelector<HTMLInputElement>('input[name="range"]')!
 
-  it('submits an empty endpoint as an empty string, and an empty range as nothing', async () => {
+  it('submits nothing for a half-filled range or an empty range (#3228)', async () => {
     const partial = render(TimeField, { props: { timeRangeFieldProps: { name: 'range', modelValue: { start: new Temporal.PlainTime(9, 15), end: undefined } } } })
-    expect(hiddenInput(partial.container).value).toBe('09:15:00 - ')
+    expect(hiddenInput(partial.container).value).toBe('')
     partial.unmount()
 
     const empty = render(TimeField, { props: { timeRangeFieldProps: { name: 'range', modelValue: { start: undefined, end: undefined } } } })
@@ -422,5 +422,17 @@ describe('unavailable days inside the range', () => {
       timeRangeFieldProps: { modelValue: { start: calendarDateTime.start, end: calendarDateTime.end.add({ days: 2 }) }, locale: 'en-GB', isTimeUnavailable },
     })
     expect(input).toHaveAttribute('data-invalid', '')
+  })
+})
+
+describe('hidden input value', () => {
+  it.each([
+    { label: 'no value', modelValue: undefined, expected: '' },
+    { label: 'only a start', modelValue: { start: time.start, end: undefined }, expected: '' },
+    { label: 'only an end', modelValue: { start: undefined, end: time.end }, expected: '' },
+    { label: 'a complete range', modelValue: time, expected: '09:15:29 - 17:45:00' },
+  ])('is "$expected" for $label', ({ modelValue, expected }) => {
+    const { container } = setup({ timeRangeFieldProps: { modelValue, name: 'range' } })
+    expect(container.querySelector('input')).toHaveValue(expected)
   })
 })
