@@ -79,6 +79,7 @@ export const [injectTabsRootContext, provideTabsRootContext]
 
 <script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">
 import { renderAs } from '@/Primitive/renderAs'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { useTabs, useTabsAutoSelect } from './useTabs'
 
 const props = withDefaults(defineProps<TabsRootProps<T>>(), {
@@ -118,6 +119,7 @@ const { root, context, modelValue } = tabs
 useTabsAutoSelect(tabs, props.defaultValue)
 
 provideTabsRootContext(context)
+useAgentRegistration('tabs', context, props)
 
 // The composable is untyped over `T`; narrow once here for the slot payload
 // (a `T | undefined` cast in the template reads as a deprecated filter to eslint).

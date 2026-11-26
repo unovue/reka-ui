@@ -72,6 +72,7 @@ export const [injectAccordionRootContext, provideAccordionRootContext]
 
 <script setup lang="ts" generic="T extends (string | string[]), ExplicitType extends SingleOrMultipleType">
 import { renderAs } from '@/Primitive/renderAs'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { useAccordion } from './useAccordion'
 
 const props = withDefaults(defineProps<AccordionRootProps<T>>(), {
@@ -109,6 +110,7 @@ const { context, modelValue } = useAccordion({
 })
 
 provideAccordionRootContext(context)
+useAgentRegistration('accordion', context, props, parentElement)
 </script>
 
 <template>

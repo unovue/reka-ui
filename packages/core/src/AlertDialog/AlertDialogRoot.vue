@@ -19,6 +19,7 @@ export interface AlertDialogProps<Payload = unknown> extends Omit<DialogRootProp
 import { provideDialogRootContext } from '@/Dialog/DialogRoot.vue'
 import { useId } from '@/shared'
 import { usePopupHandleAttachment } from '@/shared/popupHandle'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { useAlertDialog } from './useAlertDialog'
 
 defineOptions({
@@ -62,6 +63,7 @@ const { open, onOpenChange, context, payload, activeTriggerId, handleStore } = u
 })
 
 provideDialogRootContext(context)
+useAgentRegistration('dialog', context, props)
 // Client-only: the Root's state reaches a (possibly module-scope) handle only once mounted.
 usePopupHandleAttachment(handleStore)
 </script>

@@ -34,7 +34,7 @@ export interface Source {
   /** The name of the component that rendered this one, like `AlertDialogRoot`. */
   parentName?: string
   /** The component instance, for the element it rendered when it holds no element ref. */
-  instance?: { vnode: { el: unknown } }
+  instance?: { vnode: { el: unknown }, type?: unknown }
   /** Values of items seen inside `data-agent-hidden`, kept for a list whose items show only while it's open. */
   hiddenSeen?: unknown[]
   /** The `data-agent-confirm` sentence each item had when last seen, by its value, for items not on the page now. */
@@ -74,6 +74,8 @@ export interface Adapter {
   actionParts?: (s: Source, action: string, args: unknown[]) => HTMLElement[]
   /** What it hides while closed: a tab list's other tabs, an accordion's sections, a collapsible. */
   reveals?: boolean
+  /** Runs once the component registers, like a closed select asked to keep its items rendered. */
+  prepare?: (s: Source) => void
   modal?: (s: Source) => boolean
 }
 
@@ -314,9 +316,9 @@ function checkable(component: string, key: 'checked' | 'pressed', read: (s: Sour
   })
 }
 
-// A checkbox's own handler sets the asked state, so a group, an indeterminate state and its Field all follow a click's path.
+// The checkbox's own `setChecked` sets the asked state, so a group, an indeterminate state and its Field all follow a click's path.
 function checkTo(s: Source, value: unknown) {
-  s.extra(value)
+  s.extra(value, 'trigger-press')
 }
 
 function popup(component: (s: Source) => string, trigger: (s: Source) => HTMLElement | undefined, content: (s: Source) => HTMLElement | undefined, extra: Partial<Adapter> = {}): Adapter {
@@ -368,12 +370,10 @@ async function comboboxTo(s: Source, value: unknown, guard?: (value: unknown) =>
       s.ctx.onOpenChange(true)
       // A timer, not frames: a hidden page renders no frames, and a wait on one would hold every later call.
       const deadline = Date.now() + 1000
-      while (!(s.inner && registered(s.inner).length) && Date.now() < deadline)
+      while (!registered(s.inner ?? s).length && Date.now() < deadline)
         await pause(16)
     }
-    const listbox = s.inner
-    if (!listbox)
-      return fail('combobox has no list to pick from.')
+    const listbox = s.inner ?? s
     // The guard runs after the wait, on what the list shows then.
     await toggleTo(current, value, multiple, v => clickItem(listbox, v), guard)
   }
@@ -383,14 +383,23 @@ async function comboboxTo(s: Source, value: unknown, guard?: (value: unknown) =>
   }
 }
 
+// A closed select renders its items only while something needs them, like its typeahead: the bridge needs them
+// too, so it asks for them the way the typeahead does, and they're known from the next render.
+function keepItems(s: Source) {
+  const closed = s.ctx.closedItems as { hasRendered: () => boolean, renderThen: (callback: () => void) => void } | undefined
+  if (closed && !unref(s.ctx.open) && !closed.hasRendered())
+    closed.renderThen(() => {})
+}
+
 const rootOf = (s: Source) => el(s.element) ?? el(s.instance?.vnode.el)
 
 const menuContent = (s: Source) => (unref(s.ctx.open) ? byId(s, s.ctx.contentId) : undefined)
 
 export const adapters: Record<string, Adapter> = {
-  'checkbox': checkable('checkbox', 'checked', s => unref(s.ctx.state), s => s.extra(), s => !!unref(s.ctx.disabled), checkTo),
+  'checkbox': checkable('checkbox', 'checked', s => unref(s.ctx.state), s => checkTo(s, unref(s.ctx.state) !== true), s => !!unref(s.ctx.disabled), checkTo),
   'switch': checkable('switch', 'checked', s => !!unref(s.ctx.checked), s => s.ctx.toggleCheck(), s => !!unref(s.ctx.disabled)),
-  'toggle': checkable('toggle', 'pressed', s => !!unref(s.ctx), (s) => { s.ctx.value = !s.ctx.value }, s => !!s.props.disabled),
+  // A standalone toggle registers its `pressed` state, with its `setPressed`.
+  'toggle': checkable('toggle', 'pressed', s => !!unref(s.ctx), s => s.extra(!unref(s.ctx), 'trigger-press'), s => !!s.props.disabled, (s, value) => s.extra(value, 'trigger-press')),
 
   'radio-group': field(['value'], {
     component: () => 'radio-group',
@@ -420,7 +429,11 @@ export const adapters: Record<string, Adapter> = {
       ...(unref(s.ctx.required) && { required: true }),
     }),
     // Its items render while it's closed too, off the page, so their elements and marks are known.
-    items: s => registered(s, true),
+    items: (s) => {
+      keepItems(s)
+      return registered(s, true)
+    },
+    prepare: keepItems,
     closed: true,
     disabled: s => !!unref(s.ctx.disabled),
     actions: () => ['setValue', 'setOpen'],
@@ -453,7 +466,8 @@ export const adapters: Record<string, Adapter> = {
       ...(unref(s.ctx.filterSearch) && { query: unref(s.ctx.filterSearch) }),
       ...(unref(s.ctx.multiple) && { multiple: true }),
     }),
-    items: s => (s.inner ? registered(s.inner) : []),
+    // Its items register against its own context, or against a listbox it renders.
+    items: s => registered(s.inner ?? s),
     itemsWhileOpen: true,
     closed: true,
     disabled: s => !!unref(s.ctx.disabled),
@@ -660,7 +674,7 @@ export const adapters: Record<string, Adapter> = {
       const numeric = !!unref(s.ctx.isNumericMode)
       if (numeric && chars.some(char => !DIGIT.test(char)))
         fail('pin-input takes digits only.')
-      s.ctx.modelValue.value = numeric ? chars.map(Number) : chars
+      s.ctx.setModelValue(numeric ? chars.map(Number) : chars)
     },
   }),
 
@@ -727,7 +741,7 @@ export const adapters: Record<string, Adapter> = {
   }),
 
   'dialog': popup(
-    s => (s.parentName === 'AlertDialogRoot' || el(s.ctx.contentElement)?.getAttribute('role') === 'alertdialog' ? 'alert-dialog' : 'dialog'),
+    s => (s.parentName === 'AlertDialogRoot' || (s.instance?.type as { __name?: string } | undefined)?.__name === 'AlertDialogRoot' || el(s.ctx.contentElement)?.getAttribute('role') === 'alertdialog' ? 'alert-dialog' : 'dialog'),
     s => el(s.ctx.triggerElement),
     s => (unref(s.ctx.open) ? el(s.ctx.contentElement) : undefined),
     {

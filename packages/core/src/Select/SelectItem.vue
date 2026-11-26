@@ -49,6 +49,7 @@ export interface SelectItemProps<T = AcceptableValue> extends PrimitiveProps {
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { mergeProps, onMounted } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
+import { agentMarksOf, useAgentItem } from '@/shared/useAgentRegistration'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
 import { useSelectItem, useSelectItemLabel } from './useSelect'
@@ -100,7 +101,11 @@ const { isSelected, textValue, itemContext } = (lean ?? full)!
 const item = full?.item
 
 // The detached item's attributes: the `data-disabled` the typeahead reads.
-function getLeanAttrs() {
+// With an agent bridge, its marks too, which cover the item while it renders off the page.
+function getLeanAttrs(attrs: Record<string, unknown>) {
+  const marks = agentMarksOf(attrs)
+  if (marks)
+    return props.disabled ? { ...marks, ...DISABLED_ATTRS } : marks
   return props.disabled ? DISABLED_ATTRS : undefined
 }
 
@@ -119,6 +124,7 @@ if (!lean) {
 }
 
 provideSelectItemContext(itemContext)
+useAgentItem(rootContext, props, currentElement)
 </script>
 
 <template>
@@ -126,7 +132,7 @@ provideSelectItemContext(itemContext)
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
     data-reka-collection-item=""
-    v-bind="item ? mergeProps($attrs, item.attrs.value) : getLeanAttrs()"
+    v-bind="item ? mergeProps($attrs, item.attrs.value) : getLeanAttrs($attrs)"
   >
     <slot :selected="isSelected" />
   </component>

@@ -43,6 +43,7 @@ export const [injectCollapsibleRootContext, provideCollapsibleRootContext]
 
 <script setup lang="ts">
 import { renderAs } from '@/Primitive/renderAs'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { useCollapsible } from './useCollapsible'
 
 const props = withDefaults(defineProps<CollapsibleRootProps>(), {
@@ -79,6 +80,7 @@ const { open, setOpen, root, context } = useCollapsible({
 context.contentId = useId(undefined, 'reka-collapsible-content')
 setGeneratedIds(context, { contentId: context.contentId })
 provideCollapsibleRootContext(context)
+useAgentRegistration('collapsible', context, props)
 
 // Writable like the previous `useVModel` ref: assigning requests a change through the model.
 // Created on first read: a ref that never reads `open` costs no computed.

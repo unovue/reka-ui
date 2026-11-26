@@ -14,6 +14,9 @@ import { SwitchRoot } from '@/Switch'
 import { createAgent } from '.'
 import { offPage } from './registry'
 
+// v3 emits a change's details after its value: the assertions here are about the values.
+const firstArgs = (emitted: unknown[][] | undefined) => emitted?.map(args => args.slice(0, 1))
+
 let agent: Agent | undefined
 
 async function setup(render: () => VNode | VNode[]) {
@@ -33,7 +36,7 @@ afterEach(() => {
 const named = (agent: Agent, label: string) => agent.snapshot().find((c: AgentComponent) => c.label === label)
 
 describe('disabled popup triggers', () => {
-  const menu = (onSelect: () => void, { trigger = {}, item = {} }: { trigger?: object, item?: object } = {}) => h(DropdownMenuRoot, { modal: false }, () => [
+  const menu = (onSelect: () => void, { trigger = {}, item = {} }: { trigger?: Record<string, unknown>, item?: Record<string, unknown> } = {}) => h(DropdownMenuRoot, { modal: false }, () => [
     h(DropdownMenuTrigger, trigger, () => 'Actions'),
     h(DropdownMenuPortal, () => h(DropdownMenuContent, () => [h(DropdownMenuItem, { onSelect, ...item }, () => 'Delete'), h(DropdownMenuItem, () => 'Rename')])),
   ])
@@ -80,7 +83,7 @@ describe('subscribe', () => {
     const seen: ObservedChange[] = []
     agent.subscribe(change => seen.push(change))
     const on = ref(false)
-    mount(defineComponent({ render: () => h('div', { 'data-agent-hidden': '' }, h(SwitchRoot, { 'aria-label': 'Hidden', 'modelValue': on.value, 'onUpdate:modelValue': (v: boolean) => (on.value = v) })) }), { attachTo: document.body })
+    mount(defineComponent({ render: () => h('div', { 'data-agent-hidden': '' }, h(SwitchRoot, { 'aria-label': 'Hidden', 'modelValue': on.value, 'onUpdate:modelValue': (v: any) => (on.value = v) })) }), { attachTo: document.body })
     await nextTick()
     on.value = true
     await nextTick()
@@ -92,7 +95,7 @@ describe('subscribe', () => {
     const seen: ObservedChange[] = []
     agent.subscribe(change => seen.push(change))
     const on = ref(false)
-    mount(defineComponent({ render: () => h('div', { 'data-agent-secret': '' }, h(SwitchRoot, { 'aria-label': 'Private', 'modelValue': on.value, 'onUpdate:modelValue': (v: boolean) => (on.value = v) })) }), { attachTo: document.body })
+    mount(defineComponent({ render: () => h('div', { 'data-agent-secret': '' }, h(SwitchRoot, { 'aria-label': 'Private', 'modelValue': on.value, 'onUpdate:modelValue': (v: any) => (on.value = v) })) }), { attachTo: document.body })
     await nextTick()
     on.value = true
     await nextTick()
@@ -106,7 +109,7 @@ describe('checkbox', () => {
     const { agent, wrapper } = await setup(() => h(CheckboxRoot, { 'aria-label': 'All', 'defaultValue': 'indeterminate' }))
     const result = await agent.act({ steps: [{ ref: 'All', action: 'setChecked', args: [false] }] })
     expect(result.ok).toBe(true)
-    expect(wrapper.findComponent(CheckboxRoot).emitted('update:modelValue')).toEqual([[false]])
+    expect(firstArgs(wrapper.findComponent(CheckboxRoot).emitted('update:modelValue'))).toEqual([[false]])
     expect(named(agent, 'All')).toMatchObject({ checked: false })
   })
 
@@ -126,7 +129,7 @@ describe('number field', () => {
     const result = await agent.act({ steps: [{ ref: 'Qty', action: 'setValue', args: [3] }] })
     expect(result.ok).toBe(false)
     expect(result.error!.message).toContain('steps of 5')
-    expect(wrapper.findComponent(NumberFieldRoot).emitted('update:modelValue')).toEqual([[5]])
+    expect(firstArgs(wrapper.findComponent(NumberFieldRoot).emitted('update:modelValue'))).toEqual([[5]])
     expect((await agent.act({ steps: [{ ref: 'Qty', action: 'setValue', args: [10] }] })).ok).toBe(true)
   })
 })

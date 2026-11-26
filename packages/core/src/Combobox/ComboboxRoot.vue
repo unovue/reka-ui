@@ -189,6 +189,7 @@ import { provideListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { renderAs } from '@/Primitive/renderAs'
 import { formResetBinder } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { hasComboboxValue, useComboboxRoot } from './useCombobox'
@@ -311,6 +312,7 @@ defineExpose(mergeExpose(expose, {
 
 provideListboxRootContext(context)
 provideComboboxRootContext(context)
+useAgentRegistration('combobox', context, props, currentElement)
 provideComboboxField(field, context)
 
 // A native reset of the owning form puts the value back to `defaultValue`,

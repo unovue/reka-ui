@@ -114,6 +114,7 @@ import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { formResetBinder } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useTagsInput } from './useTagsInput'
@@ -192,6 +193,7 @@ const { modelValue, root, context, isControlled } = useTagsInput<T>({
 })
 
 provideTagsInputRootContext(context as unknown as TagsInputRootContext)
+useAgentRegistration('tags-input', context, props, currentElement)
 provideTagsInputFieldContext(field ? { field, inputElement: fieldInput } : null)
 
 // A native reset of the owning form puts the value back to `defaultValue`.

@@ -13,6 +13,9 @@ import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '@/Po
 import { SwitchRoot } from '@/Switch'
 import { createAgent } from '.'
 
+// v3 emits a change's details after its value: the assertions here are about the values.
+const firstArgs = (emitted: unknown[][] | undefined) => emitted?.map(args => args.slice(0, 1))
+
 let agents: Agent[] = []
 
 async function setup(render: () => VNode | VNode[], options?: AgentOptions) {
@@ -127,7 +130,7 @@ describe('the confirm plan', () => {
 
   it('closeAll leaves a disabled open section, and setValue refuses to close it', async () => {
     const value = ref(['a', 'b'])
-    const { agent } = await setup(() => h(AccordionRoot, { 'type': 'multiple', 'aria-label': 'Sections', 'modelValue': value.value, 'onUpdate:modelValue': (v: string[]) => (value.value = v) }, () => [section('a', { disabled: true }), section('b')]))
+    const { agent } = await setup(() => h(AccordionRoot, { 'type': 'multiple', 'aria-label': 'Sections', 'modelValue': value.value, 'onUpdate:modelValue': (v: any) => (value.value = v) }, () => [section('a', { disabled: true }), section('b')]))
     const ref_ = agent.snapshot().find(c => c.component === 'accordion')!.ref
     expect((await agent.act({ steps: [{ ref: ref_, action: 'closeAll' }] })).ok).toBe(true)
     expect(value.value).toEqual(['a'])
@@ -168,7 +171,7 @@ describe('the confirm plan', () => {
     const { agent, wrapper } = await setup(() => h(ListboxRoot, { 'aria-label': 'Fruits', 'multiple': true }, () => h(ListboxContent, () => fruits.map(fruit =>
       h(ListboxItem, { value: fruit.toLowerCase(), id: `item-${fruit.toLowerCase()}`, onSelect: () => fruit === 'Apple' && document.getElementById('item-banana')!.setAttribute('data-agent-hidden', '') }, () => fruit)))))
     expect((await agent.act({ steps: [{ ref: 'Fruits', action: 'setValue', args: [['apple', 'banana']] }] })).ok).toBe(false)
-    expect(wrapper.findComponent(ListboxRoot).emitted('update:modelValue')).toEqual([[['apple']]])
+    expect(firstArgs(wrapper.findComponent(ListboxRoot).emitted('update:modelValue'))).toEqual([[['apple']]])
   })
 })
 

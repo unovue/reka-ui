@@ -152,6 +152,7 @@ import { computed, onBeforeUnmount, onMounted, toRef, watch } from 'vue'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { PopperRoot } from '@/Popper'
 import { provideFormResetOwner } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import BubbleSelect from './BubbleSelect.vue'
 import { useSelectRoot } from './useSelect'
@@ -329,6 +330,7 @@ const nativeOptions = computed(() => {
 // event `BubbleSelect` dispatches for that change.
 
 provideSelectRootContext(context)
+useAgentRegistration('select', context, props)
 
 // A native reset of the owning form puts the value back to `defaultValue`. The
 // root renders no element: `SelectTrigger` binds it.

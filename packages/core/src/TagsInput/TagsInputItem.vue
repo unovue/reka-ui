@@ -32,6 +32,7 @@ import { useCollectionItem } from '@/Collection'
 import { renderAs } from '@/Primitive/renderAs'
 import { useSelectorKey } from '@/shared/createKeyedSelector'
 import { getterRef } from '@/shared/partSurface'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 
 defineOptions({
   // `$attrs` are merged under the item's own bindings: the precedence the
@@ -57,6 +58,7 @@ const disabled = computed(() => props.disabled || context.disabled.value)
 
 const itemContext = provideTagsInputItemContext(createTagsInputItemContext(context, { value, isSelected, disabled }))
 const item = getTagsInputItemSurface(itemContext)
+useAgentItem(context, props, currentElement)
 </script>
 
 <template>

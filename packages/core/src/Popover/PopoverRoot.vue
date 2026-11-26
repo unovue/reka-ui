@@ -79,6 +79,7 @@ export const [injectPopoverRootContext, providePopoverRootContext]
 <script setup lang="ts" generic="Payload = unknown">
 import { PopperRoot } from '@/Popper'
 import { usePopupHandleAttachment } from '@/shared/popupHandle'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { usePopover } from './usePopover'
 
 const props = withDefaults(defineProps<PopoverRootProps<Payload>>(), {
@@ -120,6 +121,7 @@ const { open, onOpenChange, context, payload, activeTriggerId, handleStore } = u
 })
 
 providePopoverRootContext(context)
+useAgentRegistration('popover', context, props)
 // Client-only: the Root's state reaches a (possibly module-scope) handle only once mounted.
 usePopupHandleAttachment(handleStore)
 </script>

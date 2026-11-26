@@ -3,6 +3,7 @@ import { unrefElement } from '@vueuse/core'
 import { hideOthers } from 'aria-hidden'
 import { onUnmounted, watch } from 'vue'
 import { getFlatTreeParentElement } from './getRootNode'
+import { agentRegistrar } from './useAgentRegistration'
 
 // `aria-hidden`'s default marker: set on every node a lock currently hides.
 const MARKER = 'data-aria-hidden'
@@ -94,8 +95,11 @@ export function useHideOthers(target: MaybeElementRef) {
       isInsideClosedPopover = !!el?.closest('[popover]:not(:popover-open)')
     }
     catch {}
-    if (el && !isInsideClosedPopover)
+    if (el && !isInsideClosedPopover) {
+      // The agent bridge, when there is one, notes what the app hid itself before everything else is hidden too.
+      agentRegistrar.hiding?.()
       undo = hideOthersAcrossShadowRoots(el)
+    }
   })
 
   onUnmounted(release)

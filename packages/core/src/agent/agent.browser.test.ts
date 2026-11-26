@@ -49,7 +49,7 @@ describe('the agent benchmark\'s settings screen, in a real browser', () => {
     expect(result.ok).toBe(true)
     expect(isCorrect(saved)).toBe(true)
     // The browser agent's allow saw every step it took, the confirm in the dialog included.
-    expect(allow.mock.calls.map(([step]) => (step as { action: string }).action)).toEqual(expect.arrayContaining(['setValue', 'press', 'setChecked']))
+    expect(allow.mock.calls.map(call => ((call as unknown[])[0] as { action: string }).action)).toEqual(expect.arrayContaining(['setValue', 'press', 'setChecked']))
 
     unregister()
     expect(context.tools.size).toBe(0)

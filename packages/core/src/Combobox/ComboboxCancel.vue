@@ -7,6 +7,7 @@ export interface ComboboxCancelProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 import { getComboboxCancelSurface } from './useCombobox'
 
@@ -17,7 +18,9 @@ const props = withDefaults(defineProps<ComboboxCancelProps>(), {
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 // Clears the value (reason `'clear-press'`, unless `resetModelValueOnClear` is `false`), then the input and the search term.
-const surface = getComboboxCancelSurface(injectComboboxRootContext())
+const rootContext = injectComboboxRootContext()
+const surface = getComboboxCancelSurface(rootContext)
+useAgentItem(rootContext, props, undefined, 'clear')
 </script>
 
 <template>

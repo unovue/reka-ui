@@ -3,7 +3,7 @@ import type {
   SelectContentImplEmits,
   SelectContentImplProps,
 } from './SelectContentImpl.vue'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, useAttrs, watch } from 'vue'
 
 export type SelectContentEmits = SelectContentImplEmits
 
@@ -20,6 +20,7 @@ export interface SelectContentProps extends SelectContentImplProps {
 import type { ComponentPublicInstance } from 'vue'
 import { Presence } from '@/Presence'
 import { useForwardElement, useForwardPropsEmits } from '@/shared'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { isPortalOpening } from '@/Teleport/portalGate'
 import SelectContentImpl from './SelectContentImpl.vue'
 import SelectProvider from './SelectProvider.vue'
@@ -35,6 +36,8 @@ const emits = defineEmits<SelectContentEmits>()
 const forwarded = useForwardPropsEmits(props, emits)
 
 const rootContext = injectSelectRootContext()
+// Its marks cover its items, which render off the page while it's closed.
+useAgentItem(rootContext, useAttrs(), undefined, 'content')
 
 // Closed: the items render into a detached fragment only while something
 // needs them (see `SelectClosedItems`): each `SelectItemText` registers its

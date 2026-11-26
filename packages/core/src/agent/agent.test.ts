@@ -9,6 +9,9 @@ import { SwitchRoot } from '@/Switch'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '@/Tabs'
 import { agentTools, createAgent } from '.'
 
+// v3 emits a change's details after its value: the assertions here are about the values.
+const firstArgs = (emitted: unknown[][] | undefined) => emitted?.map(args => args.slice(0, 1))
+
 let agent: Agent | undefined
 
 async function setup(render: () => VNode | VNode[], options?: Parameters<typeof createAgent>[0]) {
@@ -67,7 +70,7 @@ describe('act', () => {
     expect(result.error!.message).toContain('Send it again with the step after it, 2 steps in one call.')
     expect(result.steps).toHaveLength(1)
     const [wifi, bluetooth] = wrapper.findAllComponents(SwitchRoot)
-    expect(wifi!.emitted('update:modelValue')).toEqual([[true]])
+    expect(firstArgs(wifi!.emitted('update:modelValue'))).toEqual([[true]])
     expect(bluetooth!.emitted('update:modelValue')).toBeUndefined()
   })
 
@@ -200,8 +203,8 @@ describe('refs', () => {
       ['Switch y', 'Section y'],
     ])
     // Every place it opened, it closed again.
-    expect(wrapper.findComponent(TabsRoot).emitted('update:modelValue')).toEqual([['b'], ['a']])
-    expect(wrapper.findComponent(AccordionRoot).emitted('update:modelValue')).toEqual([['x'], [undefined], ['y'], [undefined]])
+    expect(firstArgs(wrapper.findComponent(TabsRoot).emitted('update:modelValue'))).toEqual([['b'], ['a']])
+    expect(firstArgs(wrapper.findComponent(AccordionRoot).emitted('update:modelValue'))).toEqual([['x'], [undefined], ['y'], [undefined]])
     expect(agent.snapshot().find(component => component.label === 'On B')).toMatchObject({ offPage: true })
     expect(await agent.query({ text: 'switch', kind: 'switch' })).toMatchObject([{ label: 'Switch x', offPage: true }, { label: 'Switch y', offPage: true }])
   })

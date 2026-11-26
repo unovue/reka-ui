@@ -45,6 +45,7 @@ import { toRefs } from 'vue'
 import { provideMenuContext, provideMenuRootContext } from '@/Menu/MenuRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { usePopupHandleAttachment } from '@/shared/popupHandle'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { useDropdownMenu } from './useDropdownMenu'
 
 const props = withDefaults(defineProps<DropdownMenuRootProps<Payload>>(), {
@@ -89,6 +90,7 @@ const { open, context, menuContext, menuRootContext, payload, activeTriggerId, h
 provideMenuContext(menuContext)
 provideMenuRootContext(menuRootContext)
 provideDropdownMenuRootContext(context)
+useAgentRegistration('menu', context, props)
 // Client-only: the Root's state reaches a (possibly module-scope) handle only once mounted.
 usePopupHandleAttachment(handleStore)
 </script>

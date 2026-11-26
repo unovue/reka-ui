@@ -43,6 +43,7 @@ export const [injectAccordionItemContext, provideAccordionItemContext]
 <script setup lang="ts">
 import { computed, ref, shallowRef } from 'vue'
 import { CollapsibleRoot } from '@/Collapsible'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { getAccordionItemState } from './useAccordion'
 
 const props = withDefaults(
@@ -104,6 +105,7 @@ const itemContext: AccordionItemContext = {
 }
 setGeneratedIds(itemContext, { triggerId: triggerId.value })
 provideAccordionItemContext(itemContext)
+useAgentItem(rootContext, props, expose.element)
 </script>
 
 <template>

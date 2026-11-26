@@ -51,6 +51,7 @@ import { Slot } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { formResetBinder } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { useToggleGroup } from './useToggleGroup'
 
@@ -123,6 +124,7 @@ const { modelValue, root, context, isControlled } = useToggleGroup({
 const isFormControl = useFormControl(currentElement)
 
 provideToggleGroupRootContext(context)
+useAgentRegistration('toggle-group', context, props, currentElement)
 
 // A native reset of the owning form puts the value back to `defaultValue`.
 function onFormReset(event: Event) { resetControllableState(isControlled, event) }

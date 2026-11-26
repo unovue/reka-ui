@@ -27,6 +27,22 @@ export function useAgentRegistration(kind: string, context: unknown, props: unkn
   agentRegistrar.root?.(kind, context, props, element, extra)
 }
 
+/**
+ * The agent marks among a part's attributes (`data-agent-*`, and `hidden` or `aria-hidden`, which hide it from
+ * agents too), while a bridge is installed, for a part that renders without its attributes, like a closed
+ * select's item. Without a bridge it's one property read.
+ */
+export function agentMarksOf(attrs: Record<string, unknown>): Record<string, unknown> | undefined {
+  if (!agentRegistrar.root)
+    return undefined
+  let marks: Record<string, unknown> | undefined
+  for (const key in attrs) {
+    if (key.startsWith('data-agent-') || key === 'hidden' || key === 'aria-hidden')
+      (marks ??= {})[key] = attrs[key]
+  }
+  return marks
+}
+
 export function useAgentItem(rootContext: unknown, props: unknown, element: unknown, part?: string) {
   agentRegistrar.item?.(rootContext, props, element, part)
 }

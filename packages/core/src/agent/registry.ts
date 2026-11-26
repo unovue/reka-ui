@@ -272,6 +272,7 @@ function onRoot(kind: string, ctx: unknown, props: unknown, element?: unknown, e
   }
   sources.set(instance, source)
   const entry = add(source, adapter, ctx as object)
+  adapter.prepare?.(source)
   onBeforeUnmount(() => retire(entry))
 }
 

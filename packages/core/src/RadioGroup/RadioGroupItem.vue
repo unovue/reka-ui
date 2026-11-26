@@ -21,6 +21,7 @@ export const [injectRadioGroupItemContext, provideRadiogroupItemContext]
 <script setup lang="ts">
 import { mergeProps } from 'vue'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import Radio from './Radio.vue'
 import { injectRadioGroupRootContext } from './RadioGroupRoot.vue'
 import { getRadioGroupItemState, preventEnterKeydown } from './useRadioGroup'
@@ -60,6 +61,7 @@ const rootContext = injectRadioGroupRootContext()
 const { checked, disabled, required } = getRadioGroupItemState(rootContext, () => props.value, () => props.disabled, () => props.required)
 
 provideRadiogroupItemContext({ disabled, checked })
+useAgentItem(rootContext, props, currentElement)
 
 function handleFocus() {
   setTimeout(() => {

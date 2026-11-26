@@ -23,6 +23,9 @@ import { Toggle } from '@/Toggle'
 import { ToggleGroupItem, ToggleGroupRoot } from '@/ToggleGroup'
 import { createAgent } from '.'
 
+// v3 emits a change's details after its value: the assertions here are about the values.
+const firstArgs = (emitted: unknown[][] | undefined) => emitted?.map(args => args.slice(0, 1))
+
 let agent: Agent | undefined
 
 // jsdom lacks ResizeObserver, which the slider measures its thumbs with.
@@ -56,7 +59,7 @@ describe('form controls', () => {
     expect(byKind(agent.snapshot(), 'checkbox')).toEqual({ ref: expect.any(String), component: 'checkbox', label: 'Accept terms', checked: false, actions: ['setChecked', 'toggle'] })
     const result = await agent.act({ steps: [{ ref: 'Accept terms', action: 'setChecked', args: [true] }] })
     expect(result.ok).toBe(true)
-    expect(wrapper.findComponent(CheckboxRoot).emitted('update:modelValue')).toEqual([[true]])
+    expect(firstArgs(wrapper.findComponent(CheckboxRoot).emitted('update:modelValue'))).toEqual([[true]])
     expect(result.values).toMatchObject({ [`${result.steps[0]!.ref} Accept terms`]: true })
   })
 
@@ -67,14 +70,14 @@ describe('form controls', () => {
     expect(refused.error?.message).toContain('takes true or false')
     await agent.act({ steps: [{ ref: 'wifi', action: 'toggle' }] }).then(r => expect(r.ok).toBe(false))
     expect((await agent.act({ steps: [{ ref: 'Wi-Fi', action: 'toggle' }] })).ok).toBe(true)
-    expect(wrapper.findComponent(SwitchRoot).emitted('update:modelValue')).toEqual([[true]])
+    expect(firstArgs(wrapper.findComponent(SwitchRoot).emitted('update:modelValue'))).toEqual([[true]])
   })
 
   it('toggle: setPressed', async () => {
     const { agent, wrapper } = await setup(() => h(Toggle, { 'aria-label': 'Bold' }, () => 'B'))
     expect(byKind(agent.snapshot(), 'toggle')).toMatchObject({ label: 'Bold', pressed: false, actions: ['setPressed', 'toggle'] })
     expect((await agent.act({ steps: [{ ref: 'Bold', action: 'setPressed', args: [true] }] })).ok).toBe(true)
-    expect(wrapper.findComponent(Toggle).emitted('update:modelValue')).toEqual([[true]])
+    expect(firstArgs(wrapper.findComponent(Toggle).emitted('update:modelValue'))).toEqual([[true]])
   })
 
   it('radio-group: lists its items and takes a label', async () => {
@@ -90,7 +93,7 @@ describe('form controls', () => {
       actions: ['setValue'],
     })
     expect((await agent.act({ steps: [{ ref: 'Plan', action: 'setValue', args: ['Pro'] }] })).ok).toBe(true)
-    expect(wrapper.findComponent(RadioGroupRoot).emitted('update:modelValue')).toEqual([['pro']])
+    expect(firstArgs(wrapper.findComponent(RadioGroupRoot).emitted('update:modelValue'))).toEqual([['pro']])
     const disabled = await agent.act({ steps: [{ ref: 'Plan', action: 'setValue', args: ['Team'] }] })
     expect(disabled.error?.message).toContain('"Team" in Plan')
     const unknown = await agent.act({ steps: [{ ref: 'Plan', action: 'setValue', args: ['Enterprise'] }] })
@@ -101,7 +104,7 @@ describe('form controls', () => {
     const { agent, wrapper } = await setup(() => h(ToggleGroupRoot, { 'aria-label': 'Align', 'type': 'single' }, () => ['left', 'center', 'right'].map(value => h(ToggleGroupItem, { value }, () => value[0]!.toUpperCase() + value.slice(1)))))
     expect(byKind(agent.snapshot(), 'toggle-group')).toMatchObject({ label: 'Align', value: null, items: [{ value: 'left', label: 'Left' }, { value: 'center', label: 'Center' }, { value: 'right', label: 'Right' }] })
     expect((await agent.act({ steps: [{ ref: 'Align', action: 'setValue', args: ['Center'] }] })).ok).toBe(true)
-    expect(wrapper.findComponent(ToggleGroupRoot).emitted('update:modelValue')).toEqual([['center']])
+    expect(firstArgs(wrapper.findComponent(ToggleGroupRoot).emitted('update:modelValue'))).toEqual([['center']])
   })
 
   it('slider: sets a number, refuses one out of range or off its steps', async () => {
@@ -112,12 +115,12 @@ describe('form controls', () => {
     expect(byKind(agent.snapshot(), 'slider')).toMatchObject({ label: 'Volume', value: 50, min: 0, max: 100, step: 5, actions: ['setValue', 'increment', 'decrement'] })
     expect((await agent.act({ steps: [{ ref: 'Volume', action: 'setValue', args: ['75'] }] })).ok).toBe(true)
     const slider = wrapper.findComponent(SliderRoot)
-    expect(slider.emitted('update:modelValue')).toEqual([[[75]]])
+    expect(firstArgs(slider.emitted('update:modelValue'))).toEqual([[[75]]])
     expect(slider.emitted('valueCommit')).toEqual([[[75]]])
     expect((await agent.act({ steps: [{ ref: 'Volume', action: 'setValue', args: [150] }] })).error?.message).toContain('from 0 to 100, not 150')
     expect((await agent.act({ steps: [{ ref: 'Volume', action: 'setValue', args: [72] }] })).error?.message).toContain('moves in steps of 5')
     expect((await agent.act({ steps: [{ ref: 'Volume', action: 'increment' }] })).ok).toBe(true)
-    expect(slider.emitted('update:modelValue')!.at(-1)).toEqual([[75]])
+    expect(slider.emitted('update:modelValue')!.at(-1)!.slice(0, 1)).toEqual([[75]])
   })
 
   it('number-field: setValue, increment, and refuses out of range', async () => {
@@ -131,7 +134,7 @@ describe('form controls', () => {
     // Its stepper buttons are its own, not buttons of the page.
     expect(snapshot.filter(component => component.component === 'button')).toEqual([])
     expect((await agent.act({ steps: [{ ref: 'Quantity', action: 'setValue', args: [7] }, { ref: 'Quantity', action: 'increment' }] })).ok).toBe(true)
-    expect(wrapper.findComponent(NumberFieldRoot).emitted('update:modelValue')).toEqual([[7], [8]])
+    expect(firstArgs(wrapper.findComponent(NumberFieldRoot).emitted('update:modelValue'))).toEqual([[7], [8]])
     expect((await agent.act({ steps: [{ ref: 'Quantity', action: 'setValue', args: [11] }] })).error?.message).toContain('from 0 to 10, not 11')
   })
 
@@ -144,9 +147,9 @@ describe('form controls', () => {
     }))
     expect(byKind(agent.snapshot(), 'tags-input')).toMatchObject({ label: 'Tags', value: ['vue'], actions: ['setValue', 'add', 'remove', 'clear'] })
     expect((await agent.act({ steps: [{ ref: 'Tags', action: 'add', args: ['nuxt'] }, { ref: 'Tags', action: 'remove', args: ['vue'] }] })).ok).toBe(true)
-    expect(wrapper.findComponent(TagsInputRoot).emitted('update:modelValue')).toEqual([[['vue', 'nuxt']], [['nuxt']]])
+    expect(firstArgs(wrapper.findComponent(TagsInputRoot).emitted('update:modelValue'))).toEqual([[['vue', 'nuxt']], [['nuxt']]])
     expect((await agent.act({ steps: [{ ref: 'Tags', action: 'setValue', args: [['a', 'b']] }] })).ok).toBe(true)
-    expect(wrapper.findComponent(TagsInputRoot).emitted('update:modelValue')!.at(-1)).toEqual([['a', 'b']])
+    expect(wrapper.findComponent(TagsInputRoot).emitted('update:modelValue')!.at(-1)!.slice(0, 1)).toEqual([['a', 'b']])
   })
 })
 
@@ -166,11 +169,11 @@ describe('lists', () => {
       actions: ['setValue', 'setOpen'],
     })
     expect((await agent.act({ steps: [{ ref: 'Fruit', action: 'setValue', args: ['Banana'] }] })).ok).toBe(true)
-    expect(wrapper.findComponent(SelectRoot).emitted('update:modelValue')).toEqual([['banana']])
+    expect(firstArgs(wrapper.findComponent(SelectRoot).emitted('update:modelValue'))).toEqual([['banana']])
     const query = await agent.query({ within: 'Fruit', text: 'err' })
     expect(query).toMatchObject([{ items: [{ value: 'cherry', label: 'Cherry' }] }])
     expect((await agent.act({ steps: [{ ref: 'Fruit', action: 'open' }] })).ok).toBe(true)
-    expect(wrapper.findComponent(SelectRoot).emitted('update:open')).toEqual([[true]])
+    expect(firstArgs(wrapper.findComponent(SelectRoot).emitted('update:open'))).toEqual([[true]])
   })
 
   it('select: a list of more than 10 gives `more` and query pages it', async () => {
@@ -206,7 +209,7 @@ describe('lists', () => {
     expect(await agent.query({ within: 'Fruit' })).toMatchObject([{ items: [], note: expect.stringContaining('show while it\'s open') }])
     const result = await agent.act({ steps: [{ ref: 'Fruit', action: 'setValue', args: ['Banana'] }] })
     expect(result.ok).toBe(true)
-    expect(wrapper.findComponent(ComboboxRoot).emitted('update:modelValue')).toEqual([['banana']])
+    expect(firstArgs(wrapper.findComponent(ComboboxRoot).emitted('update:modelValue'))).toEqual([['banana']])
     expect(allow).toHaveBeenCalledWith(expect.objectContaining({ action: 'setValue', component: 'combobox', args: ['Banana'] }), expect.anything())
   })
 
@@ -214,7 +217,7 @@ describe('lists', () => {
     const { agent, wrapper } = await setup(() => h(ListboxRoot, { 'aria-label': 'Fruits' }, () => h(ListboxContent, () => fruits.map(fruit => h(ListboxItem, { value: fruit.toLowerCase() }, () => fruit)))))
     expect(byKind(agent.snapshot(), 'listbox')).toMatchObject({ label: 'Fruits', value: null, items: [{ value: 'apple', label: 'Apple' }, { value: 'banana', label: 'Banana' }, { value: 'cherry', label: 'Cherry' }] })
     expect((await agent.act({ steps: [{ ref: 'Fruits', action: 'setValue', args: ['Cherry'] }] })).ok).toBe(true)
-    expect(wrapper.findComponent(ListboxRoot).emitted('update:modelValue')).toEqual([['cherry']])
+    expect(firstArgs(wrapper.findComponent(ListboxRoot).emitted('update:modelValue'))).toEqual([['cherry']])
   })
 })
 
@@ -230,10 +233,10 @@ describe('disclosure', () => {
     const result = await agent.act({ steps: [{ ref: 'Hidden switch', action: 'setChecked', args: [true] }] })
     expect(result.ok).toBe(true)
     // It looked behind the tab, went back, then opened the one way to the switch.
-    expect(wrapper.findComponent(TabsRoot).emitted('update:modelValue')).toEqual([['two'], ['one'], ['two']])
-    expect(wrapper.findComponent(SwitchRoot).emitted('update:modelValue')).toEqual([[true]])
+    expect(firstArgs(wrapper.findComponent(TabsRoot).emitted('update:modelValue'))).toEqual([['two'], ['one'], ['two']])
+    expect(firstArgs(wrapper.findComponent(SwitchRoot).emitted('update:modelValue'))).toEqual([[true]])
     expect((await agent.act({ steps: [{ ref: 'Sections', action: 'setValue', args: ['One'] }] })).ok).toBe(true)
-    expect(wrapper.findComponent(TabsRoot).emitted('update:modelValue')!.at(-1)).toEqual(['one'])
+    expect(wrapper.findComponent(TabsRoot).emitted('update:modelValue')!.at(-1)!.slice(0, 1)).toEqual(['one'])
   })
 
   it('accordion: open, close and press a section by its label', async () => {
@@ -246,16 +249,16 @@ describe('disclosure', () => {
     // Its triggers are its own, and no collapsible of its items shows on its own.
     expect(snapshot.map(component => component.component)).toEqual(['accordion'])
     expect((await agent.act({ steps: [{ ref: 'FAQ', action: 'open', args: ['Section B'] }, { ref: 'Section A', action: 'open' }] })).ok).toBe(true)
-    expect(wrapper.findComponent(AccordionRoot).emitted('update:modelValue')).toEqual([[['b']], [['b', 'a']]])
+    expect(firstArgs(wrapper.findComponent(AccordionRoot).emitted('update:modelValue'))).toEqual([[['b']], [['b', 'a']]])
     expect((await agent.act({ steps: [{ ref: 'FAQ', action: 'closeAll' }] })).ok).toBe(true)
-    expect(wrapper.findComponent(AccordionRoot).emitted('update:modelValue')!.at(-1)).toEqual([[]])
+    expect(wrapper.findComponent(AccordionRoot).emitted('update:modelValue')!.at(-1)!.slice(0, 1)).toEqual([[]])
   })
 
   it('collapsible: setOpen', async () => {
     const { agent, wrapper } = await setup(() => h(CollapsibleRoot, () => [h(CollapsibleTrigger, () => 'Details'), h(CollapsibleContent, () => 'More')]))
     expect(byKind(agent.snapshot(), 'collapsible')).toMatchObject({ label: 'Details', open: false, actions: ['setOpen'] })
     expect((await agent.act({ steps: [{ ref: 'Details', action: 'setOpen', args: [true] }] })).ok).toBe(true)
-    expect(wrapper.findComponent(CollapsibleRoot).emitted('update:open')).toEqual([[true]])
+    expect(firstArgs(wrapper.findComponent(CollapsibleRoot).emitted('update:open'))).toEqual([[true]])
   })
 })
 
@@ -269,7 +272,7 @@ describe('popups', () => {
     const result = await agent.act({ steps: [{ ref: 'Edit profile', action: 'press', args: ['Done'] }] })
     expect(result.ok).toBe(true)
     expect(result.steps[0]!.result).toContain('Pressed "Done", after opening')
-    expect(wrapper.findComponent(DialogRoot).emitted('update:open')).toEqual([[true], [false]])
+    expect(firstArgs(wrapper.findComponent(DialogRoot).emitted('update:open'))).toEqual([[true], [false]])
   })
 
   it('alert-dialog: is found by its kind, lists its buttons, and blocks what it covers', async () => {
@@ -294,7 +297,7 @@ describe('popups', () => {
     expect(blocked.error?.message).toMatch(/behind Delete the project\? \(c\d+\), which is open/)
     expect((await agent.act({ steps: [{ ref: 'alert-dialog', action: 'press', args: ['Delete'] }] })).ok).toBe(true)
     expect(remove).toHaveBeenCalledOnce()
-    expect(wrapper.findComponent(AlertDialogRoot).emitted('update:open')).toEqual([[true], [false]])
+    expect(firstArgs(wrapper.findComponent(AlertDialogRoot).emitted('update:open'))).toEqual([[true], [false]])
   })
 
   it('dropdown menu: items are pressable, and the menu opens as needed', async () => {
@@ -309,7 +312,7 @@ describe('popups', () => {
     expect(missing.error?.message).toContain('Buttons: Edit, Archive')
     expect((await agent.act({ steps: [{ ref: 'Options', action: 'press', args: ['Edit'] }] })).ok).toBe(true)
     expect(onEdit).toHaveBeenCalledOnce()
-    expect(wrapper.findComponent(DropdownMenuRoot).emitted('update:open')).toEqual([[true], [false], [true], [false]])
+    expect(firstArgs(wrapper.findComponent(DropdownMenuRoot).emitted('update:open'))).toEqual([[true], [false], [true], [false]])
   })
 
   it('popover: setOpen, and its fields are the page\'s', async () => {
@@ -319,7 +322,7 @@ describe('popups', () => {
     ]))
     expect(byKind(agent.snapshot(), 'popover')).toMatchObject({ label: 'Dimensions', open: false })
     expect((await agent.act({ steps: [{ ref: 'Dimensions', action: 'setOpen', args: [true] }] })).ok).toBe(true)
-    expect(wrapper.findComponent(PopoverRoot).emitted('update:open')).toEqual([[true]])
+    expect(firstArgs(wrapper.findComponent(PopoverRoot).emitted('update:open'))).toEqual([[true]])
     const open = agent.snapshot()
     expect(byKind(open, 'popover')).toMatchObject({ open: true, buttons: ['Apply'] })
     expect(byKind(open, 'input')).toMatchObject({ label: 'Width', value: '100' })

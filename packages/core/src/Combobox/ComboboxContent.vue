@@ -12,8 +12,10 @@ export interface ComboboxContentProps extends ComboboxContentImplProps {
 </script>
 
 <script setup lang="ts">
+import { useAttrs } from 'vue'
 import { Presence } from '@/Presence'
 import { useForwardElement, useForwardPropsEmits } from '@/shared'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { isPortalOpening } from '@/Teleport/portalGate'
 import ComboboxContentImpl from './ComboboxContentImpl.vue'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
@@ -25,6 +27,7 @@ const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
 const rootContext = injectComboboxRootContext()
+useAgentItem(rootContext, useAttrs(), undefined, 'content')
 </script>
 
 <template>

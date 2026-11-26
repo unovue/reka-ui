@@ -6,7 +6,7 @@ import type { Entry } from './registry'
 import type { Agent, AgentAction, AgentActResult, AgentAllow, AgentChange, AgentComponent, AgentOptions, AgentQuery, AgentStep } from './types'
 import { isEqual } from 'ohash'
 import { nextTick } from 'vue'
-import { hiddenItem, itemOff, markSeen, partsNamed, seenBefore, withoutHidden } from './adapters'
+import { contentMarks, hiddenItem, itemOff, markSeen, partsNamed, seenBefore, withoutHidden } from './adapters'
 import { buttonsIn, byPosition, confirmOf, fold, forgetConcealed, isDisabledElement, isOffLimits, isShown, textOf, textOrName, wordsOf } from './dom'
 import { agentWindow, anchorOf, asAgent, entries, install, listen, offPage, partsOf, placeOf, reachable, remember, scanNative, scrub, stateKeys, uninstall } from './registry'
 import { agentTools } from './tools'
@@ -1099,8 +1099,10 @@ export function createAgent(options: AgentOptions = {}): Agent {
     // A private list's change carries every item's mark, so which one asks never says which item is chosen.
     const everyItem = entry.secret && items ? items : []
     const targets = [...own(parts), ...chosen.map(item => ('el' in item ? item.el : undefined)), ...removed.map(item => item.el), ...everyItem.map(item => item.el), ...inside, ...standIns]
-    // Marks read while a closed list's items showed count as theirs.
-    const remembered = [...new Set([...marksOfItems([...chosen, ...removed, ...everyItem]), ...seenMarks])]
+    // Marks read while a closed list's items showed count as theirs, and so does a mark on the list's content,
+    // which covers its items while they render off the page, outside it.
+    const onContent = chosen.length || removed.length || everyItem.length ? contentMarks(source).confirm : undefined
+    const remembered = [...new Set([...marksOfItems([...chosen, ...removed, ...everyItem]), ...seenMarks, ...(onContent ? [onContent] : [])])]
     const approved = [...new Set([...marksOf(targets), ...remembered])].join(' ') || undefined
     // Only the marks the person was shown are approved: an item that gains another stops the change.
     const marks = new Set([...marksOf(targets), ...remembered])

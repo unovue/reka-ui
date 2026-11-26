@@ -91,6 +91,7 @@ import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { formResetBinder } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { orderInputElements, usePinInput } from './usePinInput'
 
@@ -189,6 +190,7 @@ const { modelValue: model, currentModelValue, root, context, isControlled } = us
 const modelValue = model as unknown as Readonly<Ref<PinInputValue<Type>>>
 
 providePinInputRootContext(context)
+useAgentRegistration('pin-input', context, props)
 
 // A native reset of the owning form puts the value back to `defaultValue`.
 function onFormReset(event: Event) { resetControllableState(isControlled, event) }

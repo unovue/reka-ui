@@ -166,6 +166,7 @@ import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { formResetBinder } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useListboxRoot } from './useListbox'
@@ -265,6 +266,7 @@ defineExpose(mergeExpose(expose, {
 }))
 
 provideListboxRootContext(context)
+useAgentRegistration('listbox', context, props, currentElement)
 
 // A native reset of the owning form puts the value back to `defaultValue`.
 // Read off the composable's return here: a closure over that object would keep

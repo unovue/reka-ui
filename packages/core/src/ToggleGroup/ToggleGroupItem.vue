@@ -14,6 +14,7 @@ export interface ToggleGroupItemProps extends Omit<ToggleProps, 'name' | 'requir
 <script setup lang="ts">
 import { computed, mergeProps } from 'vue'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { Toggle } from '@/Toggle'
 import { injectToggleGroupRootContext } from './ToggleGroupRoot.vue'
 import { getToggleGroupItemSurface } from './useToggleGroup'
@@ -48,6 +49,7 @@ function onTogglePressed(_value: boolean, details: ToggleEmits['update:modelValu
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
+useAgentItem(rootContext, props, currentElement)
 // `ToggleGroupItem` wraps the multi-root `Toggle`, so the parent's scoped-style id
 // is not auto-forwarded; pass it through manually so consumer `<style scoped>` works.
 const scopeIdAttrs = useForwardScopeId()

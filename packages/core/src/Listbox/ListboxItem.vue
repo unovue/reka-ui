@@ -32,6 +32,7 @@ import { computed, mergeProps, onUnmounted, onUpdated, ref, watch, watchPostEffe
 import { useCollectionItem } from '@/Collection'
 import { renderAs } from '@/Primitive/renderAs'
 import { getterRef } from '@/shared/partSurface'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { injectListboxGroupContext } from './ListboxGroup.vue'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 import { getListboxItemSurface } from './useListbox'
@@ -144,6 +145,7 @@ onUpdated(syncLabel)
 provideListboxItemContext({
   isSelected,
 })
+useAgentItem(rootContext, props, currentElement)
 
 // Binding order is part of the v2 contract: `v-bind="$attrs"` sat after `:id`
 // and before every other binding, so a consumer `id` (e.g. ComboboxItem's)

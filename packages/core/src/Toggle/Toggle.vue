@@ -35,6 +35,7 @@ import { computed, mergeProps, useAttrs, watch } from 'vue'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { renderAs } from '@/Primitive/renderAs'
 import { formResetBinder } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { useTogglePressed } from './useTogglePressed'
 
@@ -91,7 +92,7 @@ const resolvedRequired = () => field ? field.required(props.required) : props.re
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
 // composable's `useControllableState` (`modelValue === undefined` → uncontrolled;
 // `null` is controlled and reads through, exactly as `useVModel` did).
-const { modelValue, pressed, disabled, root, isControlled } = useTogglePressed({
+const { modelValue, pressed, disabled, root, isControlled, setPressed } = useTogglePressed({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   disabled: () => field ? field.disabled(props.disabled) : props.disabled,
@@ -104,6 +105,10 @@ const { modelValue, pressed, disabled, root, isControlled } = useTogglePressed({
 
 if (field)
   watch(pressed, value => field.sync(value))
+
+// A group item belongs to its ToggleGroupRoot's registration.
+if (!toggleGroupContext)
+  useAgentRegistration('toggle', pressed, props, currentElement, setPressed)
 
 const isFormControl = useFormControl(currentElement)
 

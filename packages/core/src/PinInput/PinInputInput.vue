@@ -70,6 +70,7 @@ if (fieldSlots) {
   <component
     :is="renderAsEmpty(as, asChild)"
     :ref="forwardRef"
+    data-reka-pin-input=""
     v-bind="input.attrs.value"
   >
     <template

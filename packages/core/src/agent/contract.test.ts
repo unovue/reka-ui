@@ -810,7 +810,7 @@ describe('third review findings', () => {
     ])))
     const events: ObservedChange[] = []
     agent.subscribe(change => events.push(change))
-    const outputs = [agent.snapshot(), await agent.query({ text: SECRET }), await agent.query({ text: 'Balance' })]
+    const outputs: unknown[] = [agent.snapshot(), await agent.query({ text: SECRET }), await agent.query({ text: 'Balance' })]
     outputs.push(await agent.act({ steps: [{ ref: 'Show', action: 'setChecked', args: [true] }, { ref: 'Show', action: 'expect', args: [SECRET] }] }))
     expect(json([outputs, events])).not.toContain(SECRET)
     expect(outputs[1]).toEqual([])
@@ -843,7 +843,7 @@ describe('third review findings', () => {
     const hidden = ref(false)
     const here = ref(true)
     const on = ref(false)
-    const { agent } = await page(() => h('div', { hidden: hidden.value || undefined }, here.value ? h(SwitchRoot, { 'aria-label': 'Quiet', ...v(on) }) : null))
+    const { agent } = await page(() => h('div', { hidden: hidden.value || undefined }, here.value ? h(SwitchRoot, { 'aria-label': 'Quiet', ...v(on) }) : undefined))
     expect(agent.snapshot().find(c => c.label === 'Quiet')).toMatchObject({ checked: false })
     hidden.value = true
     await settle()
@@ -1264,7 +1264,7 @@ describe('fifth review findings', () => {
         h(SwitchRoot, { 'aria-label': 'Wire' }),
       ])), h('button', 'OK')])),
     ]), h('button', 'Behind')]))
-    const outputs = [agent.snapshot(), await agent.query({ text: SECRET }), await agent.query({ text: 'Wire' })]
+    const outputs: unknown[] = [agent.snapshot(), await agent.query({ text: SECRET }), await agent.query({ text: 'Wire' })]
     // A step on a name that isn't there lists the open modal's buttons.
     const behind = await agent.act({ steps: [{ ref: 'Nowhere', action: 'press' }] })
     expect(behind.error?.message).toContain('open over the rest of the page')

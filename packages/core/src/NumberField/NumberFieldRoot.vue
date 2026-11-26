@@ -95,6 +95,7 @@ import { createPendingFieldInput } from '@/Field/pendingFieldInput'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { renderAs } from '@/Primitive/renderAs'
 import { formResetBinder } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { VisuallyHidden, VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useNumberField } from './useNumberField'
 
@@ -162,6 +163,7 @@ const { modelValue, textValue, readonly, disabled, root, context, resetValue } =
 })
 
 provideNumberFieldRootContext(context)
+useAgentRegistration('number-field', context, props, currentElement)
 
 // A native reset of the owning form puts the value back to `defaultValue`.
 function onFormReset(event: Event) { resetValue(event) }

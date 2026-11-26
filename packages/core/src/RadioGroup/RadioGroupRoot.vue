@@ -53,6 +53,7 @@ import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusGroup } from '@/RovingFocus/useRovingFocusGroup'
 import { formResetBinder } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useRadioGroup } from './useRadioGroup'
@@ -129,6 +130,7 @@ const { modelValue, disabled, root, context, isControlled } = useRadioGroup({
 })
 
 provideRadioGroupRootContext(context)
+useAgentRegistration('radio-group', context, props, currentElement)
 
 // A native reset of the owning form puts the value back to `defaultValue`.
 function onFormReset(event: Event) { resetControllableState(isControlled, event) }

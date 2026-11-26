@@ -55,6 +55,7 @@ import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { isEqual } from '@/shared/compare'
 import { formResetBinder } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useCheckbox } from './useCheckbox'
@@ -113,7 +114,7 @@ const resolvedRequired = () => field ? field.required(props.required) : props.re
 // Group membership (checked state + press toggling, the group's `max`) lives
 // there too, keyed on the injected group context. `disabled` is the explicit
 // one (prop, group or Field): natively disabled and unfocusable.
-const { modelValue, checkedState: checkboxState, disabled, root, context, isControlled } = useCheckbox<TrueValue | FalseValue>({
+const { modelValue, checkedState: checkboxState, disabled, root, context, isControlled, setChecked } = useCheckbox<TrueValue | FalseValue>({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   emit: emits,
@@ -158,6 +159,7 @@ const ariaLabel = computed(() => {
 })
 
 provideCheckboxRootContext(context)
+useAgentRegistration('checkbox', context, props, currentElement, setChecked)
 
 // In a `rovingFocus` group the checkbox is a roving item, as a composable (the
 // former `RovingFocusItem` wrapper). The group renders `RovingFocusGroup` only

@@ -20,6 +20,7 @@ export interface TabsTriggerProps extends PrimitiveProps {
 import { mergeProps, onActivated, onDeactivated, onScopeDispose } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { injectTabsRootContext } from './TabsRoot.vue'
 import { getTabsTriggerSurface } from './useTabs'
 import { isInsideKeepAlive, useTabsPartId } from './utils'
@@ -41,6 +42,7 @@ const rootContext = injectTabsRootContext()
 useTabsPartId(rootContext.customTriggerIds, () => props.value, () => props.id)
 // Registered for the root's automatic selection of the first enabled tab.
 const entry = { element: currentElement, props }
+useAgentItem(rootContext, props, currentElement)
 rootContext.triggers?.add(entry)
 onScopeDispose(() => rootContext.triggers?.delete(entry))
 // A trigger cached by `KeepAlive` is out of the document while deactivated.

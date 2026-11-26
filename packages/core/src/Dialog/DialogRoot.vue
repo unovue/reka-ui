@@ -90,6 +90,7 @@ export const [injectDialogOverlayElementContext, provideDialogOverlayElementCont
 <script setup lang="ts" generic="Payload = unknown">
 import { ref } from 'vue'
 import { usePopupHandleAttachment } from '@/shared/popupHandle'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { useDialog } from './useDialog'
 
 defineOptions({
@@ -137,6 +138,7 @@ const { open, onOpenChange, context, payload, activeTriggerId, handleStore } = u
 })
 
 provideDialogRootContext(context)
+useAgentRegistration('dialog', context, props)
 provideDialogOverlayElementContext(ref())
 // Client-only: the Root's state reaches a (possibly module-scope) handle only once mounted.
 usePopupHandleAttachment(handleStore)

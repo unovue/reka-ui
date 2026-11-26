@@ -48,6 +48,7 @@ import { computed, mergeProps, watch } from 'vue'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { renderAs } from '@/Primitive/renderAs'
 import { formResetBinder } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useSwitch } from './useSwitch'
@@ -117,6 +118,7 @@ const { modelValue, checked, disabled, root, context, isControlled } = useSwitch
 })
 
 provideSwitchRootContext(context)
+useAgentRegistration('switch', context, props, currentElement)
 
 // A native reset of the owning form puts the value back to `defaultValue`.
 function onFormReset(event: Event) { resetControllableState(isControlled, event) }

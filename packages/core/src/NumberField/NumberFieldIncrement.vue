@@ -12,6 +12,7 @@ export interface NumberFieldIncrementProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { renderAs } from '@/Primitive/renderAs'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 
 const props = withDefaults(defineProps<NumberFieldIncrementProps>(), {
   as: 'button',
@@ -23,6 +24,7 @@ const isDisabled = getterRef(() => isNumberFieldButtonDisabled(rootContext, 'inc
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
+useAgentItem(rootContext, props, currentElement, 'increment')
 // Press-and-hold repeat (window pointer listeners) stays in the shell.
 // A press commits once it is released, after any hold-repeat steps (Base UI parity).
 const { isPressed, onTrigger } = usePressedHold({ target: currentElement, disabled: isDisabled, onRelease: rootContext.commitValue })
