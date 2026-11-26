@@ -10,7 +10,7 @@ export interface DrawerTriggerProps extends PrimitiveProps {
 <script setup lang="ts">
 import { onUnmounted, watch } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
-import { useForwardElement } from '@/shared'
+import { useForwardElement, useRenderedContentId } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { getDrawerTriggerSurface } from './useDrawer'
 
@@ -24,6 +24,8 @@ defineExpose(expose)
 // tag-dependent `type` stays here. Consumer listeners fall through as `$attrs`
 // and chain with the surface's handler.
 const trigger = getDrawerTriggerSurface(rootContext)
+// `aria-controls` references the content only while its element is rendered.
+const contentId = useRenderedContentId(rootContext)
 
 // Keep triggerElement in sync with the rendered element — useForwardElement's
 // currentElement is a reactive computed ref, and v-if / conditional rendering
@@ -46,6 +48,7 @@ onUnmounted(() => {
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
     v-bind="trigger.attrs.value"
+    :aria-controls="rootContext.open.value ? contentId : undefined"
   >
     <slot />
   </component>

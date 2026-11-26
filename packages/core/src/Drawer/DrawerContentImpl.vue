@@ -33,7 +33,7 @@ import { computed, getCurrentInstance, mergeProps } from 'vue'
 import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer } from '@/DismissableLayer/useDismissableLayer'
 import { FOCUS_SCOPE_WRAPPER, focusScopeOptions, useFocusScope } from '@/FocusScope/useFocusScope'
 import { renderAs } from '@/Primitive/renderAs'
-import { useForwardElement } from '@/shared'
+import { useContentElement, useContentMounted, useForwardElement } from '@/shared'
 import { splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { useDrawerContent } from './useDrawer'
@@ -57,6 +57,10 @@ const emits = defineEmits<DrawerContentImplEmits>()
 
 const rootContext = injectDrawerRootContext()
 const { forwardRef, currentElement, expose } = useForwardElement()
+// The trigger's `aria-controls` points at the id this element rendered (a hydrated element
+// keeps the server's), and only while it is rendered.
+useContentElement(rootContext, currentElement)
+useContentMounted(rootContext, currentElement)
 defineExpose(expose)
 
 registerDrawerCssProperties()
