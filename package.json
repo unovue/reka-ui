@@ -13,6 +13,7 @@
     "story:dev": "pnpm --filter histoire story:dev --open",
     "build": "pnpm run --filter reka-ui build && pnpm run --filter plugins build",
     "build-only": "pnpm run -r build-only",
+    "package:check": "pnpm --filter reka-ui package:check",
     "docs:install": "pnpm --filter docs install",
     "docs:dev": "pnpm --filter docs docs:dev",
     "docs:build": "pnpm --filter docs docs:build",
