@@ -1546,7 +1546,6 @@
       "slotProps": 1
     },
     "RovingFocus/RovingFocusItem.vue": {
-      "chains": 1,
       "exposeElement": 1,
       "sfcs": 1,
       "slotProps": 1
@@ -1871,7 +1870,6 @@
       "slotProps": 1
     },
     "Tabs/TabsTrigger.vue": {
-      "chains": 1,
       "exposeElement": 1,
       "sfcs": 1,
       "slotProps": 1
@@ -2261,7 +2259,7 @@
     }
   },
   "overrides": {
-    "Collection/Collection.ts": 1,
+    "Collection/Collection.ts": 2,
     "Presence/Presence.ts": 1,
     "Primitive/Primitive.ts": 1,
     "shared/useEmitAsProps.ts": 2,
@@ -2274,7 +2272,7 @@
   },
   "totals": {
     "asyncComponents": 3,
-    "chains": 61,
+    "chains": 59,
     "exposeElement": 476,
     "getCurrentInstance": 5,
     "patches": 11,
