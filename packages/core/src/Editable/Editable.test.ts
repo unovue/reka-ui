@@ -154,12 +154,13 @@ describe('editable', () => {
   })
 
   it('prevents entering edit mode when disabled', async () => {
-    // TODO(v3-port): #3385 v2 asserts the edit trigger stays visible and the input hidden; kept v3's assertion
-    const { preview, edit } = setup({ editableProps: { disabled: true } })
+    const { preview, edit, input } = setup({ editableProps: { disabled: true } })
 
     await userEvent.click(preview)
 
-    expect(edit).not.toBeVisible()
+    // The edit trigger hides while editing, so it staying visible means edit mode was not entered.
+    expect(edit).toBeVisible()
+    expect(input).not.toBeVisible()
   })
 
   it('prevents editing the input value when readonly', async () => {
@@ -195,8 +196,7 @@ describe('editable', () => {
   })
 })
 
-// TODO(v3-port): #3385 disabled Editable ignores focus/dblclick and leaves the tab order (Editable source resolved to v3)
-describe.skip('given a disabled Editable', () => {
+describe('given a disabled Editable', () => {
   it('should not enter edit mode when the preview receives focus', async () => {
     const { preview, input } = setup({ editableProps: { disabled: true, defaultValue: 'Value' } })
 
@@ -225,8 +225,7 @@ describe.skip('given a disabled Editable', () => {
   })
 })
 
-// TODO(v3-port): #3385 disabled Editable leaves the tab order (Editable source resolved to v3)
-describe.skip('given a disabled Editable with a natively focusable preview', () => {
+describe('given a disabled Editable with a natively focusable preview', () => {
   it('should take a button preview out of the tab order', () => {
     const { getByTestId } = render(defineComponent({
       components: { EditableRoot, EditableArea, EditablePreview, EditableInput },
@@ -245,8 +244,7 @@ describe('given the Editable input name', () => {
   }
   const parts = (inputAttrs = '') => `<EditableArea><EditablePreview /><EditableInput data-testid="input" ${inputAttrs} /></EditableArea>`
 
-  // TODO(v3-port): #3385 root `id` and label-driven name on the input (Editable source resolved to v3)
-  it.skip('should bind the root `id` to the input', () => {
+  it('should bind the root `id` to the input', () => {
     const { getByTestId } = renderLabelled(`<EditableRoot id="title">${parts()}</EditableRoot>`)
     expect(getByTestId('input')).toHaveAttribute('id', 'title')
   })
@@ -262,15 +260,13 @@ describe('given the Editable input name', () => {
     expect(getByTestId('input')).toHaveAttribute('aria-label', 'Project title')
   })
 
-  // TODO(v3-port): #3385 root `id` and label-driven name on the input (Editable source resolved to v3)
-  it.skip('should drop the default name for `aria-labelledby`', () => {
+  it('should drop the default name for `aria-labelledby`', () => {
     const { getByTestId } = renderLabelled(`<span id="heading">Project title</span><EditableRoot start-with-edit-mode>${parts('aria-labelledby="heading"')}</EditableRoot>`)
     expect(getByTestId('input')).not.toHaveAttribute('aria-label')
     expect(getByTestId('input')).toHaveAccessibleName('Project title')
   })
 
-  // TODO(v3-port): #3385 root `id` and label-driven name on the input (Editable source resolved to v3)
-  it.skip('should be named by a label pointing at the root `id`', async () => {
+  it('should be named by a label pointing at the root `id`', async () => {
     const { getByTestId } = renderLabelled(`<label for="title">Project title</label><EditableRoot id="title" start-with-edit-mode>${parts()}</EditableRoot>`)
     await nextTick()
     expect(getByTestId('input')).not.toHaveAttribute('aria-label')
@@ -278,8 +274,7 @@ describe('given the Editable input name', () => {
   })
 })
 
-// TODO(v3-port): #3385 label-driven name on the input (Editable source resolved to v3)
-describe.skip('given a label added after the Editable input mounts', () => {
+describe('given a label added after the Editable input mounts', () => {
   it('should drop the default name once editing starts', async () => {
     const { getByTestId, container } = render(defineComponent({
       components: { EditableRoot, EditableArea, EditablePreview, EditableInput, EditableEditTrigger },

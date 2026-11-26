@@ -126,7 +126,8 @@ export function getEditableAreaSurface(context: EditableRootContext): PartSurfac
 export function getEditablePreviewSurface(context: EditableRootContext): PartSurface<EditablePreviewState> {
   return createPartSurface<EditablePreviewState>(
     () => ({
-      tabindex: 0,
+      // A disabled field cannot enter edit mode, so its preview leaves the tab order.
+      tabindex: context.disabled.value ? -1 : 0,
       hidden: context.autoResize.value ? undefined : context.isEditing.value,
       style: context.autoResize.value
         ? {
@@ -268,6 +269,8 @@ export function useEditable(props: UseEditableProps = {}): UseEditableReturn {
   }
 
   function edit() {
+    if (disabled.value)
+      return
     isEditing.value = true
     inputValue.value = modelValue.value
     emitState('edit')
