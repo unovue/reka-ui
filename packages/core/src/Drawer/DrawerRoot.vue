@@ -6,7 +6,7 @@ import type {
   SwipeDirection,
 } from './utils'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { createContext, useId } from '@/shared'
+import { createRekaContext, useId } from '@/shared'
 
 export type DrawerModal = boolean | 'trap-focus'
 
@@ -126,7 +126,7 @@ export interface DrawerRootContext {
 }
 
 export const [injectDrawerRootContext, provideDrawerRootContext]
-  = createContext<DrawerRootContext>('DrawerRoot')
+  = createRekaContext<DrawerRootContext>('DrawerRoot')
 </script>
 
 <script setup lang="ts">
