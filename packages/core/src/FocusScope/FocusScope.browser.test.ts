@@ -1,8 +1,9 @@
 import type { VNode } from 'vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
-import { userEvent } from 'vitest/browser'
+import { server, userEvent } from 'vitest/browser'
 import { defineComponent, h, vShow, withDirectives } from 'vue'
+import { isMacWebKit } from '@/test/browser'
 import { FocusScope } from '.'
 import { getTabbableCandidates } from './utils'
 
@@ -66,7 +67,8 @@ function mountChildren(children: () => VNode[], outside: VNode[] = []) {
   return (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
 }
 
-describe('given a trapped FocusScope with a native radio group, in a real browser', () => {
+// Tabs to buttons and radios: see `isMacWebKit`.
+describe.skipIf(isMacWebKit)('given a trapped FocusScope with a native radio group, in a real browser', () => {
   it.each(['a', 'b', 'c'])('wraps Tab from the checked radio "%s" back to the first element', async (checked) => {
     const get = mountScope({ checked })
     await expect.poll(() => document.activeElement).toBe(get('button'))
@@ -97,7 +99,9 @@ describe('given a trapped FocusScope with a native radio group, in a real browse
     expect(document.activeElement).toBe(get('button'))
   })
 
-  it('wraps Tab from a radio group whose checked radio is disabled', async () => {
+  // WebKit gives a group whose checked radio is disabled no tab stop at all, so its Tab
+  // leaves the button for the page, which the scope can't tell from its candidates.
+  it.skipIf(server.browser === 'webkit')('wraps Tab from a radio group whose checked radio is disabled', async () => {
     const get = mountScope({ checked: 'b', disabled: 'b' })
     await expect.poll(() => document.activeElement).toBe(get('button'))
 
@@ -140,16 +144,17 @@ describe('given a trapped FocusScope with a native radio group, in a real browse
     expect(document.activeElement).toBe(get('1'))
   })
 
+  // The scope wraps to the group's last radio. From there the browser's own Shift+Tab goes
+  // on: Chromium skips the group's first radio, while Firefox and WebKit stop on it too.
   it('does not wrap Shift+Tab early from a radio group that another element interleaves', async () => {
     const get = mountChildren(() => [button('1'), radio('size', 'a'), button('2'), radio('size', 'c')])
     await expect.poll(() => document.activeElement).toBe(get('1'))
 
-    await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
-    expect(document.activeElement).toBe(get('c'))
-    await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
-    expect(document.activeElement).toBe(get('2'))
-    await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
-    expect(document.activeElement).toBe(get('1'))
+    const stops = server.browser === 'chromium' ? ['c', '2', '1'] : ['c', '2', 'a', '1']
+    for (const stop of stops) {
+      await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+      expect(document.activeElement).toBe(get(stop))
+    }
   })
 
   it('wraps between two radio groups at the first and last edges', async () => {
@@ -170,6 +175,11 @@ describe('given a trapped FocusScope with a native radio group, in a real browse
     expect(document.activeElement).toBe(get('y'))
     await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
     expect(document.activeElement).toBe(get('q'))
+    // Firefox's own Shift+Tab from an unchecked radio stops at its group's first radio.
+    if (server.browser === 'firefox') {
+      await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+      expect(document.activeElement).toBe(get('p'))
+    }
     await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
     expect(document.activeElement).toBe(get('middle'))
   })
@@ -177,7 +187,8 @@ describe('given a trapped FocusScope with a native radio group, in a real browse
 
 // A radio that is not rendered can't take focus, so the group's tab stop is its first radio
 // (in tabbing order) that is.
-describe('given a trapped FocusScope with a partly hidden radio group, in a real browser', () => {
+// Tabs to buttons and radios: see `isMacWebKit`.
+describe.skipIf(isMacWebKit)('given a trapped FocusScope with a partly hidden radio group, in a real browser', () => {
   it('reaches the group with Tab when its first radio has visibility: hidden', async () => {
     const get = mountChildren(() => [button('button'), radio('size', 'a', { style: 'visibility: hidden' }), radio('size', 'b')])
     await expect.poll(() => document.activeElement).toBe(get('button'))
@@ -217,7 +228,8 @@ describe('given a trapped FocusScope with a partly hidden radio group, in a real
 })
 
 // Script can focus a radio that is not its group's tab stop. Tab then moves on from that radio.
-describe('given a trapped FocusScope with focus on an unchecked radio of a checked group, in a real browser', () => {
+// Tabs to buttons and radios: see `isMacWebKit`.
+describe.skipIf(isMacWebKit)('given a trapped FocusScope with focus on an unchecked radio of a checked group, in a real browser', () => {
   const children = () => [button('1'), radio('size', 'a'), button('2'), radio('size', 'c', { checked: true })]
 
   it('moves Tab to the element after the focused radio', async () => {
@@ -246,7 +258,8 @@ describe('given a trapped FocusScope with focus on an unchecked radio of a check
 })
 
 // A control inside `<fieldset disabled>` can't take focus, but its own `disabled` stays false.
-describe('given a trapped FocusScope with a disabled fieldset, in a real browser', () => {
+// Tabs to buttons and radios: see `isMacWebKit`.
+describe.skipIf(isMacWebKit)('given a trapped FocusScope with a disabled fieldset, in a real browser', () => {
   const disabledFieldset = (children: VNode[]) => h('fieldset', { disabled: true }, children)
 
   it('reaches an enabled radio with Shift+Tab when the checked radio of its group is in the fieldset', async () => {
