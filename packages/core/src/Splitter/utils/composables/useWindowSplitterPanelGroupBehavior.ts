@@ -19,6 +19,8 @@ export function useWindowSplitterPanelGroupBehavior({
   resizeHandleRegistration,
   commitLayout,
   getPanelDataWithPercentConstraints,
+  getPanelSizeBeforeCollapse,
+  setPanelSizeBeforeCollapse,
 }: {
   eagerValuesRef: Ref<{
     panelDataArray: PanelData[]
@@ -30,6 +32,9 @@ export function useWindowSplitterPanelGroupBehavior({
   resizeHandleRegistration: Ref<number>
   commitLayout: (sizes: number[], reason: 'keyboard', event: KeyboardEvent) => void
   getPanelDataWithPercentConstraints: (groupSizeOverride?: number | null) => PanelData[] | null
+  /** The size (in percent) a panel had before it collapsed, if it is known. */
+  getPanelSizeBeforeCollapse: (panelData: PanelData) => number | null | undefined
+  setPanelSizeBeforeCollapse: (panelData: PanelData, panelSize: number) => void
 }): void {
   watchEffect((onCleanup) => {
     // Re-run when a handle mounts on its own (e.g. with v-if), so it gets its aria-* attributes.
@@ -150,10 +155,24 @@ export function useWindowSplitterPanelGroupBehavior({
               } = panelData.constraints
 
               if (size != null && collapsible) {
+                // The panel as registered, whose constraints keep its own unit.
+                const registeredPanelData = panelDataArray.find(({ id }) => id === idBefore) ?? panelData
+                const isCollapsed = fuzzyNumbersEqual(size, collapsedSize)
+                let delta = collapsedSize - size
+                if (isCollapsed) {
+                  // Restore the size the panel had before it collapsed, as `expand()` does.
+                  const sizeBeforeCollapse = getPanelSizeBeforeCollapse(registeredPanelData)
+                  const restoredSize = sizeBeforeCollapse != null && sizeBeforeCollapse >= minSize
+                    ? sizeBeforeCollapse
+                    : minSize
+                  delta = restoredSize - collapsedSize
+                }
+                else {
+                  setPanelSizeBeforeCollapse(registeredPanelData, size)
+                }
+
                 const nextLayout = adjustLayoutByDelta({
-                  delta: fuzzyNumbersEqual(size, collapsedSize)
-                    ? minSize - collapsedSize
-                    : collapsedSize - size,
+                  delta,
                   layout: layout.value,
                   panelConstraints: panelDataArrayWithPercentConstraints.map(
                     panelData => panelData.constraints,
