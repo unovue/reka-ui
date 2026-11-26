@@ -15,10 +15,9 @@ export interface TabsTriggerProps extends PrimitiveProps {
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
-import { useSelectorKey } from '@/shared/createKeyedSelector'
 import { useAgentItem } from '@/shared/useAgentRegistration'
 import { injectTabsRootContext } from './TabsRoot.vue'
-import { makeContentId, makeTriggerId, useTabsPartId } from './utils'
+import { makeContentId, makeTriggerId, useTabSelected, useTabsPartId } from './utils'
 
 const props = withDefaults(defineProps<TabsTriggerProps>(), {
   disabled: false,
@@ -34,7 +33,7 @@ const contentId = computed(() => rootContext.contentIds.value.has(props.value)
   ? rootContext.renderedContentIds.value.get(props.value) ?? makeContentId(rootContext.baseId, props.value)
   : undefined)
 
-const isSelected = useSelectorKey(rootContext.selection, () => props.value)
+const isSelected = useTabSelected(rootContext, () => props.value)
 </script>
 
 <template>

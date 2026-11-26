@@ -18,9 +18,8 @@ export interface TabsContentProps extends PrimitiveProps {
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
-import { useSelectorKey } from '@/shared/createKeyedSelector'
 import { injectTabsRootContext } from './TabsRoot.vue'
-import { makeContentId, makeTriggerId, useTabsPartId } from './utils'
+import { makeContentId, makeTriggerId, useTabSelected, useTabsPartId } from './utils'
 
 const props = defineProps<TabsContentProps>()
 
@@ -29,7 +28,7 @@ const rootContext = injectTabsRootContext()
 const triggerId = computed(() => rootContext.triggerIds.value.get(props.value) ?? makeTriggerId(rootContext.baseId, props.value))
 const contentId = useTabsPartId(rootContext.renderedContentIds, props, currentElement, () => makeContentId(rootContext.baseId, props.value))
 
-const isSelected = useSelectorKey(rootContext.selection, () => props.value)
+const isSelected = useTabSelected(rootContext, () => props.value)
 
 const isMountAnimationPreventedRef = ref(isSelected())
 
