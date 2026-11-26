@@ -308,8 +308,7 @@ describe('resize handles in two documents', () => {
   })
 })
 
-// TODO(v3-port): #3287 drop a deactivated KeepAlive handle from hit testing (Splitter source resolved to v3)
-describe.skip('resize handle in a deactivated <KeepAlive> page', () => {
+describe('resize handle in a deactivated <KeepAlive> page', () => {
   let wrapper: VueWrapper
 
   afterEach(() => {

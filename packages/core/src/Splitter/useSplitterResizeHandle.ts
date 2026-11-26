@@ -3,7 +3,7 @@ import type { PanelGroupContext } from './SplitterGroup.vue'
 import type { PointerHitAreaMargins, ResizeHandlerAction } from './utils/registry'
 import type { Direction, ResizeEvent, ResizeHandler } from './utils/types'
 import type { PartSurface } from '@/shared'
-import { computed, onScopeDispose, ref, toValue, watch, watchEffect } from 'vue'
+import { computed, getCurrentInstance, onActivated, onDeactivated, onScopeDispose, ref, toValue, watch, watchEffect } from 'vue'
 import { createPartSurface, isBrowser } from '@/shared'
 import { useWindowSplitterResizeHandlerBehavior } from './utils/composables/useWindowSplitterBehavior'
 import { registerResizeHandle } from './utils/registry'
@@ -63,6 +63,13 @@ export function useSplitterResizeHandle(context: PanelGroupContext, props: UseSp
   const state = ref<ResizeHandlerState>('inactive')
   const isFocused = ref(false)
   const resizeHandler = ref<ResizeHandler | null>(null)
+  // A deactivated <KeepAlive> handle is out of the document but still mounted: it leaves hit testing,
+  // where comparing its stacking order with a handle in the document would throw.
+  const isActive = ref(true)
+  if (getCurrentInstance()) {
+    onActivated(() => isActive.value = true)
+    onDeactivated(() => isActive.value = false)
+  }
 
   watch(disabled, () => {
     if (!isBrowser)
@@ -74,7 +81,7 @@ export function useSplitterResizeHandle(context: PanelGroupContext, props: UseSp
   }, { immediate: true })
 
   watchEffect((onCleanup) => {
-    if (disabled.value || resizeHandler.value === null)
+    if (disabled.value || !isActive.value || resizeHandler.value === null)
       return
 
     const element = props.element.value
