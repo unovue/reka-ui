@@ -38,7 +38,7 @@ import {
 } from 'vue'
 import { PopperRoot } from '@/Popper'
 import { injectMenuContext, provideMenuContext } from './MenuRoot.vue'
-import { createContentHideHook } from './utils'
+import { contentHidden, onContentHide } from './utils'
 
 const props = withDefaults(defineProps<MenuSubProps>(), {
   open: undefined,
@@ -55,7 +55,6 @@ const { state: open, setState } = useControllableState<boolean, MenuOpenChangeRe
 const parentMenuContext = injectMenuContext()
 const trigger = ref<HTMLElement>()
 const content = ref<HTMLElement>()
-const contentHide = createContentHideHook()
 
 // Prevent the parent menu from reopening with open submenus. A getter-source
 // `watch` (not `watchEffect`): `setState` reads the sub's own `open` for its
@@ -74,21 +73,23 @@ provideMenuContext({
     content.value = element
   },
   notifyOpenComplete: value => emits('update:openComplete', value),
-  onContentHide: contentHide.on,
-  contentHidden: contentHide.trigger,
+  // Shared methods, called on the context.
+  onContentHide,
+  contentHidden,
 })
 
 // Reactive: the trigger and the content adopt a consumer `id`, which the other one references.
 provideMenuSubContext(defineReactiveIds<MenuSubContext, 'triggerId' | 'contentId'>({
-  triggerId: '',
-  // Allocated here, not by the content: a closed submenu's portal mounts no
-  // content, and the trigger's `aria-controls` must name it on the first open.
-  contentId: useId(undefined, 'reka-menu-sub-content'),
   trigger,
   onTriggerChange: (element) => {
     trigger.value = element
   },
-}, ['triggerId', 'contentId']))
+}, {
+  triggerId: '',
+  // Allocated here, not by the content: a closed submenu's portal mounts no
+  // content, and the trigger's `aria-controls` must name it on the first open.
+  contentId: useId(undefined, 'reka-menu-sub-content'),
+}))
 </script>
 
 <template>

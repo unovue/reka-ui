@@ -8,7 +8,7 @@ import type { Direction } from '@/shared/types'
 import { computed, nextTick, ref, toValue, watch } from 'vue'
 import { isTriggerPressInFlight, trackTriggerPress } from '@/DismissableLayer/utils'
 import { useMenuRoot } from '@/Menu/useMenu'
-import { createPartSurface, defineReactiveIds, useControllableState } from '@/shared'
+import { createPartSurface, defineReactiveIds, getterRef, peekReactiveId, useControllableState } from '@/shared'
 import { isDisabledItem } from '@/shared/isDisabledItem'
 import { resolveDirection } from '@/shared/useDirection'
 import { wrapArray } from '@/shared/useTypeahead'
@@ -149,7 +149,8 @@ export function useMenubar(props: UseMenubarProps = {}): UseMenubarReturn {
     modelValue,
     dir: dir as Ref<Direction>,
     loop: loop as Ref<boolean>,
-    unmountOnHide: computed(() => toValue(props.unmountOnHide) ?? true) as Ref<boolean>,
+    // A getter, not a computed: it only reads a prop.
+    unmountOnHide: getterRef(() => toValue(props.unmountOnHide) ?? true) as Ref<boolean>,
     onMenuOpen,
     onMenuClose,
     onMenuToggle,
@@ -244,10 +245,8 @@ export function useMenubarMenu(rootContext: MenubarRootContext, options: UseMenu
   const context = defineReactiveIds<MenubarMenuContext, 'triggerId' | 'contentId'>({
     value,
     triggerElement: ref<HTMLElement>(),
-    triggerId: value,
-    contentId: options.contentId ?? `${value}-content`,
     wasKeyboardTriggerOpenRef,
-  }, ['triggerId', 'contentId'])
+  }, { triggerId: value, contentId: options.contentId ?? `${value}-content` })
 
   return {
     open,
@@ -289,7 +288,8 @@ export function createMenubarTriggerSurface(
 
   return createPartSurface<MenubarTriggerState>(
     () => ({
-      'id': menuContext.triggerId,
+      // Untracked: the trigger writes its id itself (`useTriggerIdInRender`), before it renders.
+      'id': peekReactiveId(menuContext, 'triggerId'),
       'role': 'menuitem',
       'aria-haspopup': 'menu',
       'aria-expanded': open.value,

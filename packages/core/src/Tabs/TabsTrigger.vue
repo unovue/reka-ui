@@ -57,7 +57,7 @@ if (isInsideKeepAlive()) {
 // (arrow-key nav, as a composable) and the tag-dependent `type` stay in the SFC.
 const surface = getTabsTriggerSurface(rootContext, () => props.value, () => props.disabled)
 const hydratedId = useHydratedId(currentElement, () => surface.attrs.value.id)
-useTabsPartId(rootContext.customTriggerIds, () => props.value, () => props.id || hydratedId.value)
+useTabsPartId(rootContext.customTriggerIds, () => props.value, () => props.id || hydratedId?.value)
 
 const roving = useRovingFocusItem({
   element: currentElement,

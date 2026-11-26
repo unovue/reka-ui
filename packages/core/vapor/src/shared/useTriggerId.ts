@@ -1,12 +1,12 @@
 // Copy of src/shared/useTriggerId.ts with the three VDOM-instance reads swapped for Vapor-safe ones
 // (generic instance, root node from `instance.block`, no `$forceUpdate` in Vapor).
-import type { Ref } from 'vue'
-import { computed, onActivated, onBeforeMount, onBeforeUnmount, onBeforeUpdate, onDeactivated, onMounted, onUpdated, ref, useAttrs, watch } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
+import { onActivated, onBeforeMount, onBeforeUnmount, onBeforeUpdate, onDeactivated, onMounted, onUpdated, ref, shallowRef, toRaw, useAttrs, watch } from 'vue'
+import { rendersForeignId } from '@/shared/usePartId'
+import { forceUpdate, getGenericInstance, hasDeactivatedAncestor, instanceElement } from './internals'
 
 // How many content elements are rendered for a context. Kept beside the context rather
 // than on it, so the context types stay as they are.
-import { forceUpdate, getGenericInstance, hasDeactivatedAncestor, instanceElement } from './internals'
-
 const mountedContents = new WeakMap<object, Ref<number>>()
 
 function useMountedContents(context: object) {
@@ -18,21 +18,109 @@ function useMountedContents(context: object) {
   return count
 }
 
-/**
- * Backs the given string properties of a context object with refs, so the context
- * keeps its plain `string` types while templates that read those properties
- * re-render when they change.
- */
-export function defineReactiveIds<T extends object, K extends keyof T>(context: T, keys: K[]) {
-  for (const key of keys) {
-    const id = ref(context[key])
-    Object.defineProperty(context, key, {
-      enumerable: true,
-      get: () => id.value,
-      set: (value) => { id.value = value },
-    })
+// One symbol and one accessor pair per id name, shared by every context: an accessor added
+// as a new property keeps the object's fast properties, and contexts built alike share one
+// hidden class. A per-context closure as accessor, an accessor in the object literal, or
+// turning an existing data property into an accessor all switch the whole context to slow
+// (dictionary) properties, which costs a few hundred bytes per context.
+const idProperties = new Map<string, { key: symbol, plainKey: symbol, descriptor: PropertyDescriptor }>()
+
+function idProperty(name: string) {
+  let property = idProperties.get(name)
+  if (!property) {
+    // `plainKey` holds the id itself, `key` its ref, created on the first read: an id nothing
+    // reads (a closed popup's content id) costs no ref.
+    const key = Symbol(name)
+    const plainKey = Symbol(`${name} (plain)`)
+    property = {
+      key,
+      plainKey,
+      descriptor: {
+        enumerable: true,
+        configurable: true,
+        // `toRaw`: read through a reactive proxy of the context, `this[key]` would be unwrapped.
+        get(this: object) {
+          const raw = toRaw(this) as Record<symbol, unknown>
+          const ref = (raw[key] ??= shallowRef(raw[plainKey])) as Ref<string>
+          return ref.value
+        },
+        set(this: object, value: string) {
+          const raw = toRaw(this) as Record<symbol, unknown>
+          raw[plainKey] = value
+          const ref = raw[key] as Ref<string> | undefined
+          if (ref)
+            ref.value = value
+        },
+      },
+    }
+    idProperties.set(name, property)
   }
-  return context
+  return property
+}
+
+/**
+ * A `defineReactiveIds` id read without tracking it: for the part that writes the id
+ * (a trigger rendering its own id), which never needs to re-render for it.
+ *
+ * @internal
+ */
+export function peekReactiveId<T extends object>(context: T, name: keyof T & string): string {
+  return (toRaw(context) as Record<symbol, string>)[idProperty(name).plainKey]!
+}
+
+/**
+ * Adds the given string properties to a context object, backed by refs (created on the first
+ * read), so the context keeps its plain `string` types while templates that read those
+ * properties re-render when they change. The properties must not be in `context` yet: pass the context
+ * without them and their initial values in `ids`.
+ */
+export function defineReactiveIds<T extends object, K extends keyof T & string>(context: Omit<T, K>, ids: Pick<T, K>): T {
+  for (const name in ids) {
+    const { key, plainKey, descriptor } = idProperty(name)
+    ;(context as Record<symbol, unknown>)[plainKey] = ids[name]
+    ;(context as Record<symbol, unknown>)[key] = undefined
+    Object.defineProperty(context, name, descriptor)
+  }
+  return context as T
+}
+
+/**
+ * Follows a trigger's consumer `id` onto `context.triggerId`: `follow` with the trigger's
+ * attrs picks up an `id` that changed since the last call.
+ */
+class ConsumerIdFollower {
+  consumerId: unknown
+
+  constructor(readonly context: { triggerId: string }, consumerId: unknown) {
+    this.consumerId = consumerId
+  }
+
+  follow(attrs: Record<string, unknown>): void {
+    const id = attrs.id
+    if (id === this.consumerId)
+      return
+    this.consumerId = id
+    if (typeof id === 'string' && id)
+      this.context.triggerId = id
+  }
+}
+
+function setTriggerId(context: { triggerId: string }, consumerId: unknown, generate?: () => string) {
+  if (typeof consumerId === 'string' && consumerId)
+    context.triggerId = consumerId
+  // `generate` first: reading a reactive id creates its ref.
+  else if (generate && !context.triggerId)
+    context.triggerId = generate()
+}
+
+function syncRenderedTriggerId(context: { triggerId: string }, element: Readonly<Ref<HTMLElement | undefined>>) {
+  const syncRendered = () => {
+    const renderedId = element.value?.id
+    if (renderedId && renderedId !== context.triggerId)
+      context.triggerId = renderedId
+  }
+  onMounted(syncRendered)
+  onUpdated(syncRendered)
 }
 
 /**
@@ -44,19 +132,20 @@ export function defineReactiveIds<T extends object, K extends keyof T>(context: 
  * - Once mounted, and after every update, the id the element really rendered wins:
  *   with `asChild`, an `id` on the child element overrides the one passed down, and a
  *   consumer `id` that changes after mount is picked up.
+ *
+ * `rendered: false` skips that last check, for a trigger that renders `context.triggerId`
+ * itself on its own element; by default it only runs for a part that may render another id
+ * (see `rendersForeignId`).
  */
 export function useTriggerId(
   context: { triggerId: string },
   element: Readonly<Ref<HTMLElement | undefined>>,
   generate?: () => string,
+  rendered: boolean = rendersForeignId(),
 ) {
   const attrs = useAttrs()
   let consumerId = attrs.id
-  if (typeof consumerId === 'string' && consumerId)
-    context.triggerId = consumerId
-  else if (!context.triggerId && generate)
-    context.triggerId = generate()
-
+  setTriggerId(context, consumerId, generate)
   onBeforeUpdate(() => {
     if (attrs.id === consumerId)
       return
@@ -64,13 +153,28 @@ export function useTriggerId(
     if (typeof consumerId === 'string' && consumerId)
       context.triggerId = consumerId
   })
-  const syncRendered = () => {
-    const renderedId = element.value?.id
-    if (renderedId && renderedId !== context.triggerId)
-      context.triggerId = renderedId
-  }
-  onMounted(syncRendered)
-  onUpdated(syncRendered)
+  if (rendered)
+    syncRenderedTriggerId(context, element)
+}
+
+/**
+ * `useTriggerId` without a lifecycle hook per trigger, for a trigger that renders its id with
+ * `peekReactiveId` (untracked): call the returned function from its render with its `$attrs`,
+ * which picks up a consumer `id` that changed, as the trigger renders. The content follows the
+ * new id; the trigger, which does not track it, renders once.
+ *
+ * @internal
+ */
+export function useTriggerIdInRender(
+  context: { triggerId: string },
+  element: Readonly<Ref<HTMLElement | undefined>>,
+  generate?: () => string,
+): ConsumerIdFollower {
+  const attrs = useAttrs()
+  setTriggerId(context, attrs.id, generate)
+  if (rendersForeignId())
+    syncRenderedTriggerId(context, element)
+  return new ConsumerIdFollower(context, attrs.id)
 }
 
 /**
@@ -90,7 +194,7 @@ export function useContentId(
     set triggerId(id) {
       context.contentId = id
     },
-  }, element)
+  }, element, undefined, true)
   useContentElement(context, element)
 }
 
@@ -215,7 +319,21 @@ export function useContentMounted(key: object, element: Readonly<Ref<HTMLElement
  * reference is patched onto the trigger once the content exists instead of being left
  * as the server wrote it. Needs `useContentMounted` on the content side.
  */
-export function useRenderedContentId(context: { contentId: string }, key: object = context) {
-  const count = useMountedContents(key)
-  return computed(() => (count.value > 0 && context.contentId) || undefined)
+export function useRenderedContentId(context: { contentId: string }, key: object = context): ComputedRef<string | undefined> {
+  return new RenderedContentIdRef(context, key) as unknown as ComputedRef<string | undefined>
+}
+
+/**
+ * The ref `useRenderedContentId` returns: a getter, without a computed or a closure. The
+ * count is looked up (and created) on the first read, so a trigger that reads it only
+ * while open (a tooltip) allocates nothing until then.
+ */
+class RenderedContentIdRef {
+  // Ref markers as prototype getters: no per-instance slots.
+  get __v_isRef(): true { return true }
+  get __v_isReadonly(): true { return true }
+  constructor(readonly context: { contentId: string }, readonly key: object) {}
+  get value(): string | undefined {
+    return (useMountedContents(this.key).value > 0 && this.context.contentId) || undefined
+  }
 }

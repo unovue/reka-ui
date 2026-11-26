@@ -2,7 +2,7 @@
 import type { ComboboxInputChangeReason, ComboboxOpenChangeReason } from './useCombobox'
 import type { ListboxFilterProps } from '@/Listbox'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { getCurrentScope, mergeProps, nextTick, onMounted, onUnmounted, toValue, watch } from 'vue'
+import { getCurrentScope, mergeProps, nextTick, onMounted, onUnmounted, toRef, toValue, watch } from 'vue'
 import { getElementByIdFrom, useControllableState, useForwardElement, useRenderedContentId } from '@/shared'
 
 export type ComboboxInputEmits = {
@@ -52,7 +52,8 @@ defineSlots<{
 }>()
 
 const rootContext = injectComboboxRootContext()
-watch(() => props.focusOnOpen, value => rootContext.focusInputOnOpen.value = value, { immediate: true })
+// Read only in event handlers: the input's prop itself, rather than a watcher copying it.
+rootContext.focusInputOnOpen = toRef(props, 'focusOnOpen')
 const fieldContext = injectComboboxFieldContext(null)
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)

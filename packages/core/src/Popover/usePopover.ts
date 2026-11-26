@@ -4,8 +4,8 @@ import type { PopoverOpenChangeReason, PopoverRootContext } from './PopoverRoot.
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import type { PopupRootStore } from '@/shared/popupHandle'
 import { computed, ref, toValue } from 'vue'
-import { createPartSurface, disclosureState, setGeneratedIds, useControllableState } from '@/shared'
-import { createPopupRootStore, setPopupRootStore } from '@/shared/popupHandle'
+import { createPartSurface, disclosureState, getterRef, setGeneratedIds, useControllableState } from '@/shared'
+import { createPopupRootStore, definePopupRootIds } from '@/shared/popupHandle'
 
 // =============================================================================
 // Headless composable for the Popover (overlay) family — issue #2723.
@@ -192,7 +192,8 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
     onUpdate: props.onUpdate,
   })
   const modal = computed<boolean>(() => toValue(props.modal) ?? false)
-  const unmountOnHide = computed<boolean>(() => toValue(props.unmountOnHide) ?? true)
+  // A getter, not a computed: it only reads a prop.
+  const unmountOnHide = getterRef<boolean>(() => toValue(props.unmountOnHide) ?? true)
   const hasCustomAnchor = ref(false)
 
   // Writable: a `PopoverTrigger` / `PopoverContent` `id` replaces the generated
@@ -206,7 +207,7 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
     open,
     setState,
     baseId,
-    contentId: () => contentId.value,
+    contentId,
     triggerId: props.triggerId,
     defaultTriggerId: props.defaultTriggerId,
   })
@@ -230,26 +231,17 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
     return setState(!open.value, reason, event)
   }
 
-  const context: PopoverRootContext = {
+  // The ids are added after the literal, which keeps the context on fast properties.
+  const context = definePopupRootIds<PopoverRootContext>({
     triggerElement,
-    // With a `handle`, the content's `aria-labelledby` follows the active
-    // trigger while it is mounted, and is dropped (`''`) while no mounted
-    // trigger owns the popover, so it never points at a missing id.
-    get triggerId() {
-      if (!handleStore.handle.value)
-        return ownTriggerId.value
-      return handleStore.activeTriggerElement.value ? handleStore.activeTriggerId.value! : ''
-    },
-    get contentId() { return contentId.value },
-    set contentId(value) { contentId.value = value },
     open,
     modal: modal as Ref<boolean>,
     unmountOnHide: unmountOnHide as Ref<boolean>,
     onOpenChange,
     onOpenToggle,
     hasCustomAnchor,
-    notifyOpenComplete: value => props.onOpenComplete?.(value),
-  }
+    notifyOpenComplete: (value: boolean) => props.onOpenComplete?.(value),
+  }, handleStore, ownTriggerId, contentId)
   setGeneratedIds(context, { contentId: contentId.value })
   const ownTriggerSlot = {
     get triggerId() { return ownTriggerId.value },
@@ -257,7 +249,6 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
   }
   setGeneratedIds(ownTriggerSlot, { triggerId: ownTriggerId.value })
   ownTriggerSlots.set(context, ownTriggerSlot)
-  setPopupRootStore(context, handleStore)
 
   // The part surfaces are for standalone consumers (the part SFCs build their
   // own from the context), so each is built on first read.

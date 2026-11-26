@@ -1,5 +1,5 @@
 import type { ElementSourceLike } from '@/Collection/Collection'
-import { getCurrentInstance, getCurrentScope, onBeforeUnmount, onMounted, onScopeDispose, onUpdated, shallowRef } from 'vue'
+import { getCurrentInstance, getCurrentScope, inject, onBeforeUnmount, onMounted, onScopeDispose, onUpdated, shallowRef, ssrContextKey } from 'vue'
 import { COLLECTION_ITEM_ATTRS, useCollectionItem } from '@/Collection/Collection'
 import { SelectorHold } from '@/shared/createKeyedSelector'
 import { useId } from '@/shared/useId'
@@ -77,10 +77,13 @@ export function useRovingFocusItem(options: UseRovingFocusItemOptions) {
   // have set up, so the server-rendered HTML would have no stop at all. Before
   // mount, one item per group stands in as the stop (see `claimPreMountTabStop`);
   // after mount the group's own tabindex takes over. Only that item holds a ref.
-  const preMountTabStop = isFocusable() && context.claimPreMountTabStop(getId(), !!options.active?.())
+  // A client-side mount (not hydrating) is never seen before it mounts, so it skips this.
+  const instance = getCurrentInstance()
+  const rendersBeforeMount = !instance || !!instance.vnode.el || !!inject(ssrContextKey, null)
+  const preMountTabStop = rendersBeforeMount && isFocusable() && context.claimPreMountTabStop(getId(), !!options.active?.())
     ? shallowRef(true)
     : undefined
-  if (preMountTabStop && getCurrentInstance())
+  if (preMountTabStop && instance)
     onMounted(() => preMountTabStop.value = false)
   if (getCurrentScope()) {
     onScopeDispose(() => {

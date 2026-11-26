@@ -35,7 +35,7 @@ defineExpose(expose)
 const rootContext = injectTabsRootContext()
 const surface = getTabsContentSurface(rootContext, () => props.value)
 const hydratedId = useHydratedId(currentElement, () => surface.attrs.value.id)
-useTabsPartId(rootContext.customContentIds, () => props.value, () => props.id || hydratedId.value)
+useTabsPartId(rootContext.customContentIds, () => props.value, () => props.id || hydratedId?.value)
 
 // id/role/aria-labelledby/tabindex + data-state/data-orientation from the shared
 // surface builder (selection is read from its `state`, not re-derived); the

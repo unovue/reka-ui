@@ -27,6 +27,7 @@ const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
 const rootContext = injectComboboxRootContext()
+rootContext.watchHighlight?.()
 useAgentItem(rootContext, useAttrs(), undefined, 'content')
 
 // A closing content still mounted for its exit animation hands Escape, outside interaction

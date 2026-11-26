@@ -69,6 +69,11 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
   openOnClick: Ref<boolean>
   resetModelValueOnClear: Ref<boolean>
   unmountOnHide: Ref<boolean>
+  /**
+   * Called by `ComboboxContent` as it sets up: from then on its items exist, and the root
+   * keeps them unhighlighted while closed. @internal
+   */
+  watchHighlight?: () => void
   /** The root's `displayValue` resolver, if any. */
   displayValue?: (value: T) => string
   /** The root's `items`, if any. Read through `getComboboxInputText` / `getComboboxSelectedLabels`. */
@@ -196,7 +201,7 @@ export interface ComboboxRootProps<T = AcceptableValue, I = T> extends Omit<List
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false, I = T">
-import { camelize, mergeProps, nextTick, toRef, useAttrs, watch } from 'vue'
+import { camelize, getCurrentScope, mergeProps, nextTick, toRef, useAttrs, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { provideListboxRootContext } from '@/Listbox/ListboxRoot.vue'
@@ -334,19 +339,35 @@ context.onOpenChange = (value, reason, event) => {
   }
   return changed
 }
-watch([open, highlightedElement], ([isOpen], [wasOpen]) => {
-  if (!isOpen) {
+function onOpened() {
+  if (isOpeningInternally)
     isOpeningInternally = false
-    if (highlightedElement.value)
-      highlightedElement.value = null
-  }
-  else if (!wasOpen) {
-    if (isOpeningInternally)
+  else if (!highlightedElement.value)
+    highlightSelected()
+}
+// Created when the content first sets up, since no item exists before: a combobox that never
+// opens has no watcher. The content sets up at mount when it is open or kept mounted, otherwise
+// as the combobox first opens, which is handled here as the watcher would have.
+const scope = getCurrentScope()
+const openAtSetup = open.value
+let isWatchingHighlight = false
+context.watchHighlight = () => {
+  if (isWatchingHighlight)
+    return
+  isWatchingHighlight = true
+  if (open.value && !openAtSetup)
+    onOpened()
+  scope?.run(() => watch([open, highlightedElement], ([isOpen], [wasOpen]) => {
+    if (!isOpen) {
       isOpeningInternally = false
-    else if (!highlightedElement.value)
-      highlightSelected()
-  }
-})
+      if (highlightedElement.value)
+        highlightedElement.value = null
+    }
+    else if (!wasOpen) {
+      onOpened()
+    }
+  }))
+}
 
 defineExpose(mergeExpose(expose, {
   /** The filtering result: `{ search, active, count }`. */

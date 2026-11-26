@@ -373,9 +373,9 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
   const triggerElement = ref<HTMLElement>()
   const valueElement = ref<HTMLElement>()
 
-  const context: SelectRootContext<T> = {
+  // `contentId` follows a consumer `id` on the content (`useContentId`).
+  const context = defineReactiveIds<SelectRootContext<T>, 'contentId'>({
     baseId,
-    contentId: `${baseId}-content`,
     triggerElement,
     onTriggerChange: (node) => {
       triggerElement.value = node
@@ -410,9 +410,7 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
     getNavigationIntent,
     virtualTypeaheadItems,
     notifyOpenComplete: value => props.onOpenComplete?.(value),
-  }
-  // `contentId` follows a consumer `id` on the content (`useContentId`).
-  defineReactiveIds(context, ['contentId'])
+  }, { contentId: `${baseId}-content` })
 
   return {
     modelValue,
@@ -451,6 +449,48 @@ export interface UseSelectTriggerReturn {
   /** `role="combobox"`, `aria-*`, `disabled`, `dir` and the open/typeahead handlers. The tag-dependent `type` stays in the SFC. */
   trigger: PartSurface<SelectTriggerState>
   isDisabled: ComputedRef<boolean>
+}
+
+// The trigger's typeahead helpers, at module level: no closures per trigger.
+
+// A rendered item selects itself, so its `select` event can prevent it.
+function selectMatch<T>(context: SelectRootContext<T>, item: SelectTypeaheadItem<T>, event: KeyboardEvent) {
+  if (item.select)
+    item.select(event)
+  else
+    context.setModelValue(item.value, 'typeahead', event)
+}
+
+// While open, typing on the trigger moves focus to the match without selecting it.
+function focusTypeaheadMatch(context: SelectRootContext<any>, term: string) {
+  const items = (context.closedItems?.liveItems?.() ?? []).filter(item => !item.disabled && item.element)
+  const active = getActiveElement()
+  const current = items.find(item => item.element === active)
+  getNextMatch(items, term, current, item => item.textValue)?.element?.focus()
+}
+
+// The next match, and whether only the rendered items can settle it:
+// - nothing matches: an option only a `SelectItem` has may;
+// - a repeated key's cycle wraps to its first match: the same, after the last
+//   one it knows. `items` may well list them all, but only the render can
+//   tell, so such a key renders once per focus. A jump back to another letter,
+//   or a longer search the selection still matches, renders nothing;
+// - the match depends on a `disabled` remembered from an unmounted item, which
+//   its template may have changed since.
+function findTypeaheadMatch<T>(context: SelectRootContext<T>, term: string, all: (SelectTypeaheadItem<T> & { dataOnly?: boolean, remembered?: boolean })[]) {
+  const items = all.filter(item => !item.disabled)
+  const current = items.find(item => context.isSelected(item.value))
+  // Matched by identity, so items with the same text stay distinct.
+  const match = (list: typeof all) => getNextMatch(list, term, current, item => item.textValue)
+  const next = match(items)
+  const singleKey = Array.from(term).every(char => char === term[0])
+  const prefix = (singleKey ? term[0] ?? '' : term).toLowerCase()
+  const inCycle = !!current && current.textValue.toLowerCase().startsWith(prefix)
+  const unsure = next
+    ? (inCycle && singleKey && items.indexOf(next) < items.indexOf(current!))
+    || (all.some(item => item.remembered) && match(all.filter(item => !item.disabled || item.remembered)) !== next)
+    : singleKey || !inCycle
+  return { next, unsure }
 }
 
 /**
@@ -526,7 +566,7 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
     // item can answer it (see `findTypeaheadMatch`), or the match is a record's
     // string key (the item's own value may be a number).
     if (closedItems && closedItems.canRender() && !closedItems.hasRendered()) {
-      const found = context.items?.value && findTypeaheadMatch()
+      const found = context.items?.value && findTypeaheadMatch(context, search.value, getTypeaheadItems())
       const next = found && found.next
       if (!found || found.unsure || (next && next.dataOnly && context.isRecordItems?.() && !context.isSelected(next.value))) {
         closedItems.renderThen(() => {
@@ -535,27 +575,11 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
         })
       }
       else if (next) {
-        selectMatch(next, event)
+        selectMatch(context, next, event)
       }
       return
     }
     matchTypeahead(event)
-  }
-
-  // A rendered item selects itself, so its `select` event can prevent it.
-  function selectMatch(item: SelectTypeaheadItem<T>, event: KeyboardEvent) {
-    if (item.select)
-      item.select(event)
-    else
-      context.setModelValue(item.value, 'typeahead', event)
-  }
-
-  // While open, typing on the trigger moves focus to the match without selecting it.
-  function focusTypeaheadMatch() {
-    const items = (context.closedItems?.liveItems?.() ?? []).filter(item => !item.disabled && item.element)
-    const active = getActiveElement()
-    const current = items.find(item => item.element === active)
-    getNextMatch(items, search.value, current, item => item.textValue)?.element?.focus()
   }
 
   // Items that need more than the render's flush (an async wrapper) register
@@ -571,38 +595,12 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
     }, { flush: 'post' })
   }
 
-  // The next match, and whether only the rendered items can settle it:
-  // - nothing matches: an option only a `SelectItem` has may;
-  // - a repeated key's cycle wraps to its first match: the same, after the last
-  //   one it knows. `items` may well list them all, but only the render can
-  //   tell, so such a key renders once per focus. A jump back to another letter,
-  //   or a longer search the selection still matches, renders nothing;
-  // - the match depends on a `disabled` remembered from an unmounted item, which
-  //   its template may have changed since.
-  function findTypeaheadMatch() {
-    const term = search.value
-    const all = getTypeaheadItems()
-    const items = all.filter(item => !item.disabled)
-    const current = items.find(item => context.isSelected(item.value))
-    // Matched by identity, so items with the same text stay distinct.
-    const match = (list: typeof all) => getNextMatch(list, term, current, item => item.textValue)
-    const next = match(items)
-    const singleKey = Array.from(term).every(char => char === term[0])
-    const prefix = (singleKey ? term[0] ?? '' : term).toLowerCase()
-    const inCycle = !!current && current.textValue.toLowerCase().startsWith(prefix)
-    const unsure = next
-      ? (inCycle && singleKey && items.indexOf(next) < items.indexOf(current!))
-      || (all.some(item => item.remembered) && match(all.filter(item => !item.disabled || item.remembered)) !== next)
-      : singleKey || !inCycle
-    return { next, unsure }
-  }
-
   function matchTypeahead(event: KeyboardEvent) {
     if (context.multiple.value || context.open.value)
       return true
-    const { next } = findTypeaheadMatch()
+    const { next } = findTypeaheadMatch(context, search.value, getTypeaheadItems())
     if (next)
-      selectMatch(next, event)
+      selectMatch(context, next, event)
     return !!next
   }
 
@@ -722,7 +720,7 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
       handleTypeaheadSearch(event.key, [])
       if (event.key !== ' ' || isTypingAhead) {
         if (context.open.value && !context.multiple.value)
-          focusTypeaheadMatch()
+          focusTypeaheadMatch(context, search.value)
         else
           typeaheadSelect(event)
       }

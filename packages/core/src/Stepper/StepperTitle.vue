@@ -1,9 +1,8 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { onBeforeUnmount, onMounted } from 'vue'
 import { claimReferencedId, useForwardElement } from '@/shared'
 import { injectStepperItemContext } from './StepperItem.vue'
-import { getStepperTitleSurface } from './useStepper'
+import { getStepperTitleSurface, STEPPER_PARTS, useStepperPart } from './useStepper'
 </script>
 
 <script setup lang="ts">
@@ -17,12 +16,7 @@ const itemContext = injectStepperItemContext()
 claimReferencedId(itemContext, 'titleId')
 const surface = getStepperTitleSurface(itemContext)
 
-onMounted(() => {
-  itemContext.hasTitle.value = true
-})
-onBeforeUnmount(() => {
-  itemContext.hasTitle.value = false
-})
+useStepperPart(itemContext, STEPPER_PARTS.TITLE)
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 </script>

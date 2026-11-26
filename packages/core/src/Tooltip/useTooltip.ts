@@ -77,17 +77,23 @@ export function createTooltipTriggerSurface(context: TooltipContext): PartSurfac
     setTimeout(resetPointerDown, 1)
   }
 
+  // A trigger unmounted while pressed must not leave its listener on `document`. The cleanup
+  // is registered on the first press: registered here, it would keep every handler of a
+  // surface that is never rendered (the one `useTooltip` returns) alive with the scope.
+  const scope = getCurrentScope()
+  let isCleanupRegistered = false
+
   function handlePointerDown(event: PointerEvent) {
     if (context.open.value && !context.disableClosingTrigger.value) {
       context.onClose('trigger-press', event)
     }
     isPointerDown.value = true
     document.addEventListener('pointerup', handlePointerUp, { once: true })
+    if (scope?.active && !isCleanupRegistered) {
+      isCleanupRegistered = true
+      scope.run(() => onScopeDispose(() => document.removeEventListener('pointerup', handlePointerUp)))
+    }
   }
-
-  // A trigger unmounted while pressed must not leave its listener on `document`.
-  if (getCurrentScope())
-    onScopeDispose(() => document.removeEventListener('pointerup', handlePointerUp))
 
   function handlePointerMove(event: PointerEvent) {
     if (event.pointerType === 'touch')
@@ -338,8 +344,9 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
       wasOpenDelayedRef.value = false
   }, delayDuration)
   // A pending open of a `KeepAlive` page that is left would fire on the page shown instead.
-  if (getCurrentInstance())
-    onDeactivated(() => timer.clear())
+  // The hook is added when the timer first starts: most tooltips never start it.
+  const instance = getCurrentInstance()
+  let isDeactivationHandled = false
 
   function handleOpen(reason?: TooltipOpenChangeReason | BaseChangeReason, event?: Event): boolean {
     timer.clear()
@@ -353,6 +360,10 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
   }
   function handleDelayedOpen(event?: PointerEvent) {
     delayedOpenEvent = event
+    if (instance && !isDeactivationHandled) {
+      isDeactivationHandled = true
+      onDeactivated(() => timer.clear(), instance)
+    }
     timer.start()
   }
   function onTriggerEnter(event?: PointerEvent) {
@@ -372,7 +383,6 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
 
   // `contentId` follows the id the content rendered (`useContentElement`).
   const context = defineReactiveIds<TooltipContext, 'contentId'>({
-    contentId: `${baseId}-content`,
     open,
     stateAttribute,
     isDelayed,
@@ -390,7 +400,7 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
     disabled,
     ignoreNonKeyboardFocus,
     notifyOpenComplete: value => props.onOpenComplete?.(value),
-  }, ['contentId'])
+  }, { contentId: `${baseId}-content` })
 
   return {
     open,

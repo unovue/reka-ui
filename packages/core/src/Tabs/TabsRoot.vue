@@ -20,8 +20,6 @@ export interface TabsRootContext {
   baseId: string
   tabsList: Ref<HTMLElement | undefined>
   contentIds: Ref<Set<StringOrNumber>>
-  /** `contentIds` as a keyed selector: a trigger reads only whether its own content is rendered. */
-  renderedContents?: KeyedSelector<StringOrNumber>
   /** `TabsTrigger` `id` props by value; a value without one uses `makeTriggerId`. */
   customTriggerIds: Ref<Map<StringOrNumber, string>>
   /** `TabsContent` `id` props by value; a value without one uses `makeContentId`. */

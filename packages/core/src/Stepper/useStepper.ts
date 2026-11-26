@@ -4,8 +4,8 @@ import type { StepperRootContext } from './StepperRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Translate } from '@/shared/translations'
 import type { DataOrientation, Direction } from '@/shared/types'
-import { computed, nextTick, ref, toValue, watch } from 'vue'
-import { createPartSurface, getActiveElement, useArrowNavigation, useControllableState, useKbd } from '@/shared'
+import { computed, nextTick, onScopeDispose, ref, shallowRef, toValue, watch } from 'vue'
+import { createPartSurface, getActiveElement, getterRef, useArrowNavigation, useControllableState, useKbd } from '@/shared'
 import { defaultTranslate } from '@/shared/translations'
 import { resolveDirection } from '@/shared/useDirection'
 
@@ -66,7 +66,8 @@ export function getStepperItemContext(context: StepperRootContext, options: Step
     return true
   })
 
-  const isCurrent = computed(() => context.modelValue.value === step.value)
+  // A getter ref: its two readers track the step and the model directly.
+  const isCurrent = getterRef(() => context.modelValue.value === step.value)
 
   return {
     get titleId() {
@@ -80,8 +81,7 @@ export function getStepperItemContext(context: StepperRootContext, options: Step
     isCurrent,
     disabled,
     isFocusable,
-    hasTitle: ref(false),
-    hasDescription: ref(false),
+    parts: shallowRef(0),
   }
 }
 
@@ -116,16 +116,33 @@ export function getStepperItemSurface(context: StepperRootContext, item: Stepper
  * `context.itemDisabled.set(el, () => item.disabled.value)` so `goToStep`
  * reads the item's current state instead of the last-rendered attribute.
  */
+/**
+ * `StepperItemContext.parts` flags. Until the trigger has mounted (`TRIGGER_MOUNTED`), which
+ * parts are rendered is unknown: the title and description usually come after the trigger. The
+ * server render and the first client render reference both ids so that the server HTML names the
+ * trigger and hydration matches it; an id without an element is ignored.
+ *
+ * @internal
+ */
+export const STEPPER_PARTS = { TITLE: 1, DESCRIPTION: 2, TRIGGER_MOUNTED: 4 } as const
+
+/**
+ * Reports a rendered part (`StepperTitle` / `StepperDescription`) to its item from setup until
+ * its scope is disposed.
+ *
+ * @internal
+ * @lifecycle setup
+ */
+export function useStepperPart(item: StepperItemContext, flag: number) {
+  item.parts.value |= flag
+  onScopeDispose(() => {
+    item.parts.value &= ~flag
+  })
+}
+
 export interface StepperTriggerNaming {
   /** The trigger's fallthrough attributes: a consumer `aria-label` or `aria-labelledby` names it. */
-  attrs: Record<string, unknown>
-  /**
-   * Whether the trigger has mounted. Until then, which parts are rendered is unknown: the
-   * title and description report themselves once mounted, and usually come after the trigger.
-   * The server render and the first client render reference both ids so that the server HTML
-   * names the trigger and hydration matches it; an id without an element is ignored.
-   */
-  isMounted: Readonly<Ref<boolean>>
+  attrs: Readonly<Record<string, unknown>>
 }
 
 /**
@@ -135,17 +152,20 @@ export interface StepperTriggerNaming {
  */
 function getTriggerNaming(item: StepperItemContext, naming: StepperTriggerNaming | undefined) {
   const hasConsumerName = !!naming && !!(naming.attrs['aria-label'] || naming.attrs['aria-labelledby'])
-  const isMounted = !!naming?.isMounted.value
+  const parts = item.parts.value
+  const isMounted = !!naming && !!(parts & STEPPER_PARTS.TRIGGER_MOUNTED)
+  const hasTitle = !isMounted || !!(parts & STEPPER_PARTS.TITLE)
+  const hasDescription = !isMounted || !!(parts & STEPPER_PARTS.DESCRIPTION)
   if (hasConsumerName) {
     // The description is already part of the name when the trigger names itself by it.
     return {
       'aria-labelledby': undefined,
-      'aria-describedby': isMounted && !item.hasDescription.value ? undefined : item.descriptionId,
+      'aria-describedby': hasDescription ? item.descriptionId : undefined,
     }
   }
   const ids = [
-    !isMounted || item.hasTitle.value ? item.titleId : undefined,
-    !isMounted || item.hasDescription.value ? item.descriptionId : undefined,
+    hasTitle ? item.titleId : undefined,
+    hasDescription ? item.descriptionId : undefined,
   ].filter(Boolean)
   return { 'aria-labelledby': ids.length ? ids.join(' ') : undefined, 'aria-describedby': undefined }
 }
@@ -325,7 +345,7 @@ export function useStepper(props: UseStepperProps = {}): UseStepperReturn {
   const totalStepperItems = ref<Set<HTMLElement>>(new Set())
   const totalStepperItemsArray = computed(() => Array.from(totalStepperItems.value))
   const itemDisabled = new WeakMap<HTMLElement, () => boolean>()
-  const stepperItemValues = new Map<HTMLElement, () => number>()
+  const stepperItemValues = new Map<HTMLElement, Readonly<Ref<number>>>()
   const t = props.translate ?? defaultTranslate
 
   const isFirstStep = computed(() => modelValue.value === 1)

@@ -58,6 +58,22 @@ function getClaims(context: object, key: string) {
  * @internal
  * @lifecycle setup
  */
+/**
+ * Whether the part in setup may render an element id other than the one it passes: one
+ * that renders another element (`asChild`, `as="template"`, a component as `as`), or one
+ * that hydrates server HTML, whose element keeps the id the server rendered.
+ *
+ * @internal
+ */
+export function rendersForeignId() {
+  const instance = getCurrentInstance()
+  if (!instance)
+    return true
+  const { as, asChild } = instance.props as { as?: unknown, asChild?: boolean }
+  // Hydration assigns the server element to the vnode before the component's setup runs.
+  return !!instance.vnode?.el || !!asChild || as === 'template' || (as != null && typeof as !== 'string')
+}
+
 export function usePartId<K extends string>(
   id: MaybeRefOrGetter<string | undefined>,
   context: Record<K, string>,
@@ -116,10 +132,14 @@ export function usePartId<K extends string>(
     watch(() => toValue(id), refresh, { immediate: true })
   }
   // The child renders in a slot, which can change its id without updating the part, so
-  // once the element has an id of its own, the attribute is watched.
+  // once the element has an id of its own, the attribute is watched. Only a part that
+  // renders another element (`asChild`, `as="template"`, or a component as `as`), or one
+  // that hydrates server HTML, whose element keeps the id the server rendered, can render
+  // an id other than its own. A part that renders a tag on the client renders exactly its
+  // id, and gets no hooks for it.
   let observer: MutationObserver | undefined
   let observed: Element | undefined
-  if (element) {
+  if (element && rendersForeignId()) {
     const syncChild = () => {
       const el = element.value ?? undefined
       const rendered = el?.id
@@ -135,11 +155,14 @@ export function usePartId<K extends string>(
     }
     onMounted(syncChild)
     onUpdated(syncChild)
+    onScopeDispose(() => {
+      observer?.disconnect()
+      release()
+    })
   }
-  onScopeDispose(() => {
-    observer?.disconnect()
-    release()
-  })
+  else {
+    onScopeDispose(release)
+  }
 
   return getterRef(() => toValue(id) || generated)
 }
