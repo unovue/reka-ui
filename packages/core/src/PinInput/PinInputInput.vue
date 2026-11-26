@@ -286,7 +286,7 @@ watch([currentElement, () => props.index], ([element], _, onCleanup) => {
     autocapitalize="none"
     :as="as"
     :as-child="asChild"
-    :autocomplete="isOtpMode ? 'one-time-code' : 'false'"
+    :autocomplete="isOtpMode ? 'one-time-code' : 'off'"
     :type="isPasswordMode ? 'password' : 'text'"
     :inputmode="context.isNumericMode.value ? 'numeric' : 'text'"
     :pattern="context.isNumericMode.value ? '[0-9]*' : undefined"

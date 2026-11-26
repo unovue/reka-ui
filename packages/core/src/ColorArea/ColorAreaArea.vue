@@ -64,14 +64,24 @@ function handlePointerMove(event: PointerEvent) {
   }
 }
 
+// A drag ends on `pointerup`, but also when the browser cancels the pointer or takes the capture away
+// (a touch turning into a scroll, a system gesture, an alert). Each of them commits once.
+function endDrag() {
+  if (!isDragging.value)
+    return
+
+  isDragging.value = false
+  rootContext.commitValues()
+}
+
 function handlePointerUp(event: PointerEvent) {
   if (!isDragging.value)
     return
 
   const target = event.target as HTMLElement
+  // Ends the drag first, so the `lostpointercapture` that the release fires finds nothing to commit.
+  endDrag()
   target.releasePointerCapture(event.pointerId)
-  isDragging.value = false
-  rootContext.commitValues()
 }
 
 // Keyboard navigation
@@ -116,10 +126,12 @@ function handleKeyDown(event: KeyboardEvent) {
   }
 
   event.preventDefault()
-  rootContext.updateValues(
-    rootContext.xValue.value + xDelta,
-    rootContext.yValue.value + yDelta,
-  )
+  const previousX = rootContext.xValue.value
+  const previousY = rootContext.yValue.value
+  rootContext.updateValues(previousX + xDelta, previousY + yDelta)
+  // Each key press is a finished change, as it is for the sliders. A press at the edge changes nothing.
+  if (rootContext.xValue.value !== previousX || rootContext.yValue.value !== previousY)
+    rootContext.commitValues()
 }
 </script>
 
@@ -139,6 +151,8 @@ function handleKeyDown(event: KeyboardEvent) {
     @pointerdown="handlePointerDown"
     @pointermove="handlePointerMove"
     @pointerup="handlePointerUp"
+    @pointercancel="endDrag"
+    @lostpointercapture="endDrag"
   >
     <slot />
   </Primitive>
