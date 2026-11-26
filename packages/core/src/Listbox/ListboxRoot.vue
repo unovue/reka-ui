@@ -11,7 +11,7 @@ import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from
 import {
   usePrimitiveElement,
 } from '@/Primitive'
-import { createContext, mergeExpose, useDirection, useFormControl } from '@/shared'
+import { createRekaContext, mergeExpose, useDirection, useFormControl } from '@/shared'
 
 export type ListboxRootContext<T> = {
   modelValue: Ref<T | Array<T> | undefined>
@@ -78,7 +78,7 @@ export type ListboxRootContext<T> = {
 }
 
 export const [injectListboxRootContext, provideListboxRootContext]
-  = createContext<ListboxRootContext<AcceptableValue>>('ListboxRoot')
+  = createRekaContext<ListboxRootContext<AcceptableValue>>('ListboxRoot')
 
 /**
  * A listbox's participation in an ancestor `FieldRoot`: the root owns the
@@ -93,10 +93,10 @@ export interface ListboxFieldContext {
 }
 
 export const [injectListboxFieldContext, provideListboxFieldContext]
-  = createContext<ListboxFieldContext | null>('ListboxRoot', 'ListboxFieldContext')
+  = createRekaContext<ListboxFieldContext | null>('ListboxRoot', 'ListboxFieldContext')
 
 export const [injectListboxHighlightScrollContext, provideListboxHighlightScrollContext]
-  = createContext<ListboxHighlightScroll>('ListboxHighlightScroll')
+  = createRekaContext<ListboxHighlightScroll>('ListboxHighlightScroll')
 
 export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the listbox. Can be binded with `v-model`. */

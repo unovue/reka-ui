@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
-import { createContext, useForwardElement, useId } from '@/shared'
+import { createRekaContext, useForwardElement, useId } from '@/shared'
 
 export interface ListboxItemProps<T = AcceptableValue> extends PrimitiveProps {
   /** The value given as data when submitted with a `name`. */
@@ -24,7 +24,7 @@ interface ListboxItemContext {
 }
 
 export const [injectListboxItemContext, provideListboxItemContext]
-  = createContext<ListboxItemContext>('ListboxItem')
+  = createRekaContext<ListboxItemContext>('ListboxItem')
 </script>
 
 <script setup lang="ts"  generic="T extends AcceptableValue = AcceptableValue">
