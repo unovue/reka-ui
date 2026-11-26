@@ -101,8 +101,7 @@ describe('given default Tree', () => {
   })
 
   describe('when holding `Shift` before typing a letter', async () => {
-    // TODO(v3-port): #3282 typeahead ignores named keys (typeahead source resolved to v3; the virtualizer hunk did merge)
-    it.skip('should ignore the named key and highlight text starting with r', async () => {
+    it('should ignore the named key and highlight text starting with r', async () => {
       await content.trigger('keydown', { key: 'Shift', shiftKey: true })
       await content.trigger('keydown', { key: 'R', shiftKey: true })
       const item = items.find(i => i.text().startsWith('routes'))

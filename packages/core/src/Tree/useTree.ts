@@ -654,7 +654,8 @@ export function useTree<T extends Record<string, any> = Record<string, any>>(pro
     if (isVirtual.value) {
       virtualKeydownHook.trigger(event)
     }
-    else {
+    // Typeahead only for a printable character (not `Shift`, `Home`, …).
+    else if (event.key.length === 1) {
       const collections = getItems()
       handleTypeaheadSearch(event.key, collections)
     }
