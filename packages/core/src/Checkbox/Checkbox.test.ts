@@ -891,3 +891,37 @@ describe('given a parent Checkbox', () => {
     expect(wrapper.find('button').attributes('data-state')).toBe('checked')
   })
 })
+
+describe('given a Checkbox outside a roving focus group', () => {
+  it('renders as a roving focus item only in a group with roving focus', async () => {
+    const wrapper = mount(defineComponent({
+      components: { CheckboxRoot, CheckboxGroupRoot },
+      template: `<div>
+        <CheckboxGroupRoot><CheckboxRoot value="a" data-testid="roving" /><CheckboxRoot value="b" /></CheckboxGroupRoot>
+        <CheckboxGroupRoot :roving-focus="false"><CheckboxRoot value="a" data-testid="plain" /></CheckboxGroupRoot>
+        <CheckboxRoot data-testid="alone" />
+      </div>`,
+    }), { attachTo: document.body })
+    await nextTick()
+    await nextTick()
+
+    const roving = wrapper.find('[data-testid=roving]')
+    expect(roving.attributes('data-reka-collection-item')).toBe('')
+    expect(roving.attributes('tabindex')).toBeDefined()
+    expect(wrapper.find('[data-testid=plain]').attributes('data-reka-collection-item')).toBeUndefined()
+    expect(wrapper.find('[data-testid=alone]').attributes('data-reka-collection-item')).toBeUndefined()
+
+    // The roving item still moves focus with the arrow keys.
+    ;(roving.element as HTMLElement).focus()
+    await roving.trigger('keydown', { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(wrapper.findAll('[role=checkbox]')[1].element)
+    wrapper.unmount()
+  })
+
+  it('does not import the roving focus item itself (the group hands it over)', async () => {
+    const { readFileSync } = await import('node:fs')
+    // Tests run from packages/core.
+    const source = readFileSync('src/Checkbox/CheckboxRoot.vue', 'utf8')
+    expect(source).not.toMatch(/import \{[^}]*\} from '@\/RovingFocus/)
+  })
+})
