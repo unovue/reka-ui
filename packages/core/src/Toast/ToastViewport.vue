@@ -2,7 +2,7 @@
 import type { ComponentPublicInstance } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { getActiveElement, useForwardExpose } from '@/shared'
+import { getActiveElement, useForwardExpose, useTranslations } from '@/shared'
 import { resolveElement } from '@/shared/resolveElement'
 
 export interface ToastViewportProps extends PrimitiveProps {
@@ -15,6 +15,7 @@ export interface ToastViewportProps extends PrimitiveProps {
    * An author-localized label for the toast viewport to provide context for screen reader users
    * when navigating page landmarks. The available `{hotkey}` placeholder will be replaced for you.
    * Alternatively, you can pass in a custom function to generate the label.
+   * Defaults to the `toastViewportLabel` message of `ConfigProvider`, which is "Notifications ({hotkey})".
    * @defaultValue 'Notifications ({hotkey})'
    */
   label?: string | ((hotkey: string) => string)
@@ -37,9 +38,11 @@ defineOptions({
 
 const props = withDefaults(defineProps<ToastViewportProps>(), {
   hotkey: () => ['F8'], // from VIEWPORT_DEFAULT_HOTKEY
-  label: 'Notifications ({hotkey})',
   as: 'ol',
 })
+
+const t = useTranslations()
+
 const { hotkey, label } = toRefs(props)
 
 const { forwardRef, currentElement } = useForwardExpose()
@@ -346,7 +349,7 @@ function getSortedTabbableCandidates({ tabbingDirection }: { tabbingDirection: '
   <DismissableLayerBranch
     ref="branchRef"
     role="region"
-    :aria-label="typeof label === 'string' ? label.replace('{hotkey}', hotkeyMessage) : label(hotkeyMessage)"
+    :aria-label="label === undefined ? t('toastViewportLabel', { hotkey: hotkeyMessage }) : typeof label === 'string' ? label.replace('{hotkey}', hotkeyMessage) : label(hotkeyMessage)"
     tabindex="-1"
     :style="{
       // incase list has size when empty (e.g. padding), we remove pointer events so

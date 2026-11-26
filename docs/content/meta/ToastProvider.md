@@ -29,10 +29,9 @@
   },
   {
     'name': 'label',
-    'description': '<p>An author-localized label for each toast. Used to help screen reader users\nassociate the interruption with a toast.</p>\n',
+    'description': '<p>An author-localized label for each toast. Used to help screen reader users\nassociate the interruption with a toast.\nDefaults to the <code>toastLabel</code> message of <code>ConfigProvider</code>, which is &quot;Notification&quot;.</p>\n',
     'type': 'string',
-    'required': false,
-    'default': '\'Notification\''
+    'required': false
   },
   {
     'name': 'limit',
@@ -73,7 +72,7 @@
 | `disableSwipe` | Whether to disable the ability to swipe to close the toast. | `boolean` | No | - |
 | `disableWindowBlurPause` | When true, toasts keep counting down while the window is not focused, so a toast can close before the user comes back to the page. Keyboard focus inside the viewport still pauses the toasts until the window is focused again. | `boolean` | No | - |
 | `duration` | Time in milliseconds that each toast should remain visible for. | `number` | No | `5000` |
-| `label` | An author-localized label for each toast. Used to help screen reader users associate the interruption with a toast. | `string` | No | `"Notification"` |
+| `label` | An author-localized label for each toast. Used to help screen reader users associate the interruption with a toast. Defaults to the toastLabel message of ConfigProvider, which is "Notification". | `string` | No | - |
 | `limit` | The maximum number of toasts shown at once. Older toasts beyond the limit get data-limited and inert rather than being removed, so they can be hidden or animated. No limit is applied when unset. | `number` | No | - |
 | `swipeDirection` | Direction of pointer swipe that should close the toast. | `"right" \| "left" \| "down" \| "up"` | No | `"right"` |
 | `swipeThreshold` | Distance in pixels that the swipe must pass before a close is triggered. | `number` | No | `50` |
