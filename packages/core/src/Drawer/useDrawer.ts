@@ -781,9 +781,11 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
   // parent "in reverse" while the child swipes away. Ported from BaseUI
   // `DrawerPopup.tsx` (useIsoLayoutEffect subscribing to nestedSwipeProgressStore).
   let unsubscribeNestedProgress: (() => void) | undefined
+  let registeredElement: HTMLElement | undefined
 
   onMounted(() => {
-    rootContext.contentElement.value = currentElement.value as HTMLElement | undefined
+    registeredElement = currentElement.value as HTMLElement | undefined
+    rootContext.contentElement.value = registeredElement
     rootContext.notifyParentHasNestedDrawer?.(true)
 
     // Initial frontmost height. Required on reopen, when the height is already
@@ -813,13 +815,17 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
   })
 
   onUnmounted(() => {
+    // Release the element so the root, which stays mounted, does not keep it after close.
+    if (rootContext.contentElement.value === registeredElement)
+      rootContext.contentElement.value = undefined
+    registeredElement = undefined
     rootContext.notifyParentHasNestedDrawer?.(false)
     releaseFrontmostHeight()
     unsubscribeNestedProgress?.()
   })
 
   // Dev warning for missing DrawerTitle
-  // eslint-disable-next-line node/prefer-global/process
+
   if (process.env.NODE_ENV !== 'production') {
     onMounted(() => {
       if (!getElementByIdFrom(currentElement.value, rootContext.titleId)) {
