@@ -1,15 +1,14 @@
 // Loads the packed reka-ui the way a Node consumer does. `run.mjs` unpacks the tarball into
 // ./node_modules/reka-ui first, so every import below goes through the published `exports` and
 // only reaches files that are really in the package. Run it through `pnpm package:check`.
+// The package is ESM-only: every entry is loaded with import().
 /* eslint-disable no-console, node/prefer-global/process, antfu/no-top-level-await */
 import { existsSync, readFileSync, statSync } from 'node:fs'
-import { createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
 
 const here = import.meta.dirname
 const core = resolve(here, '..')
 const packed = resolve(here, 'node_modules/reka-ui')
-const require = createRequire(import.meta.url)
 const pkg = JSON.parse(readFileSync(resolve(packed, 'package.json'), 'utf8'))
 
 let failed = 0
@@ -68,13 +67,18 @@ function sourceExports(file, top = true) {
     names.delete('default')
   return [...names]
 }
-// What `require()` adds on top of the named exports, depending on the Node version
-const keys = mod => Object.keys(mod).filter(key => key !== '__esModule' && key !== 'module.exports')
+const keys = mod => Object.keys(mod)
 
 // --- Everything package.json points to is in the package ---
 const targets = new Set([pkg.main, pkg.module, pkg.types])
+// Conditions can nest (`"import": { "types", "default" }` on the family subpaths)
+function conditionFiles(conditions, condition = 'default') {
+  if (typeof conditions === 'string')
+    return [[condition, conditions]]
+  return Object.entries(conditions).flatMap(([name, value]) => conditionFiles(value, name))
+}
 for (const [entry, conditions] of Object.entries(pkg.exports)) {
-  for (const [condition, file] of Object.entries(typeof conditions === 'string' ? { default: conditions } : conditions)) {
+  for (const [condition, file] of conditionFiles(conditions)) {
     targets.add(file)
     // No `types` condition on these: TypeScript reads the declaration next to the file it resolved
     if (entry !== './vapor' && condition !== 'types' && /\.[cm]?js$/.test(file))
@@ -86,7 +90,7 @@ for (const files of Object.values(pkg.typesVersions['*']))
 const absent = [...targets].filter(file => !existsSync(resolve(packed, file)))
 check(!absent.length, `the ${targets.size} files that main, module, types, typesVersions and exports name (and their declarations) are packed${absent.length ? ` (missing ${absent.join(', ')})` : ''}`)
 
-// --- Named exports of every entry, through import() and require() ---
+// --- Named exports of every entry, through import() ---
 const SOURCES = {
   '.': 'src/index.ts',
   './internal': 'src/internal.ts',
@@ -99,18 +103,15 @@ for (const [entry, source] of Object.entries(SOURCES)) {
   const id = `reka-ui${entry.slice(1)}`
   const expected = sourceExports(resolve(core, source))
   const esm = await import(id)
-  const cjs = require(id)
-  loaded[entry] = { esm, cjs }
-  for (const [kind, mod] of [['import()', esm], ['require()', cjs]]) {
-    const result = diff(keys(mod), expected)
-    check(result.same, `${id}: ${kind} has the ${expected.length} exports of ${source}${result.same ? '' : ` (${result.text})`}`)
-  }
+  loaded[entry] = { esm }
+  const result = diff(keys(esm), expected)
+  check(result.same, `${id}: import() has the ${expected.length} exports of ${source}${result.same ? '' : ` (${result.text})`}`)
 }
 
 // Every name the resolver, the Nuxt module and the namespaced entry hand out has to exist in `reka-ui`
 const { components, utilities } = loaded['./constant'].esm
 const listed = [...Object.values(components), ...Object.values(utilities)].flat()
-for (const [kind, mod] of [['import()', loaded['.'].esm], ['require()', loaded['.'].cjs]]) {
+for (const [kind, mod] of [['import()', loaded['.'].esm]]) {
   const unknown = listed.filter(name => mod[name] === undefined)
   check(listed.length > 300 && !unknown.length, `reka-ui: ${kind} exports all ${listed.length} names listed in reka-ui/constant${unknown.length ? ` (missing ${unknown.join(', ')})` : ''}`)
 }
@@ -119,7 +120,7 @@ for (const [kind, mod] of [['import()', loaded['.'].esm], ['require()', loaded['
 const excluded = ['configProvider', 'primitive', 'visuallyHidden']
 const groups = Object.keys(components).filter(group => !excluded.includes(group))
 const pascal = group => group.charAt(0).toUpperCase() + group.slice(1)
-for (const [kind, namespaced, root] of [['import()', await import('reka-ui/namespaced'), loaded['.'].esm], ['require()', require('reka-ui/namespaced'), loaded['.'].cjs]]) {
+for (const [kind, namespaced, root] of [['import()', await import('reka-ui/namespaced'), loaded['.'].esm]]) {
   const result = diff(keys(namespaced), groups.map(pascal))
   check(result.same, `reka-ui/namespaced: ${kind} has the ${groups.length} component groups${result.same ? '' : ` (${result.text})`}`)
   const wrong = []
@@ -137,7 +138,7 @@ for (const [kind, namespaced, root] of [['import()', await import('reka-ui/names
 }
 
 // --- reka-ui/resolver and reka-ui/nuxt ---
-for (const [kind, mod] of [['import()', (await import('reka-ui/resolver')).default], ['require()', require('reka-ui/resolver')]]) {
+for (const [kind, mod] of [['import()', (await import('reka-ui/resolver')).default]]) {
   const resolver = typeof mod === 'function' ? mod : mod?.default
   check(typeof resolver === 'function', `reka-ui/resolver: ${kind} gives the resolver function`)
   const plain = resolver?.().resolve('AccordionRoot')
@@ -145,28 +146,25 @@ for (const [kind, mod] of [['import()', (await import('reka-ui/resolver')).defau
   check(plain?.name === 'AccordionRoot' && plain?.from === 'reka-ui', `reka-ui/resolver: ${kind} resolves AccordionRoot from reka-ui`)
   check(prefixed?.resolve('RekaDialogRoot')?.name === 'DialogRoot' && prefixed?.resolve('NotAComponent') === undefined, `reka-ui/resolver: ${kind} applies the prefix and skips unknown names`)
 }
-for (const [kind, mod] of [['import()', (await import('reka-ui/nuxt')).default], ['require()', require('reka-ui/nuxt')]]) {
+for (const [kind, mod] of [['import()', (await import('reka-ui/nuxt')).default]]) {
   const nuxtModule = typeof mod === 'function' ? mod : mod?.default
   check(typeof nuxtModule === 'function', `reka-ui/nuxt: ${kind} gives a Nuxt module function`)
   const meta = await nuxtModule?.getMeta?.()
   check(meta?.configKey === 'reka', `reka-ui/nuxt: ${kind} module has the "reka" config key`)
 }
 
-// --- reka-ui/vapor needs a DOM: in Node both ways throw the documented error ---
+// --- reka-ui/vapor needs a DOM: in Node it throws the documented error ---
 const SSR = 'reka-ui/vapor does not support server-side rendering'
 check((await message(() => import('reka-ui/vapor'))).startsWith(SSR), 'reka-ui/vapor: import() in Node throws the SSR error')
-check((await message(() => require('reka-ui/vapor'))).startsWith(SSR), 'reka-ui/vapor: require() in Node throws the SSR error')
 
-check(require('reka-ui/package.json').name === 'reka-ui', 'reka-ui/package.json: require() gives the manifest')
+check((await import('reka-ui/package.json', { with: { type: 'json' } })).default.name === 'reka-ui', 'reka-ui/package.json: import() gives the manifest')
 
-// --- Lazy parts render through require() ---
-// PopoverContent, TooltipContent and HoverCardContent load their implementation with
-// `defineAsyncComponent(() => import(...))`. In the CJS files that import becomes a `require()`
-// whose result Vue does not recognise as a module, so a loader that hands it over as is renders
-// nothing: each loader has to end with `.then(m => m.default)`.
-const { createSSRApp, h } = require('vue')
-const { renderToString } = require('vue/server-renderer')
-
+// --- Lazy parts render on the server ---
+// PopoverContent, TooltipContent and HoverCardContent load their implementation lazily; the
+// published build has to hand Vue a module it recognises, or the content renders nothing.
+const vue = await import('vue')
+const { renderToString } = await import('vue/server-renderer')
+const { h } = vue
 const cases = {
   'PopoverContent (modal)': root => h(root.PopoverRoot, { open: true, modal: true }, () => [h(root.PopoverTrigger, () => 'open'), h(root.PopoverContent, () => 'lazy part')]),
   'PopoverContent (non-modal)': root => h(root.PopoverRoot, { open: true }, () => [h(root.PopoverTrigger, () => 'open'), h(root.PopoverContent, () => 'lazy part')]),
@@ -174,13 +172,9 @@ const cases = {
   'HoverCardContent': root => h(root.HoverCardRoot, { open: true }, () => [h(root.HoverCardTrigger, () => 'open'), h(root.HoverCardContent, () => 'lazy part')]),
 }
 for (const [name, render] of Object.entries(cases)) {
-  for (const [kind, root, vue, renderer] of [
-    ['require()', loaded['.'].cjs, { createSSRApp }, renderToString],
-    ['import()', loaded['.'].esm, await import('vue'), (await import('vue/server-renderer')).renderToString],
-  ]) {
-    const html = await renderer(vue.createSSRApp({ render: () => render(root) })).catch(e => `threw: ${e.message}`)
-    check(html.includes('lazy part'), `${name}: ${kind} build renders its lazily loaded content on the server`)
-  }
+  const root = loaded['.'].esm
+  const html = await renderToString(vue.createSSRApp({ render: () => render(root) })).catch(e => `threw: ${e.message}`)
+  check(html.includes('lazy part'), `${name}: the build renders its lazily loaded content on the server`)
 }
 
 console.log(failed ? `\n${failed} check(s) failed` : '\nAll package smoke checks passed')

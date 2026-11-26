@@ -1,6 +1,6 @@
 // Checks the reka-ui package as it would be published: packs it, then lints the tarball (publint),
 // resolves its types the way TypeScript does (Are The Types Wrong), loads every entry from Node
-// (smoke.mjs) and type-checks a small consumer (types/). Run after a full build, from the repo
+// (smoke.mjs) and type-checks a small ESM consumer (types/). The package is ESM-only. Run after a full build, from the repo
 // root: `pnpm build && pnpm package:check`.
 //
 // publint and attw are fetched with `npx` at the exact versions below, so they stay out of the
@@ -22,8 +22,9 @@ const PUBLINT_ALLOWED = [
   /pkg\.exports\["\.\/vapor"\]\.node is \.\/dist\/vapor\/ssr\.cjs and ends with the \.cjs extension, but the code is written in ESM/,
 ]
 
-// attw problems that are known and accepted, per entry. Every other entry has to be clean in all
-// four resolution modes (node10, node16 from CJS, node16 from ESM, bundler).
+// The package is ESM-only, so attw runs with its `esm-only` profile: node16 from ESM and bundler
+// have to be clean, node10 and node16 from CJS are not checked.
+// attw problems that are known and accepted, per entry.
 const ATTW_ALLOWED = {
   // `reka-ui/vapor` is typed as ESM (dist/vapor/index.d.ts), but in Node its `node` condition
   // resolves to ssr.cjs, a CommonJS stub that throws the "no SSR" error: attw reports that pair as
@@ -110,16 +111,16 @@ step('publint', publint.ok && /Linting\.\.\./.test(publint.output) && !unexpecte
 
 // --- Are The Types Wrong ---
 const allowed = Object.keys(ATTW_ALLOWED)
-step('attw', run(`${ATTW} (every entry except ${allowed.join(', ')})`, 'npx', ['--yes', ATTW, tarball, '--exclude-entrypoints', ...allowed]).ok)
+step('attw', run(`${ATTW} (every entry except ${allowed.join(', ')})`, 'npx', ['--yes', ATTW, tarball, '--profile', 'esm-only', '--exclude-entrypoints', ...allowed]).ok)
 for (const [entry, rules] of Object.entries(ATTW_ALLOWED))
-  step(`attw (${entry})`, run(`${ATTW} (${entry}, allowing ${rules.join(', ')})`, 'npx', ['--yes', ATTW, tarball, '--entrypoints', entry, '--ignore-rules', ...rules]).ok)
+  step(`attw (${entry})`, run(`${ATTW} (${entry}, allowing ${rules.join(', ')})`, 'npx', ['--yes', ATTW, tarball, '--profile', 'esm-only', '--entrypoints', entry, '--ignore-rules', ...rules]).ok)
 
 // --- Load every entry from Node ---
 step('smoke', run('node smoke.mjs', process.execPath, [resolve(here, 'smoke.mjs')], { cwd: here }).ok)
 
 // --- Type-check a consumer against the packed declarations ---
 const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc')
-for (const resolution of ['bundler', 'node16', 'node10'])
+for (const resolution of ['bundler', 'node16'])
   step(`types (${resolution})`, run(`tsc, moduleResolution ${resolution}`, process.execPath, [tsc, '-p', resolve(here, `types/tsconfig.${resolution}.json`)], { cwd: here }).ok)
 
 rmSync(temp, { recursive: true, force: true })

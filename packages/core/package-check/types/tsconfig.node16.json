@@ -9,5 +9,5 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "files": ["esm.mts", "cjs.cts"]
+  "files": ["esm.mts"]
 }

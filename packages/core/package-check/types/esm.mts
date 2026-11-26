@@ -1,5 +1,6 @@
 // A TypeScript consumer that uses `import`. Type-checked against the packed reka-ui with
 // `moduleResolution` "bundler" and "node16" (where a .mts file resolves the `import` condition).
+// The package is ESM-only, so there is no CommonJS consumer to check.
 import type { DateValue } from 'reka-ui'
 import type { Components } from 'reka-ui/constant'
 import type { ModuleOptions } from 'reka-ui/nuxt'
