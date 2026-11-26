@@ -1,12 +1,15 @@
 <script setup vapor lang="ts">
-import { DialogContent, DialogDescription, DialogRoot, DialogTitle, ListboxContent, ListboxGroup, ListboxGroupLabel, ListboxItem, ListboxRoot, SelectContent, SelectGroup, SelectItem, SelectItemText, SelectLabel, SelectRoot, SelectTrigger, SelectViewport, StepperItem, StepperRoot, StepperTitle, StepperTrigger } from '#reka'
+import { DialogContent, DialogDescription, DialogRoot, DialogTitle, ListboxContent, ListboxGroup, ListboxGroupLabel, ListboxItem, ListboxRoot, PopoverContent, PopoverRoot, PopoverTrigger, SelectContent, SelectGroup, SelectItem, SelectItemText, SelectLabel, SelectRoot, SelectTrigger, SelectViewport, StepperItem, StepperRoot, StepperTitle, StepperTrigger, TabsContent, TabsList, TabsRoot, TabsTrigger } from '#reka'
 import { ref } from 'vue'
 
 const titleId = ref('my-title')
 const descriptionId = ref('my-description')
 const showFirst = ref(true)
 const childId = ref('child-title')
-defineExpose({ titleId, descriptionId, showFirst, childId })
+const triggerId = ref('my-trigger')
+const contentId = ref('my-content')
+const panelId = ref('my-panel')
+defineExpose({ titleId, descriptionId, showFirst, childId, triggerId, contentId, panelId })
 </script>
 
 <template>
@@ -102,6 +105,40 @@ defineExpose({ titleId, descriptionId, showFirst, childId })
       </ListboxGroup>
     </ListboxContent>
   </ListboxRoot>
+
+  <!-- Consumer ids on a trigger and its content, which can change after mount -->
+  <PopoverRoot :open="true">
+    <PopoverTrigger
+      :id="triggerId"
+      data-testid="popover-trigger"
+    >
+      Open
+    </PopoverTrigger>
+    <PopoverContent
+      :id="contentId"
+      data-testid="popover-content"
+    >
+      Content
+    </PopoverContent>
+  </PopoverRoot>
+
+  <TabsRoot default-value="a">
+    <TabsList aria-label="Sections">
+      <TabsTrigger
+        value="a"
+        data-testid="tab"
+      >
+        A
+      </TabsTrigger>
+    </TabsList>
+    <TabsContent
+      :id="panelId"
+      value="a"
+      data-testid="panel"
+    >
+      Panel
+    </TabsContent>
+  </TabsRoot>
 
   <StepperRoot :default-value="1">
     <StepperItem :step="1">
