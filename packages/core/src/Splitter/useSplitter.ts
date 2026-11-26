@@ -581,7 +581,9 @@ export function useSplitter(props: UseSplitterProps): UseSplitterReturn {
         keyboardResizeBy,
         panelGroupElement,
       )
-      if (delta === 0)
+      // No movement changes nothing, except in a drag that has already moved the
+      // layout: the pointer is back where it started, so is the layout.
+      if (delta === 0 && (!initialLayout || compareLayouts(prevLayout, initialLayout)))
         return
 
       // Support RTL layouts
