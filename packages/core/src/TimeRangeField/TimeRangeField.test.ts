@@ -402,3 +402,25 @@ describe('coderabbit review (#3088)', () => {
     await vi.waitFor(() => expect(getByTestId('start-timeZoneName')).toHaveTextContent('CDT'))
   })
 })
+
+describe('unavailable days inside the range', () => {
+  it.each([
+    ['PlainDateTime', calendarDateTime],
+    ['ZonedDateTime', zonedDateTime],
+  ])('does not check the next day for a same-day `%s` range', (_, { start, end }) => {
+    // The day after the range, 2 January, is unavailable.
+    const isTimeUnavailable = (value: any) => value.day === 2
+    const { input } = setup({
+      timeRangeFieldProps: { modelValue: { start, end }, locale: 'en-GB', isTimeUnavailable },
+    })
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('marks a date-time range with an unavailable day inside invalid', () => {
+    const isTimeUnavailable = (value: any) => value.day === 2
+    const { input } = setup({
+      timeRangeFieldProps: { modelValue: { start: calendarDateTime.start, end: calendarDateTime.end.add({ days: 2 }) }, locale: 'en-GB', isTimeUnavailable },
+    })
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+})

@@ -387,3 +387,33 @@ describe('coderabbit review (#3088)', () => {
     await vi.waitFor(() => expect(getByTestId('start-timeZoneName')).toHaveTextContent('CDT'))
   })
 })
+
+describe('unavailable days inside the range', () => {
+  // 2024-01-15 is a Monday, 2024-01-19 a Friday.
+  const isDateUnavailable = (date: any) => date.dayOfWeek >= 6
+
+  it('does not mark a single-day range invalid when the next day is unavailable', () => {
+    const friday = new Temporal.PlainDate(2024, 1, 19)
+    const { input, start } = setup({ dateFieldProps: { modelValue: { start: friday, end: friday }, isDateUnavailable } })
+    expect(input).not.toHaveAttribute('data-invalid')
+    expect(start.day).not.toHaveAttribute('aria-invalid')
+  })
+
+  it('does not check the day after the end of a date-time range', () => {
+    const { input } = setup({
+      dateFieldProps: {
+        modelValue: { start: new Temporal.PlainDateTime(2024, 1, 15, 9), end: new Temporal.PlainDateTime(2024, 1, 19, 17) },
+        granularity: 'hour',
+        isDateUnavailable,
+      },
+    })
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('marks a range with an unavailable day inside invalid', () => {
+    const { input } = setup({
+      dateFieldProps: { modelValue: { start: new Temporal.PlainDate(2024, 1, 18), end: new Temporal.PlainDate(2024, 1, 22) }, isDateUnavailable },
+    })
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+})
