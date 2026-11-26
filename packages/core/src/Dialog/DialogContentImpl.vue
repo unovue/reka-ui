@@ -141,6 +141,8 @@ if (process.env.NODE_ENV !== 'production') {
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
     v-bind="mergeProps(layer.attrs(), layerWrapper.rest)"
+    :data-nested-dialog-open="rootContext.nestedOpenDialogCount?.value ? '' : undefined"
+    :style="rootContext.nestedOpenDialogCount ? { '--nested-dialogs': rootContext.nestedOpenDialogCount.value } : undefined"
   >
     <slot />
   </component>

@@ -8,8 +8,7 @@ const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="$
 const nestedCount = (id: string) => get(id)!.style.getPropertyValue('--nested-dialogs')
 const isNestedOpen = (id: string) => get(id)!.hasAttribute('data-nested-dialog-open')
 
-// TODO(v3-port): #3407 v3 Dialog has no data-nested-dialog-open / --nested-dialogs hook
-describe.skip('given nested Dialogs', () => {
+describe('given nested Dialogs', () => {
   let cleanup: (() => void) | undefined
 
   afterEach(() => {

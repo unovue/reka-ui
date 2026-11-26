@@ -72,6 +72,13 @@ export interface DialogRootContext {
   descriptionId: string
   /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
   notifyOpenComplete?: (value: boolean) => void
+  /** How many dialogs nested in this one are open, at any depth. */
+  nestedOpenDialogCount?: Ref<number>
+  /**
+   * Called by a dialog nested in this one with the number of open dialogs it
+   * stands for: itself while it is open, plus the open ones nested in it.
+   */
+  onNestedOpenChange?: (id: symbol, count: number) => void
 }
 
 export const [injectDialogRootContext, provideDialogRootContext]
@@ -91,6 +98,7 @@ export const [injectDialogOverlayElementContext, provideDialogOverlayElementCont
 import { ref } from 'vue'
 import { usePopupHandleAttachment } from '@/shared/popupHandle'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
+import { useNestedDialogs } from './nestedDialogs'
 import { useDialog } from './useDialog'
 
 defineOptions({
@@ -137,6 +145,7 @@ const { open, onOpenChange, context, payload, activeTriggerId, handleStore } = u
   defaultTriggerId: props.defaultTriggerId,
 })
 
+useNestedDialogs(context, injectDialogRootContext(null))
 provideDialogRootContext(context)
 useAgentRegistration('dialog', context, props)
 provideDialogOverlayElementContext(ref())
