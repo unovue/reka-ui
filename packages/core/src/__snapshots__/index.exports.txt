@@ -1,4 +1,4 @@
-# values (538)
+# values (539)
 AccordionContent
 AccordionHeader
 AccordionItem
@@ -437,6 +437,7 @@ convertToRgb
 createContext
 createToastManager
 createValidityState
+defaultTranslations
 getAreaBackgroundStyle
 getAreaGradient
 getChannelName
@@ -538,7 +539,7 @@ useStateMachine
 useToastManager
 withDefault
 
-# types (592)
+# types (595)
 AcceptableInputValue
 AcceptableValue
 AccordionContentProps
@@ -1099,6 +1100,9 @@ TooltipProviderProps
 TooltipRootEmits
 TooltipRootProps
 TooltipTriggerProps
+TranslationKey
+TranslationParams
+Translations
 TreeItemEmits
 TreeItemProps
 TreeItemSelectEvent
