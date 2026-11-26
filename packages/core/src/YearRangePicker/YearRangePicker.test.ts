@@ -4,7 +4,7 @@ import type { YearRangePickerRootProps } from './YearRangePickerRoot.vue'
 import type { DateRange } from '@/shared/date'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
-import { render } from '@testing-library/vue'
+import { fireEvent, render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -448,5 +448,54 @@ describe('year range picker - tabindex states', () => {
     expect(getByTestId('year-2000')).toHaveAttribute('tabindex', '0')
     expect(getByTestId('year-2002').tagName).toBe('BUTTON')
     expect(getByTestId('year-2002')).toHaveAttribute('tabindex', '-1')
+  })
+})
+
+describe('year range picker - Home, End and the numeric keypad', () => {
+  const placeholder = new CalendarDate(1980, 1, 20)
+
+  it('moves to the first and last year of the row with Home and End', async () => {
+    const { getByTestId, user } = setup({ pickerProps: { placeholder } })
+    getByTestId('year-1986').focus()
+
+    await user.keyboard(kbd.END)
+    expect(getByTestId('year-1987')).toHaveFocus()
+
+    await user.keyboard(kbd.HOME)
+    expect(getByTestId('year-1984')).toHaveFocus()
+
+    // Already at the start of the row: stays put.
+    await user.keyboard(kbd.HOME)
+    expect(getByTestId('year-1984')).toHaveFocus()
+  })
+
+  it('skips a disabled year at the row boundary', async () => {
+    const { getByTestId, user } = setup({
+      pickerProps: { placeholder, isYearDisabled: date => date.year === 1984 },
+    })
+    getByTestId('year-1986').focus()
+
+    await user.keyboard(kbd.HOME)
+    expect(getByTestId('year-1985')).toHaveFocus()
+  })
+
+  it('selects with the numeric keypad Enter', async () => {
+    const { getByTestId, picker } = setup({ pickerProps: { placeholder } })
+    const cell = getByTestId('year-1986')
+    cell.focus()
+
+    await fireEvent.keyDown(cell, { key: 'Enter', code: 'NumpadEnter' })
+
+    expect(picker.querySelector('[data-selection-start]')).toBe(cell)
+  })
+
+  it('moves focus with the numeric keypad arrows', async () => {
+    const { getByTestId } = setup({ pickerProps: { placeholder } })
+    const cell = getByTestId('year-1986')
+    cell.focus()
+
+    await fireEvent.keyDown(cell, { key: 'ArrowRight', code: 'Numpad6' })
+
+    expect(getByTestId('year-1987')).toHaveFocus()
   })
 })
