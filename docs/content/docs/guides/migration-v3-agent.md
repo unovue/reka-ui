@@ -1143,15 +1143,17 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 - `keepFocusOnValueChange` on `ListboxRoot` defaults to `true` (v2: `false`). A `modelValue` set from code while focus is outside the listbox highlights the item and makes it the tab stop, without focusing it or scrolling the page to it. v2 focused the item and called `scrollIntoView`.
 - With focus inside the listbox, and for clicks, keyboard navigation and typeahead, nothing changed.
 - `useListboxRoot()` defaults `keepFocusOnValueChange` to `true` too. `ColorSwatchPickerRoot` gains the same prop with the same default. `ComboboxRoot`, `AutocompleteRoot` and `useComboboxRoot()` are unchanged.
+- `useListboxRoot()` keeps focus only when its `element` option is passed. Without it, a programmatic change still moves focus as in v2.
 
 **How to find it.**
-- Every `ListboxRoot` (also `Listbox.Root` and `reka-listbox-root`) and `useListboxRoot(` call. Note whether it sets `keep-focus-on-value-change`, `:keep-focus-on-value-change` or `keepFocusOnValueChange`.
+- Every `ListboxRoot` (also `Listbox.Root` and `reka-listbox-root`), `ColorSwatchPickerRoot` (also `ColorSwatchPicker.Root` and `reka-color-swatch-picker-root`) and `useListboxRoot(` call. Note whether it sets `keep-focus-on-value-change`, `:keep-focus-on-value-change` or `keepFocusOnValueChange`.
 - Code that assigns a listbox's bound value and then relies on focus being on the selected option (keyboard handling right after, a test asserting `document.activeElement`, a `focusin` handler on the listbox).
 
 **Rewrite rules.**
 - A root that already sets `keep-focus-on-value-change` (bare, or bound to `true`): remove the attribute; it is the default.
 - A root that binds it to `false` or to a variable: leave unchanged.
 - A root without the prop whose code relies on a programmatic value change moving focus or scrolling to the item: add `:keep-focus-on-value-change="false"`. *Ask* if you cannot tell.
+- A `useListboxRoot(` call without `element` keeps the v2 focus move; pass `element` to get the new default.
 - Tests that set the value from code with focus outside and expect the item to be focused: expect focus to stay, or pass `keepFocusOnValueChange: false`.
 
 **Verify.** The type-check passes; setting the value from code while typing in another input keeps focus in that input for each default root.
