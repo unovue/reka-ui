@@ -221,6 +221,30 @@ const selectedPeople = ref([people[0], people[1]])
 </template>
 ```
 
+### Limiting the selection
+
+`max` caps how many values a `multiple` listbox can hold. A click, <kbd>Enter</kbd>, a <kbd>Shift</kbd> range or a select-all that would go over it is blocked, the value stays as it is, and `invalid` is emitted with the first value over the limit. Selected items can still be deselected. `0`, the default, means no limit. A `modelValue` you set from code is not clamped.
+
+```vue line=12-13
+<script setup lang="ts">
+import { ListboxRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+const toppings = ref<string[]>([])
+</script>
+
+<template>
+  <ListboxRoot
+    v-model="toppings"
+    multiple
+    :max="2"
+    @invalid="value => console.warn(`Pick at most two toppings, ${value} was not added`)"
+  >
+    ...
+  </ListboxRoot>
+</template>
+```
+
 ### Filtering
 
 Pass a `filter` function to `ListboxRoot` to filter the items by the `ListboxFilter` value. It is called as `filter(text, search, value)` with the item's `textValue` (or its text content) and returns whether the item matches. `useFilter` provides locale-aware `contains`, `startsWith` and `endsWith` matchers that fit this signature.
@@ -375,6 +399,86 @@ When the data your `v-for` reads changes, Vue re-renders every item of that `v-f
 ```
 
 `v-memo` must list every value the item's props and slot read, such as `:disabled`. A value it leaves out goes stale when only that value changes. The selected and highlighted states don't need listing: the item tracks those itself. For very long lists, see the virtualization example above.
+
+### Highlighting an item programmatically
+
+`ListboxRoot` exposes `highlightItem(value, options?)`, which highlights the item with the given value and scrolls it into view. By default it also moves focus to that item. Pass `{ focus: false }` to keep focus where it is, for example on a separate text input that jumps to the first matching item as the user types.
+
+```vue line=12
+<script setup lang="ts">
+import { ListboxContent, ListboxItem, ListboxRoot } from 'reka-ui'
+import { useTemplateRef } from 'vue'
+
+const fruits = ['Apple', 'Banana', 'Blueberry', 'Cherry', 'Grapes']
+const listbox = useTemplateRef('listbox')
+
+function onInput(event: Event) {
+  const query = (event.target as HTMLInputElement).value.toLowerCase()
+  const match = fruits.find(fruit => fruit.toLowerCase().startsWith(query))
+  if (query && match)
+    listbox.value?.highlightItem(match, { focus: false })
+}
+</script>
+
+<template>
+  <input
+    aria-label="Jump to fruit"
+    @input="onInput"
+  >
+  <ListboxRoot ref="listbox">
+    <ListboxContent>
+      <ListboxItem
+        v-for="fruit in fruits"
+        :key="fruit"
+        :value="fruit"
+      >
+        {{ fruit }}
+      </ListboxItem>
+    </ListboxContent>
+  </ListboxRoot>
+</template>
+```
+
+### Keeping focus when the value changes
+
+By default, changing `modelValue` from code after mount highlights the selected item and moves focus to it. Set `keepFocusOnValueChange` when the value can change while the user is working elsewhere, for example typing in a text input. If focus is outside the listbox at that moment, the item is highlighted and becomes the tab stop, but focus stays where it is and the page is not scrolled to the listbox (a virtualized list still scrolls its own viewport to the item). If focus is already inside the listbox, focus follows the new highlight as usual. Clicking, keyboard navigation and typeahead are not affected.
+
+```vue line=22
+<script setup lang="ts">
+import { ListboxContent, ListboxItem, ListboxRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+const fruits = ['Apple', 'Banana', 'Cherry']
+const fruit = ref<string>()
+
+// Selects the fruit the user types, while focus stays in the input.
+function onInput(event: Event) {
+  const query = (event.target as HTMLInputElement).value.toLowerCase()
+  fruit.value = fruits.find(f => f.toLowerCase() === query) ?? fruit.value
+}
+</script>
+
+<template>
+  <input
+    aria-label="Fruit"
+    @input="onInput"
+  >
+  <ListboxRoot
+    v-model="fruit"
+    keep-focus-on-value-change
+  >
+    <ListboxContent>
+      <ListboxItem
+        v-for="item in fruits"
+        :key="item"
+        :value="item"
+      >
+        {{ item }}
+      </ListboxItem>
+    </ListboxContent>
+  </ListboxRoot>
+</template>
+```
 
 ## Real-world examples
 
