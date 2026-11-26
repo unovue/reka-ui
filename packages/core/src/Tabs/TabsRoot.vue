@@ -71,6 +71,7 @@ export const [injectTabsRootContext, provideTabsRootContext]
 import { ref, shallowRef, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { createKeyedSelector } from '@/shared/createKeyedSelector'
+import { useLazySlotProps } from '@/shared/lazySlotProps'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
 
 const props = withDefaults(defineProps<TabsRootProps<T>>(), {
@@ -127,14 +128,10 @@ const agentContext = provideTabsRootContext({
 })
 useAgentRegistration('tabs', agentContext, props)
 
-// The default slot runs inside `Primitive`'s render, so a value read to build its props would
-// re-render that element, and every trigger and content below it, on each tab change. Read through
-// a getter, only a slot that uses `modelValue` pays for that.
-const slotProps = {
-  get modelValue() {
-    return modelValue.value
-  },
-}
+// Read when a consumer slot uses it, not where the slot is rendered: the slot is rendered by this
+// root's element, and a value read there re-renders it, and through it every trigger and content,
+// on each tab change.
+const slotProps = useLazySlotProps({ modelValue: () => modelValue.value })
 </script>
 
 <template>
@@ -144,6 +141,6 @@ const slotProps = {
     :as-child="asChild"
     :as="as"
   >
-    <slot v-bind="slotProps" />
+    <slot v-bind="slotProps()" />
   </Primitive>
 </template>
