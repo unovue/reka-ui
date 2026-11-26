@@ -15,10 +15,9 @@ export interface TabsTriggerProps extends PrimitiveProps {
 import { computed, mergeProps } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
-import { useSelectorKey } from '@/shared/createKeyedSelector'
 import { useAgentItem } from '@/shared/useAgentRegistration'
 import { injectTabsRootContext } from './TabsRoot.vue'
-import { makeContentId, makeTriggerId, useTabsPartId } from './utils'
+import { makeContentId, makeTriggerId, useTabSelected, useTabsPartId } from './utils'
 
 defineOptions({
   // `$attrs` are merged under the roving and the trigger's own bindings, the precedence the
@@ -40,7 +39,7 @@ const contentId = computed(() => rootContext.contentIds.value.has(props.value)
   ? rootContext.renderedContentIds.value.get(props.value) ?? makeContentId(rootContext.baseId, props.value)
   : undefined)
 
-const isSelected = useSelectorKey(rootContext.selection, () => props.value)
+const isSelected = useTabSelected(rootContext, () => props.value)
 
 const roving = useRovingFocusItem({
   element: currentElement,
