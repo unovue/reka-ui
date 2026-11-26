@@ -10,7 +10,7 @@ import type { DrawerSnapPoint, SwipeDirection } from './utils'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import { useResizeObserver } from '@vueuse/core'
-import { computed, nextTick, onMounted, onUnmounted, ref, toValue, watch } from 'vue'
+import { computed, nextTick, onMounted, onScopeDispose, onUnmounted, ref, toValue, watch } from 'vue'
 import { isOwnBackdropPress } from '@/DismissableLayer/internalBackdrop'
 import { focus } from '@/FocusScope/utils'
 import { containsComposed, createPartSurface, disclosureState, getActiveElement, getElementByIdFrom, isHTMLElement, setGeneratedIds, useControllableState } from '@/shared'
@@ -293,6 +293,13 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
     onUpdate: props.onSnapPointUpdate as ((value: DrawerSnapPoint | null | undefined, details: ChangeEventDetails<DrawerSnapPointChangeReason>) => void) | undefined,
   })
 
+  // The root's scope stops before its popup unmounts, so a popup removed along
+  // with the root does not report a close.
+  let isDisposed = false
+  onScopeDispose(() => {
+    isDisposed = true
+  }, true)
+
   const modal = computed<DrawerModal>(() => toValue(props.modal) ?? true)
   const swipeDirection = computed<SwipeDirection>(() => toValue(props.swipeDirection) ?? 'down')
   const snapPoints = computed(() => toValue(props.snapPoints))
@@ -368,7 +375,9 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
     onOpenChange,
     onOpenToggle,
     notifyOpenComplete(value) {
-      props.onOpenComplete?.(value)
+      // A drawer that is being removed altogether has not completed a close.
+      if (!isDisposed)
+        props.onOpenComplete?.(value)
     },
     setActiveSnapPoint,
     onPopupHeightChange(h) {

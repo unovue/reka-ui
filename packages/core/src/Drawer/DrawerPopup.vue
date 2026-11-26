@@ -22,7 +22,7 @@ export interface DrawerPopupProps extends Omit<DrawerContentImplProps, 'trapFocu
 </script>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, onUnmounted, watch } from 'vue'
 import { Presence } from '@/Presence'
 import { useBodyScrollLock, useEmitAsProps, useForwardElement, useHideOthers, usePartId } from '@/shared'
 import { isPortalOpening } from '@/Teleport/portalGate'
@@ -99,6 +99,21 @@ function onCloseAutoFocusNonModalOnce(event: Event) {
 const shouldHideOthers = computed(() => isFullModal.value && rootContext.open.value ? currentElement.value : undefined)
 useHideOthers(shouldHideOthers)
 
+// A close is reported once the exit animation ends. When the popup is removed
+// before that (its parent stopped rendering it), the close is complete.
+let isClosePending = false
+watch(() => rootContext.open.value, (open) => {
+  isClosePending = !open
+})
+function onPresenceComplete(value: boolean) {
+  isClosePending = false
+  rootContext.notifyOpenComplete?.(value)
+}
+onUnmounted(() => {
+  if (isClosePending && !rootContext.open.value)
+    rootContext.notifyOpenComplete?.(false)
+})
+
 // BaseUI parity (`useDialogRoot`): only a fully modal drawer locks page scroll,
 // with or without a `DrawerBackdrop`; `'trap-focus'` leaves the page scrollable.
 const scrollLocked = useBodyScrollLock(isFullModal.value && rootContext.open.value)
@@ -113,7 +128,7 @@ watch(() => isFullModal.value && rootContext.open.value, (locked) => {
     :appear="isPortalOpening(rootContext)"
     :present="rootContext.open.value"
     :force-mount="forceMount"
-    @complete="rootContext.notifyOpenComplete"
+    @complete="onPresenceComplete"
   >
     <DrawerContentImpl
       v-if="isFullModal"
