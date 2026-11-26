@@ -20,6 +20,8 @@ export interface TabsRootContext {
   baseId: string
   tabsList: Ref<HTMLElement | undefined>
   contentIds: Ref<Set<StringOrNumber>>
+  /** `contentIds` as a keyed selector: a trigger reads only whether its own content is rendered. */
+  renderedContents?: KeyedSelector<StringOrNumber>
   /** `TabsTrigger` `id` props by value; a value without one uses `makeTriggerId`. */
   customTriggerIds: Ref<Map<StringOrNumber, string>>
   /** `TabsContent` `id` props by value; a value without one uses `makeContentId`. */
@@ -79,6 +81,7 @@ export const [injectTabsRootContext, provideTabsRootContext]
 
 <script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">
 import { renderAs } from '@/Primitive/renderAs'
+import { useLazySlotProps } from '@/shared/lazySlotProps'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { useTabs, useTabsAutoSelect } from './useTabs'
 
@@ -124,6 +127,9 @@ useAgentRegistration('tabs', context, props)
 // The composable is untyped over `T`; narrow once here for the slot payload
 // (a `T | undefined` cast in the template reads as a deprecated filter to eslint).
 const slotModelValue = modelValue as ComputedRef<T | null | undefined>
+// Read when a consumer slot uses it, not where the slot is rendered: the slot is rendered by this
+// root's element, and a value read there re-renders it, and through it every tab, on each change.
+const slotProps = useLazySlotProps({ modelValue: () => slotModelValue.value })
 </script>
 
 <template>
@@ -132,6 +138,6 @@ const slotModelValue = modelValue as ComputedRef<T | null | undefined>
     :ref="forwardRef"
     v-bind="root.attrs.value"
   >
-    <slot :model-value="slotModelValue" />
+    <slot v-bind="slotProps()" />
   </component>
 </template>
