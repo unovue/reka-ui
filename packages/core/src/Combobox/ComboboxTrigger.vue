@@ -10,12 +10,14 @@ export interface ComboboxTriggerProps extends PrimitiveProps {
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { Primitive } from '@/Primitive'
-import { disabledAttr, useForwardExpose, useRenderedContentId } from '@/shared'
+import { disabledAttr, useForwardExpose, useRenderedContentId, useTranslations } from '@/shared'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 const props = withDefaults(defineProps<ComboboxTriggerProps>(), {
   as: 'button',
 })
+
+const t = useTranslations()
 
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectComboboxRootContext()
@@ -42,7 +44,7 @@ function handleKeyDown(ev: KeyboardEvent) {
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
     tabindex="-1"
-    aria-label="Show popup"
+    :aria-label="t('comboboxTrigger')"
     aria-haspopup="listbox"
     :aria-expanded="rootContext.open.value"
     :aria-controls="rootContext.open.value ? contentId : undefined"

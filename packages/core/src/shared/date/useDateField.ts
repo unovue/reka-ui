@@ -1,13 +1,13 @@
 import type { CalendarDateTime, DateFields, DateValue, TimeFields } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { AnyExceptLiteral, DateStep, HourCycle, SegmentPart, SegmentValueObj } from './types'
-import type { Formatter } from '@/shared'
+import type { Formatter, Translate } from '@/shared'
 import {
   DateFormatter,
 } from '@internationalized/date'
 import { computed } from 'vue'
 import { getDaysInMonth, toDate } from '@/date'
-import { getActiveElement, snapValueToStep, useKbd } from '@/shared'
+import { getActiveElement, snapValueToStep, useKbd, useTranslations } from '@/shared'
 import { isAcceptableSegmentKey, isNumberString, isSegmentNavigationKey } from './segment'
 
 const DIGIT_REG = /^\d$/
@@ -32,6 +32,7 @@ type SegmentAttrProps = {
   hourCycle: HourCycle
   placeholder: DateValue
   formatter: Formatter
+  t: Translate
 }
 
 function commonSegmentAttrs(props: SegmentAttrProps) {
@@ -63,11 +64,11 @@ function daySegmentAttrs(props: SegmentAttrProps) {
   const valueNow = date.day
   const valueMin = 1
   const valueMax = getDaysInMonth(date)
-  const valueText = isEmpty ? 'Empty' : `${valueNow}`
+  const valueText = isEmpty ? props.t('dateFieldEmpty') : `${valueNow}`
 
   return {
     ...commonSegmentAttrs(props),
-    'aria-label': 'day,',
+    'aria-label': props.t('dateFieldDay'),
     'aria-valuemin': valueMin,
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
@@ -85,11 +86,11 @@ function monthSegmentAttrs(props: SegmentAttrProps) {
   const valueNow = date.month
   const valueMin = 1
   const valueMax = 12
-  const valueText = isEmpty ? 'Empty' : `${valueNow} - ${formatter.fullMonth(toDate(date))}`
+  const valueText = isEmpty ? props.t('dateFieldEmpty') : `${valueNow} - ${formatter.fullMonth(toDate(date))}`
 
   return {
     ...commonSegmentAttrs(props),
-    'aria-label': 'month, ',
+    'aria-label': props.t('dateFieldMonth'),
     'contenteditable': true,
     'aria-valuemin': valueMin,
     'aria-valuemax': valueMax,
@@ -106,11 +107,11 @@ function yearSegmentAttrs(props: SegmentAttrProps) {
   const valueMin = 1
   const valueMax = 9999
   const valueNow = date.year
-  const valueText = isEmpty ? 'Empty' : `${valueNow}`
+  const valueText = isEmpty ? props.t('dateFieldEmpty') : `${valueNow}`
 
   return {
     ...commonSegmentAttrs(props),
-    'aria-label': 'year, ',
+    'aria-label': props.t('dateFieldYear'),
     'aria-valuemin': valueMin,
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
@@ -129,11 +130,11 @@ function hourSegmentAttrs(props: SegmentAttrProps) {
   const valueMin = hourCycle === 12 ? 1 : 0
   const valueMax = hourCycle === 12 ? 12 : 23
   const valueNow = date.hour
-  const valueText = isEmpty ? 'Empty' : `${valueNow} ${segmentValues.dayPeriod ?? ''}`
+  const valueText = isEmpty ? props.t('dateFieldEmpty') : `${valueNow} ${segmentValues.dayPeriod ?? ''}`
 
   return {
     ...commonSegmentAttrs(props),
-    'aria-label': 'hour, ',
+    'aria-label': props.t('dateFieldHour'),
     'aria-valuemin': valueMin,
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
@@ -153,11 +154,11 @@ function minuteSegmentAttrs(props: SegmentAttrProps) {
   const valueNow = date.minute
   const valueMin = 0
   const valueMax = 59
-  const valueText = isEmpty ? 'Empty' : `${valueNow}`
+  const valueText = isEmpty ? props.t('dateFieldEmpty') : `${valueNow}`
 
   return {
     ...commonSegmentAttrs(props),
-    'aria-label': 'minute, ',
+    'aria-label': props.t('dateFieldMinute'),
     'aria-valuemin': valueMin,
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
@@ -177,11 +178,11 @@ function secondSegmentAttrs(props: SegmentAttrProps) {
   const valueNow = date.second
   const valueMin = 0
   const valueMax = 59
-  const valueText = isEmpty ? 'Empty' : `${valueNow}`
+  const valueText = isEmpty ? props.t('dateFieldEmpty') : `${valueNow}`
 
   return {
     ...commonSegmentAttrs(props),
-    'aria-label': 'second, ',
+    'aria-label': props.t('dateFieldSecond'),
     'aria-valuemin': valueMin,
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
@@ -203,7 +204,7 @@ function dayPeriodSegmentAttrs(props: SegmentAttrProps) {
   return {
     ...commonSegmentAttrs(props),
     'inputmode': 'text',
-    'aria-label': 'AM/PM',
+    'aria-label': props.t('dateFieldDayPeriod'),
     'aria-valuemin': valueMin,
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
@@ -221,7 +222,7 @@ function literalSegmentAttrs(_props: SegmentAttrProps) {
 function timeZoneSegmentAttrs(props: SegmentAttrProps) {
   return {
     'role': 'textbox',
-    'aria-label': 'timezone, ',
+    'aria-label': props.t('dateFieldTimeZoneName'),
     'data-readonly': true,
     'data-segment': 'timeZoneName',
     'tabindex': props.disabled ? undefined : 0,
@@ -239,7 +240,7 @@ function eraSegmentAttrs(props: SegmentAttrProps) {
 
   return {
     ...commonSegmentAttrs(props),
-    'aria-label': 'era',
+    'aria-label': props.t('dateFieldEra'),
     'aria-valuemin': valueMin,
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
@@ -298,6 +299,7 @@ export type UseDateFieldProps = {
 
 export function useDateField(props: UseDateFieldProps) {
   const kbd = useKbd()
+  const t = useTranslations()
 
   function minuteSecondIncrementation({ e, part, dateRef, prevValue }: MinuteSecondIncrementProps): number {
     const step = props.step.value[part] ?? 1
@@ -631,6 +633,7 @@ export function useDateField(props: UseDateFieldProps) {
     hourCycle: props.hourCycle,
     segmentValues: props.segmentValues.value,
     formatter: props.formatter,
+    t,
   }) ?? {})
 
   // TODO: look into abstracting segment keydown functions since they have the same structure (checks -> arrow_up, arrow_down update -> number string update -> move to next -> backspace update)

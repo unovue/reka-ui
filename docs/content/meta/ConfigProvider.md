@@ -36,6 +36,12 @@
     'required': false
   },
   {
+    'name': 'translations',
+    'description': '<p>The text the primitives give to assistive technology on their own, by key, in place of the built-in English:\na string, with a <code>{name}</code> placeholder for each value the message is given, or a function of those values.\nKeys that are left out keep the text of the nearest <code>ConfigProvider</code> above, then the built-in one.\nA label passed to a part itself (an <code>aria-label</code>, or a prop such as <code>calendarLabel</code>) still wins.</p>\n',
+    'type': 'Partial&lt;Translations&gt;',
+    'required': false
+  },
+  {
     'name': 'useId',
     'description': '<p>The global <code>useId</code> injection as a workaround for preventing hydration issue.</p>\n',
     'type': '(() =&gt; string)',
@@ -55,6 +61,7 @@
 | `nonce` | The global nonce value of your application. This will be inherited by the related primitives. | `string` | No | - |
 | `scrollBody` | How the body makes up for the scrollbar while scroll is locked. This will be inherited by the related primitives. true adds the scrollbar width to the body's right padding, and false leaves its padding and margin alone. An object sets padding and margin separately: true adds the scrollbar width to the existing value, a number is in px, and a string is used as written. With only margin: true, the margin makes up for the scrollbar and the padding is left alone. | `boolean \| ScrollBodyOption` | No | `true` |
 | `teleportTo` | The global default teleport target for all portalled primitives (e.g. Dialog, Popover, Tooltip). Individual *Portal components can still override this via their own to prop. Useful when rendering inside a custom element / shadow DOM. | `string \| HTMLElement` | No | - |
+| `translations` | The text the primitives give to assistive technology on their own, by key, in place of the built-in English: a string, with a {name} placeholder for each value the message is given, or a function of those values. Keys that are left out keep the text of the nearest ConfigProvider above, then the built-in one. A label passed to a part itself (an aria-label, or a prop such as calendarLabel) still wins. | `Partial<Translations>` | No | - |
 | `useId` | The global useId injection as a workaround for preventing hydration issue. | `(() => string)` | No | - |
 
 </llm-only>

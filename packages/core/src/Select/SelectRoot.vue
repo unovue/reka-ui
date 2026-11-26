@@ -66,7 +66,7 @@ interface SelectOption { value: any, disabled?: boolean, textContent: string }
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { useVModel } from '@vueuse/core'
-import { computed, ref, toRefs, watch } from 'vue'
+import { computed, ref, toRaw, toRefs, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { PopperRoot } from '@/Popper'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
@@ -194,9 +194,44 @@ function handleValueChange(value: T) {
   fieldContext?.handleControlInput({ value: nextValue })
 }
 
+// Every item looks its option up when it mounts and when it unmounts, so the lookup must not
+// walk the whole set: that made mounting a list quadratic in its length. The options with a
+// primitive value are also kept by that value, and a value that can only match itself is
+// looked up there. Any other value goes through the comparator, option by option.
+const optionIndex = new Map<unknown, SelectOption>()
+
+function isPrimitive(value: SelectOption['value']) {
+  return value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint'
+}
+
+/**
+ * Whether `valueComparator` can match `value` to that same value only. A string is compared
+ * with `===` before `by` is read. Without `by`, the other primitives are compared by a
+ * serialized form no other value has.
+ */
+function matchesItselfOnly(value: SelectOption['value']) {
+  return typeof value === 'string' || (props.by === undefined && isPrimitive(value))
+}
+
 function getOption(value: SelectOption['value']) {
-  return Array.from(optionsSet.value)
-    .find(option => valueComparator(value, option.value, props.by))
+  if (value === undefined)
+    return undefined
+  if (matchesItselfOnly(value)) {
+    const option = optionIndex.get(value)
+    // The set is on the root context, so an option deleted from it directly is no match
+    return option && toRaw(optionsSet.value).has(option) ? option : undefined
+  }
+  for (const option of optionsSet.value) {
+    if (valueComparator(value, option.value, props.by))
+      return option
+  }
+}
+
+function removeOption(option: SelectOption) {
+  const rawOption = toRaw(option)
+  optionsSet.value.delete(rawOption)
+  if (optionIndex.get(rawOption.value) === rawOption)
+    optionIndex.delete(rawOption.value)
 }
 
 const agentContext = provideSelectRootContext(defineReactiveIds({
@@ -228,17 +263,17 @@ const agentContext = provideSelectRootContext(defineReactiveIds({
   optionsSet,
   onOptionAdd: (option) => {
     const existingOption = getOption(option.value)
-    if (existingOption) {
-      optionsSet.value.delete(existingOption)
-    }
+    if (existingOption)
+      removeOption(existingOption)
 
     optionsSet.value.add(option)
+    if (isPrimitive(option.value))
+      optionIndex.set(option.value, toRaw(option))
   },
   onOptionRemove: (option) => {
     const existingOption = getOption(option.value)
-    if (existingOption) {
-      optionsSet.value.delete(existingOption)
-    }
+    if (existingOption)
+      removeOption(existingOption)
   },
 }, ['contentId']))
 useAgentRegistration('select', agentContext, props)

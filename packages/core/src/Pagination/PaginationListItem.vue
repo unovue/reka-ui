@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { disabledAttr, useForwardExpose } from '@/shared'
+import { disabledAttr, useForwardExpose, useTranslations } from '@/shared'
 
 export interface PaginationListItemProps extends PrimitiveProps {
   /** Value for the page */
@@ -14,6 +14,9 @@ import { Primitive } from '@/Primitive'
 import { injectPaginationRootContext } from './PaginationRoot.vue'
 
 const props = withDefaults(defineProps<PaginationListItemProps>(), { as: 'button' })
+
+const t = useTranslations()
+
 useForwardExpose()
 
 const rootContext = injectPaginationRootContext()
@@ -26,7 +29,7 @@ const disabled = computed((): boolean => rootContext.disabled.value)
   <Primitive
     v-bind="props"
     data-type="page"
-    :aria-label="`Page ${value}`"
+    :aria-label="t('paginationPage', { page: value })"
     :aria-current="isSelected ? 'page' : undefined"
     :data-selected="isSelected ? 'true' : undefined"
     :disabled="disabledAttr(disabled, props.as, props.asChild)"

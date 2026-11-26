@@ -8,12 +8,14 @@ export interface EditableInputProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, useAttrs, watch } from 'vue'
-import { disabledAttr, useKbd } from '@/shared'
+import { disabledAttr, useKbd, useTranslations } from '@/shared'
 import { injectEditableRootContext } from './EditableRoot.vue'
 
 const props = withDefaults(defineProps<EditableInputProps>(), {
   as: 'input',
 })
+
+const t = useTranslations()
 
 const kbd = useKbd()
 
@@ -29,7 +31,7 @@ const { primitiveElement, currentElement: inputRef } = usePrimitiveElement()
 // attribute, or a `<label>` for the input (wrapping it, or pointing at the root's `id`).
 const attrs = useAttrs()
 const hasLabelElement = ref(false)
-const ariaLabel = computed(() => (attrs['aria-labelledby'] || hasLabelElement.value) ? undefined : 'editable input')
+const ariaLabel = computed(() => (attrs['aria-labelledby'] || hasLabelElement.value) ? undefined : t('editableInput'))
 
 // Checked on mount and each time editing starts, which is when the input is shown, so a label added later counts.
 function updateHasLabelElement() {
