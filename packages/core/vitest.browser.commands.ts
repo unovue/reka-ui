@@ -59,3 +59,31 @@ export const requestGC: BrowserCommand<[]> = async (context) => {
     throw new Error(`requestGC needs the playwright provider, not ${context.provider.name}`)
   await context.page.requestGC()
 }
+
+/**
+ * Presses the left mouse button at a point of the test page's viewport, in every
+ * engine. With `mouseUp`, a press and release that can wait on the page in
+ * between, as `mouseDrag` can't.
+ */
+export const mouseDown: BrowserCommand<[x: number, y: number]> = async (context, x, y) => {
+  if (context.provider.name !== 'playwright')
+    throw new Error(`mouseDown needs the playwright provider, not ${context.provider.name}`)
+  const { page, iframe } = context
+  const box = await iframe.owner().boundingBox()
+  if (!box)
+    throw new Error('mouseDown: the test iframe has no box')
+  await page.mouse.move(box.x + x, box.y + y)
+  await page.mouse.down()
+}
+
+/** Moves the mouse to a point of the test page's viewport in `steps` moves, and releases the left button there. */
+export const mouseUp: BrowserCommand<[x: number, y: number, steps?: number]> = async (context, x, y, steps = 1) => {
+  if (context.provider.name !== 'playwright')
+    throw new Error(`mouseUp needs the playwright provider, not ${context.provider.name}`)
+  const { page, iframe } = context
+  const box = await iframe.owner().boundingBox()
+  if (!box)
+    throw new Error('mouseUp: the test iframe has no box')
+  await page.mouse.move(box.x + x, box.y + y, { steps })
+  await page.mouse.up()
+}

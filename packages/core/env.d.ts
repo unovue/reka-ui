@@ -25,5 +25,7 @@ declare module 'vitest/browser' {
     mouseDrag: (fromX: number, fromY: number, toX: number, toY: number, steps?: number, holdMs?: number) => Promise<void>
     setReducedMotion: (value: 'reduce' | 'no-preference') => Promise<void>
     requestGC: () => Promise<void>
+    mouseDown: (x: number, y: number) => Promise<void>
+    mouseUp: (x: number, y: number, steps?: number) => Promise<void>
   }
 }

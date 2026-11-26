@@ -1,8 +1,9 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
-import { cdp, userEvent } from 'vitest/browser'
+import { cdp, commands, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref } from 'vue'
+import { hasCDP } from '@/test/browser'
 import { SelectContent, SelectItem, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '.'
 
 function mountSelect(initiallyDisabled: boolean) {
@@ -74,7 +75,8 @@ describe('given a Select whose root is disabled, in a real browser', () => {
 })
 
 // jsdom has no touch input and never follows a tap with a `click`, so which element a tap's
-// events land on can only be checked with real (CDP) pointer input.
+// events land on can only be checked with real (CDP) pointer input. Real touch and pen
+// input exists in Chromium only: see `hasCDP`.
 describe('given a Select used with a real pointer, in a real browser', () => {
   const ITEMS = ['apple', 'banana', 'cherry', 'grape', 'melon']
   let wrapper: VueWrapper | undefined
@@ -171,7 +173,7 @@ describe('given a Select used with a real pointer, in a real browser', () => {
     await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
   }
 
-  describe('when tapping the trigger of an item-aligned Select', () => {
+  describe.skipIf(!hasCDP)('when tapping the trigger of an item-aligned Select', () => {
     // The menu opens on the tap's `pointerup` and lays an item over the trigger, so the
     // tap's trailing `click` lands on that item.
     it.each([
@@ -190,7 +192,7 @@ describe('given a Select used with a real pointer, in a real browser', () => {
     })
   })
 
-  describe('when tapping an item', () => {
+  describe.skipIf(!hasCDP)('when tapping an item', () => {
     it('selects it once and closes', async () => {
       const { modelValue, selects, originalEvents } = mountPointerSelect({ position: 'popper', rootProps: { defaultOpen: true } })
       await opened()
@@ -235,7 +237,23 @@ describe('given a Select used with a real pointer, in a real browser', () => {
   })
 
   describe('when pressing the trigger, dragging onto an item and releasing', () => {
-    it.each(['mouse', 'pen'])('selects the item with a %s', async (pointerType) => {
+    it('selects the item with a mouse', async () => {
+      const { modelValue, selects } = mountPointerSelect({ position: 'popper' })
+      const press = get('trigger')!.getBoundingClientRect()
+
+      await commands.mouseDown(press.left + press.width / 2, press.top + press.height / 2)
+      await expect.poll(() => get('banana')).not.toBeNull()
+
+      const release = get('banana')!.getBoundingClientRect()
+      await commands.mouseUp(release.left + release.width / 2, release.top + release.height / 2, 2)
+
+      await expect.poll(() => modelValue.value).toBe('banana')
+      await expect.poll(isOpen).toBe(false)
+      expect(selects).toEqual(['banana'])
+    })
+
+    it.skipIf(!hasCDP)('selects the item with a pen', async () => {
+      const pointerType = 'pen'
       const { modelValue, selects } = mountPointerSelect({ position: 'popper' })
       const press = centerOf(get('trigger')!)
 
