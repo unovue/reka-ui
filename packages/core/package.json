@@ -769,7 +769,7 @@
     "@vue/server-renderer": "^3.5.46",
     "@vue/test-utils": "^2.6.0",
     "@vue/tsconfig": "^0.9.1",
-    "jsdom": "^31.0.1",
+    "jsdom": "^30.1.1",
     "playwright": "^1.63.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
