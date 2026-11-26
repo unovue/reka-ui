@@ -169,6 +169,10 @@ const areaStyles = computed(() => {
   return getAreaBackgroundStyle(bgColor, xChannel.value, yChannel.value, colorSpace.value)
 })
 
+// A controlled `modelValue` only catches up after the parent re-renders, so a commit in the same tick
+// as the update (keyboard) reports the color that was just set.
+let pendingColor: Color | undefined
+
 function updateValues(x: number, y: number) {
   const clampedX = Math.max(xRange.value.min, Math.min(xRange.value.max, x))
   const clampedY = Math.max(yRange.value.min, Math.min(yRange.value.max, y))
@@ -192,16 +196,19 @@ function updateValues(x: number, y: number) {
     channels.push({ channel: 'hue', value: hueValue.value })
   }
 
-  color.value = setChannelValues(color.value, channels)
+  const nextColor = setChannelValues(color.value, channels)
+  pendingColor = nextColor
+  color.value = nextColor
 
   // Re-enable watch sync after Vue has processed the update
   nextTick(() => {
     isUpdating = false
+    pendingColor = undefined
   })
 }
 
 function commitValues() {
-  emits('changeEnd', colorToString(color.value, 'hex'))
+  emits('changeEnd', colorToString(pendingColor ?? color.value, 'hex'))
 }
 
 const thumbRef = ref<HTMLElement>()

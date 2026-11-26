@@ -18,11 +18,14 @@ export interface MonthPickerPrevSlot {
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
-import { disabledAttr } from '@/shared'
+import { disabledAttr, useTranslations } from '@/shared'
 import { injectMonthPickerRootContext } from './MonthPickerRoot.vue'
 
 const props = withDefaults(defineProps<MonthPickerPrevProps>(), { as: 'button' })
+
 defineSlots<MonthPickerPrevSlot>()
+
+const t = useTranslations()
 
 const rootContext = injectMonthPickerRootContext()
 
@@ -37,7 +40,7 @@ function handleClick() {
 
 <template>
   <Primitive
-    aria-label="Previous year"
+    :aria-label="t('monthPickerPrev')"
     :as="props.as"
     :as-child="props.asChild"
     :type="props.as === 'button' ? 'button' : undefined"

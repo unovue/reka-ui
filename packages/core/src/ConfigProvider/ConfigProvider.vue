@@ -1,7 +1,9 @@
 <script lang="ts">
 import type { Ref } from 'vue'
+import type { Translate, Translations } from '@/shared/translations'
 import type { Direction, ScrollBodyOption } from '@/shared/types'
 import { createRekaContext } from '@/shared'
+import { createTranslate } from '@/shared/translations'
 
 interface ConfigProviderContextValue {
   dir?: Ref<Direction>
@@ -10,6 +12,7 @@ interface ConfigProviderContextValue {
   nonce?: Ref<string | undefined>
   teleportTo?: Ref<string | HTMLElement | undefined>
   useId?: () => string
+  translate?: Translate
 }
 
 export const [injectConfigProviderContext, provideConfigProviderContext]
@@ -50,6 +53,14 @@ export interface ConfigProviderProps {
    * The global `useId` injection as a workaround for preventing hydration issue.
    */
   useId?: () => string
+  /**
+   * The text the primitives give to assistive technology on their own, by key, in place of the built-in English:
+   * a string, with a `{name}` placeholder for each value the message is given, or a function of those values.
+   * Keys that are left out keep the text of the nearest `ConfigProvider` above, then the built-in one.
+   * A label passed to a part itself (an `aria-label`, or a prop such as `calendarLabel`) still wins.
+   * @type Partial<Translations>
+   */
+  translations?: Partial<Translations>
 }
 </script>
 
@@ -71,6 +82,9 @@ const props = withDefaults(defineProps<ConfigProviderProps>(), {
 
 const { dir, locale, scrollBody, nonce, teleportTo } = toRefs(props)
 
+// One function for every primitive below: none of them keeps anything of its own to translate.
+const translate = createTranslate(() => props.translations, injectConfigProviderContext(null)?.translate)
+
 provideConfigProviderContext({
   dir,
   locale,
@@ -78,6 +92,7 @@ provideConfigProviderContext({
   nonce,
   teleportTo,
   useId: props.useId,
+  translate,
 })
 </script>
 

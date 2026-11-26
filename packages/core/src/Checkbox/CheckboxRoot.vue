@@ -59,7 +59,6 @@ import { isEqual } from 'ohash'
 import { computed, onBeforeUnmount, onMounted, shallowRef, useAttrs, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { Primitive } from '@/Primitive'
-import { RovingFocusItem } from '@/RovingFocus'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { getParentState, getParentToggleValue, getState, isIndeterminate } from './utils'
@@ -124,7 +123,8 @@ const nativeDisabled = computed(() => Boolean(checkboxGroupContext?.disabled.val
 const disabled = computed(() => nativeDisabled.value || isGroupMaxReached.value)
 // Checkboxes inside a `CheckboxGroupRoot` share one Field, so none of them
 // takes the field's id (it would be duplicated) or acts as its control.
-const participatesAsControl = computed(() => Boolean(fieldContext) && !checkboxGroupContext)
+// Both contexts are injected once, so this never changes.
+const participatesAsControl = { value: Boolean(fieldContext) && !checkboxGroupContext }
 const resolvedId = computed(() => props.id ?? (participatesAsControl.value ? fieldContext?.fieldId.value : generatedId.value))
 const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
 // `required` is a plain (non-optional-default) `Boolean` prop, so Vue casts
@@ -202,11 +202,15 @@ function handleClick(target?: unknown) {
 }
 
 // A programmatic/parent-driven change updates `filled`, but isn't dirtying.
-watch(checkboxState, (state) => {
-  if (participatesAsControl.value)
+// Outside a Field (or inside a group) there is nothing to report, so no watcher is created.
+if (participatesAsControl.value) {
+  watch(checkboxState, (state) => {
     fieldContext?.reportControlState({ filled: state === true })
-})
+  })
+}
 
+// Depends on the element, which is set after mount. The template reads it last, so a checkbox
+// without a `name` (no hidden input either way) does not render a second time once it has mounted.
 const isFormControl = useFormControl(currentElement)
 // The hidden form input is rendered as a sibling (not nested) of the interactive
 // control to avoid the `nested-interactive` a11y violation. That makes this a
@@ -311,7 +315,7 @@ useAgentRegistration('checkbox', agentContext, props, currentElement, handleClic
 <template>
   <component
     v-bind="{ ...fieldContext?.dataAttributes.value, 'aria-controls': ariaControls, ...$attrs, ...scopeIdAttrs, ...getFieldAriaAttrs() }"
-    :is="checkboxGroupContext?.rovingFocus.value ? RovingFocusItem : Primitive"
+    :is="checkboxGroupContext?.rovingFocus.value ? checkboxGroupContext.RovingFocusItem : Primitive"
     :id="resolvedId"
     :ref="forwardRef"
     role="checkbox"
@@ -340,7 +344,7 @@ useAgentRegistration('checkbox', agentContext, props, currentElement, handleClic
   </component>
 
   <VisuallyHiddenInput
-    v-if="isFormControl && resolvedName && !checkboxGroupContext"
+    v-if="!checkboxGroupContext && resolvedName && isFormControl"
     type="checkbox"
     :checked="!!checkboxState"
     :name="resolvedName"
