@@ -1,8 +1,12 @@
 import type { Component } from 'vue'
+import type { Translations } from '..'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { CalendarDate, JapaneseCalendar, parseZonedDateTime, toCalendar } from '@internationalized/date'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, nextTick, reactive } from 'vue'
+import { createTranslate, defaultTranslate, defaultTranslations, getDateSegmentLabel, translationKey } from '@/shared/translations'
 import * as reka from '..'
 
 enableAutoUnmount(afterEach)
@@ -550,6 +554,246 @@ export function read([selector, attribute]: Check) {
   return attribute === 'text' ? element.textContent?.replace(/\s+/g, ' ').trim() : element.getAttribute(attribute) ?? undefined
 }
 
+/** For each fixture: messages for every key it shows, and what it then announces. */
+const translated: Record<string, { translations: Partial<Translations>, checks: Check[] }> = {
+  Calendar: {
+    translations: { calendarLabel: 'Datum', calendarPrev: 'Vorherige Seite', calendarNext: 'Nächste Seite' },
+    checks: [
+      ['[data-root]', 'aria-label', 'Datum, January 2024'],
+      ['[data-prev]', 'aria-label', 'Vorherige Seite'],
+      ['[data-next]', 'aria-label', 'Nächste Seite'],
+    ],
+  },
+  RangeCalendar: {
+    translations: { calendarLabel: 'Zeitraum', calendarPrev: 'Vorherige Seite', calendarNext: 'Nächste Seite' },
+    checks: [
+      ['[data-root]', 'aria-label', 'Zeitraum, January 2024'],
+      ['[data-prev]', 'aria-label', 'Vorherige Seite'],
+      ['[data-next]', 'aria-label', 'Nächste Seite'],
+    ],
+  },
+  MonthPicker: {
+    translations: { monthPickerLabel: 'Monat wählen', monthPickerPrev: 'Vorheriges Jahr', monthPickerNext: 'Nächstes Jahr' },
+    checks: [
+      ['[data-root]', 'aria-label', 'Monat wählen, 2024'],
+      ['[data-prev]', 'aria-label', 'Vorheriges Jahr'],
+      ['[data-next]', 'aria-label', 'Nächstes Jahr'],
+    ],
+  },
+  MonthRangePicker: {
+    translations: { monthPickerLabel: 'Monate wählen', monthPickerPrev: 'Vorheriges Jahr', monthPickerNext: 'Nächstes Jahr' },
+    checks: [
+      ['[data-root]', 'aria-label', 'Monate wählen, 2024'],
+      ['[data-prev]', 'aria-label', 'Vorheriges Jahr'],
+      ['[data-next]', 'aria-label', 'Nächstes Jahr'],
+    ],
+  },
+  YearPicker: {
+    translations: { yearPickerLabel: 'Jahr wählen', yearPickerPrev: 'Frühere Jahre', yearPickerNext: 'Spätere Jahre' },
+    checks: [
+      ['[data-root]', 'aria-label', 'Jahr wählen, 2020 - 2031'],
+      ['[data-prev]', 'aria-label', 'Frühere Jahre'],
+      ['[data-next]', 'aria-label', 'Spätere Jahre'],
+    ],
+  },
+  YearRangePicker: {
+    translations: { yearPickerLabel: 'Jahre wählen', yearPickerPrev: 'Frühere Jahre', yearPickerNext: 'Spätere Jahre' },
+    checks: [
+      ['[data-root]', 'aria-label', 'Jahre wählen, 2020 - 2031'],
+      ['[data-prev]', 'aria-label', 'Frühere Jahre'],
+      ['[data-next]', 'aria-label', 'Spätere Jahre'],
+    ],
+  },
+  Carousel: {
+    translations: {
+      carouselRoleDescription: 'Karussell',
+      carouselStopRotation: 'Wechsel anhalten',
+      carouselPrev: 'Vorherige Folie',
+      carouselNext: 'Nächste Folie',
+      carouselSlideRoleDescription: 'Folie',
+      carouselSlideLabel: '{index} von {total}',
+      carouselIndicator: ({ index }) => `Gehe zu Folie ${index}`,
+    },
+    checks: [
+      ['[data-root]', 'aria-roledescription', 'Karussell'],
+      ['[data-toggle]', 'aria-label', 'Wechsel anhalten'],
+      ['[data-prev]', 'aria-label', 'Vorherige Folie'],
+      ['[data-next]', 'aria-label', 'Nächste Folie'],
+      ['[data-item]', 'aria-roledescription', 'Folie'],
+      ['[data-item]', 'aria-label', '1 von 2'],
+      ['[data-indicator]', 'aria-label', 'Gehe zu Folie 2'],
+    ],
+  },
+  CarouselTabs: {
+    translations: { carouselStartRotation: 'Wechsel starten', carouselIndicatorGroup: 'Folie wählen', carouselIndicatorTab: 'Folie {index}' },
+    checks: [
+      ['[data-toggle]', 'aria-label', 'Wechsel starten'],
+      ['[data-group]', 'aria-label', 'Folie wählen'],
+      ['[data-indicator]', 'aria-label', 'Folie 2'],
+    ],
+  },
+  ColorArea: {
+    translations: { colorAreaRoleDescription: 'Farbwähler', colorAreaThumbRoleDescription: 'Farbregler', colorChannelHue: 'Farbton', colorChannelSaturation: 'Sättigung' },
+    checks: [
+      ['[data-area]', 'aria-roledescription', 'Farbwähler'],
+      ['[data-thumb]', 'aria-roledescription', 'Farbregler'],
+      ['[data-thumb]', 'aria-label', 'Farbton, Sättigung'],
+      ['[data-thumb]', 'aria-valuetext', 'Farbton 0, Sättigung 100'],
+    ],
+  },
+  ColorSlider: {
+    translations: {
+      colorChannelRed: 'Rot',
+      colorChannelGreen: 'Grün',
+      colorChannelBlue: 'Blau',
+      colorChannelHue: 'Farbton',
+      colorChannelSaturation: 'Sättigung',
+      colorChannelLightness: 'Helligkeit',
+      colorChannelBrightness: 'Leuchtkraft',
+      colorChannelAlpha: 'Deckkraft',
+    },
+    checks: [
+      ['[data-thumb="red"]', 'aria-label', 'Rot'],
+      ['[data-thumb="green"]', 'aria-label', 'Grün'],
+      ['[data-thumb="blue"]', 'aria-label', 'Blau'],
+      ['[data-thumb="hue"]', 'aria-label', 'Farbton'],
+      ['[data-thumb="saturation"]', 'aria-label', 'Sättigung'],
+      ['[data-thumb="lightness"]', 'aria-label', 'Helligkeit'],
+      ['[data-thumb="brightness"]', 'aria-label', 'Leuchtkraft'],
+      ['[data-thumb="alpha"]', 'aria-label', 'Deckkraft'],
+    ],
+  },
+  ColorSwatch: {
+    translations: { colorSwatchRoleDescription: 'Farbfeld', colorSwatchTransparent: 'durchsichtig' },
+    checks: [
+      ['[data-swatch]', 'aria-roledescription', 'Farbfeld'],
+      ['[data-empty]', 'aria-label', 'durchsichtig'],
+    ],
+  },
+  Combobox: {
+    translations: { comboboxTrigger: 'Liste öffnen' },
+    checks: [['[data-trigger]', 'aria-label', 'Liste öffnen']],
+  },
+  DateField: {
+    translations: {
+      dateFieldDay: 'Tag',
+      dateFieldMonth: 'Monat',
+      dateFieldYear: 'Jahr',
+      dateFieldHour: 'Stunde',
+      dateFieldMinute: 'Minute',
+      dateFieldSecond: 'Sekunde',
+      dateFieldDayPeriod: 'Tageshälfte',
+      dateFieldTimeZoneName: 'Zeitzone',
+      dateFieldEra: 'Epoche',
+      dateFieldEmpty: 'Leer',
+    },
+    checks: [
+      ['[data-filled="day"]', 'aria-label', 'Tag'],
+      ['[data-filled="month"]', 'aria-label', 'Monat'],
+      ['[data-filled="year"]', 'aria-label', 'Jahr'],
+      ['[data-filled="hour"]', 'aria-label', 'Stunde'],
+      ['[data-filled="minute"]', 'aria-label', 'Minute'],
+      ['[data-filled="second"]', 'aria-label', 'Sekunde'],
+      ['[data-filled="dayPeriod"]', 'aria-label', 'Tageshälfte'],
+      ['[data-filled="timeZoneName"]', 'aria-label', 'Zeitzone'],
+      ['[data-japanese="era"]', 'aria-label', 'Epoche'],
+      ['[data-filled="day"]', 'aria-valuetext', '15'],
+      ['[data-empty="day"]', 'aria-valuetext', 'Leer'],
+      ['[data-empty="month"]', 'aria-valuetext', 'Leer'],
+      ['[data-empty="year"]', 'aria-valuetext', 'Leer'],
+      ['[data-empty="hour"]', 'aria-valuetext', 'Leer'],
+      ['[data-empty="minute"]', 'aria-valuetext', 'Leer'],
+      ['[data-empty="second"]', 'aria-valuetext', 'Leer'],
+    ],
+  },
+  TimeField: {
+    translations: { dateFieldHour: 'Stunde', dateFieldMinute: 'Minute', dateFieldSecond: 'Sekunde', dateFieldDayPeriod: 'Tageshälfte', dateFieldEmpty: 'Leer' },
+    checks: [
+      ['[data-part="hour"]', 'aria-label', 'Stunde'],
+      ['[data-part="minute"]', 'aria-label', 'Minute'],
+      ['[data-part="second"]', 'aria-label', 'Sekunde'],
+      ['[data-part="dayPeriod"]', 'aria-label', 'Tageshälfte'],
+      ['[data-part="hour"]', 'aria-valuetext', 'Leer'],
+    ],
+  },
+  Editable: {
+    translations: { editableInput: 'Eingabe', editableEdit: 'Bearbeiten', editableSubmit: 'Speichern', editableCancel: 'Abbrechen' },
+    checks: [
+      ['[data-input]', 'aria-label', 'Eingabe'],
+      ['[data-edit]', 'aria-label', 'Bearbeiten'],
+      ['[data-submit]', 'aria-label', 'Speichern'],
+      ['[data-cancel]', 'aria-label', 'Abbrechen'],
+    ],
+  },
+  NumberField: {
+    translations: { numberFieldRoleDescription: 'Zahlenfeld', numberFieldDecrement: 'Verringern', numberFieldIncrement: 'Erhöhen' },
+    checks: [
+      ['[data-input]', 'aria-roledescription', 'Zahlenfeld'],
+      ['[data-decrement]', 'aria-label', 'Verringern'],
+      ['[data-increment]', 'aria-label', 'Erhöhen'],
+    ],
+  },
+  Pagination: {
+    translations: {
+      paginationLabel: 'Seiten',
+      paginationFirst: 'Erste Seite',
+      paginationPrev: 'Vorherige Seite',
+      paginationPage: 'Seite {page}',
+      paginationNext: 'Nächste Seite',
+      paginationLast: 'Letzte Seite',
+    },
+    checks: [
+      ['[data-root]', 'aria-label', 'Seiten'],
+      ['[data-first]', 'aria-label', 'Erste Seite'],
+      ['[data-prev]', 'aria-label', 'Vorherige Seite'],
+      ['[data-page="2"]', 'aria-label', 'Seite 2'],
+      ['[data-next]', 'aria-label', 'Nächste Seite'],
+      ['[data-last]', 'aria-label', 'Letzte Seite'],
+    ],
+  },
+  PinInput: {
+    translations: { pinInputLabel: 'PIN', pinInputLabelIndexed: ({ index, total }) => `PIN-Stelle ${index} von ${total}` },
+    checks: [
+      ['[data-pin="1"]', 'aria-label', 'PIN-Stelle 1 von 3'],
+      ['[data-pin="3"]', 'aria-label', 'PIN-Stelle 3 von 3'],
+    ],
+  },
+  Slider: {
+    translations: { sliderMinimum: 'Minimum (de)', sliderMaximum: 'Maximum (de)', sliderValue: 'Wert {index} von {total}' },
+    checks: [
+      ['[data-two="0"]', 'aria-label', 'Minimum (de)'],
+      ['[data-two="1"]', 'aria-label', 'Maximum (de)'],
+      ['[data-three="1"]', 'aria-label', 'Wert 2 von 3'],
+    ],
+  },
+  SliderArea: {
+    translations: { sliderAreaRoleDescription: '2D-Regler', sliderMinimum: 'Anfang', sliderMaximum: 'Ende' },
+    checks: [
+      ['[data-thumb="0"]', 'aria-roledescription', '2D-Regler'],
+      ['[data-thumb="0"]', 'aria-label', 'Anfang'],
+      ['[data-thumb="1"]', 'aria-label', 'Ende'],
+    ],
+  },
+  Stepper: {
+    translations: { stepperLabel: 'Fortschritt', stepperAnnouncement: 'Schritt {step} von {total}' },
+    checks: [
+      ['[data-root]', 'aria-label', 'Fortschritt'],
+      ['[data-root] > [role="status"]', 'text', 'Schritt 2 von 3'],
+    ],
+  },
+  TagGroup: {
+    translations: { tagGroupRemove: 'Entfernen' },
+    checks: [['[data-delete]', 'aria-label', 'Entfernen']],
+  },
+  Toast: {
+    translations: { toastLabel: 'Hinweis', toastViewportLabel: 'Hinweise ({hotkey})' },
+    checks: [
+      ['[role="region"]', 'aria-label', 'Hinweise (F8)'],
+      ['[role="alert"]', 'text', 'Hinweis Saved'],
+    ],
+  },
+}
+
 describe('built-in accessible labels', () => {
   describe.each(Object.entries(fixtures))('%s', (_name, fixture) => {
     it('keeps its English strings when nothing is configured', async () => {
@@ -561,5 +805,198 @@ describe('built-in accessible labels', () => {
       await mountFixture(fixture, fixture.consumerTemplate)
       expect(fixture.consumer!.map(read)).toEqual(fixture.consumer!.map(check => check[2]))
     })
+  })
+})
+
+describe('translations on ConfigProvider', () => {
+  describe.each(Object.entries(fixtures))('%s', (name, fixture) => {
+    it('announces the messages it is given', async () => {
+      await mountFixture(fixture, fixture.template, { translations: translated[name].translations })
+      expect(translated[name].checks.map(read)).toEqual(translated[name].checks.map(check => check[2]))
+    })
+
+    it('is unchanged by a provider that sets nothing, or spreads the defaults', async () => {
+      await mountFixture(fixture, fixture.template, { translations: {} })
+      expect(fixture.defaults.map(read)).toEqual(fixture.defaults.map(check => check[2]))
+      await mountFixture(fixture, fixture.template, { translations: { ...defaultTranslations } })
+      expect(fixture.defaults.map(read)).toEqual(fixture.defaults.map(check => check[2]))
+    })
+
+    it.runIf(fixture.consumer)('lets a consumer label win over a message', async () => {
+      await mountFixture(fixture, fixture.consumerTemplate, { translations: translated[name].translations })
+      expect(fixture.consumer!.map(read)).toEqual(fixture.consumer!.map(check => check[2]))
+    })
+  })
+
+  it('has a fixture for every key', () => {
+    const covered = new Set(Object.values(translated).flatMap(entry => Object.keys(entry.translations)))
+    expect(Object.keys(defaultTranslations).filter(key => !covered.has(key))).toEqual([])
+  })
+
+  it('is documented key by key, with the defaults', () => {
+    const guide = readFileSync(resolve(__dirname, '../../../../docs/content/docs/guides/i18n.md'), 'utf8')
+    const missing = Object.entries(defaultTranslations).filter(([key, message]) => !guide.includes(`| \`${key}\` | \`${message}\` |`))
+    expect(missing).toEqual([])
+  })
+
+  it('names the pin input before its position is known', () => {
+    // The position is known from the first render in every fixture, so the message is looked up directly.
+    expect(createTranslate(() => translated.PinInput.translations)('pinInputLabel')).toBe('PIN')
+  })
+
+  it('follows a change of the messages', async () => {
+    const config = reactive<{ translations: Partial<Translations> }>({ translations: { paginationNext: 'Weiter' } })
+    await mountFixture(fixtures.Pagination, fixtures.Pagination.template, config)
+    expect(read(['[data-next]', 'aria-label', ''])).toBe('Weiter')
+
+    config.translations = { paginationNext: 'Suivant' }
+    await nextTick()
+    expect(read(['[data-next]', 'aria-label', ''])).toBe('Suivant')
+
+    config.translations = {}
+    await nextTick()
+    expect(read(['[data-next]', 'aria-label', ''])).toBe('Next Page')
+  })
+
+  it('inherits the keys a nested provider leaves out', async () => {
+    document.body.innerHTML = ''
+    mount(defineComponent({
+      components: reka as unknown as Record<string, Component>,
+      template: `
+        <ConfigProvider :translations="{ paginationNext: 'Weiter', paginationPrev: 'Zurück' }">
+          <ConfigProvider :translations="{ paginationNext: 'Vor' }">
+            <PaginationRoot :total="30" :items-per-page="10">
+              <PaginationList><PaginationFirst data-first /><PaginationPrev data-prev /><PaginationNext data-next /></PaginationList>
+            </PaginationRoot>
+          </ConfigProvider>
+        </ConfigProvider>`,
+    }), { attachTo: document.body })
+    await nextTick()
+
+    expect(read(['[data-next]', 'aria-label', ''])).toBe('Vor')
+    expect(read(['[data-prev]', 'aria-label', ''])).toBe('Zurück')
+    expect(read(['[data-first]', 'aria-label', ''])).toBe('First Page')
+  })
+})
+
+describe('translate', () => {
+  it('returns the built-in English for a key that is not set', () => {
+    const t = createTranslate(() => undefined)
+    expect(t('paginationNext')).toBe('Next Page')
+    expect(t('pinInputLabelIndexed', { index: 2, total: 4 })).toBe('pin input 2 of 4')
+    expect(defaultTranslate('toastViewportLabel', { hotkey: 'F8' })).toBe('Notifications (F8)')
+  })
+
+  it('fills each placeholder, as often as it appears, and leaves unknown ones alone', () => {
+    const t = createTranslate(() => ({ sliderValue: '{index}/{total} ({index}) {other}' }))
+    expect(t('sliderValue', { index: 2, total: 3 })).toBe('2/3 (2) {other}')
+  })
+
+  it('calls a function message with the values', () => {
+    const message = vi.fn(({ step, total }: { step: number, total: number }) => `${total - step} to go`)
+    const t = createTranslate(() => ({ stepperAnnouncement: message }))
+    expect(t('stepperAnnouncement', { step: 1, total: 4 })).toBe('3 to go')
+    expect(message).toHaveBeenCalledWith({ step: 1, total: 4 })
+  })
+
+  it('keeps an empty string, which is a message', () => {
+    expect(createTranslate(() => ({ stepperLabel: '' }))('stepperLabel')).toBe('')
+  })
+
+  it('reads the messages on each call', () => {
+    let messages: Partial<Translations> = {}
+    const t = createTranslate(() => messages)
+    expect(t('tagGroupRemove')).toBe('Remove')
+    messages = { tagGroupRemove: 'Entfernen' }
+    expect(t('tagGroupRemove')).toBe('Entfernen')
+  })
+
+  it('builds the key of a named message', () => {
+    expect(translationKey('colorChannel', 'hue')).toBe('colorChannelHue')
+    expect(translationKey('dateField', 'timeZoneName')).toBe('dateFieldTimeZoneName')
+  })
+})
+
+describe('date and time segment names', () => {
+  const parts = ['day', 'month', 'year', 'hour', 'minute', 'second', 'dayPeriod', 'timeZoneName', 'era'] as const
+  const english = ['day,', 'month, ', 'year, ', 'hour, ', 'minute, ', 'second, ', 'AM/PM', 'timezone, ', 'era']
+  const names = (locale: string, t = defaultTranslate) => parts.map(part => getDateSegmentLabel(t, part, locale))
+
+  afterEach(() => vi.unstubAllGlobals())
+
+  it.each(['en', 'en-US', 'en-GB', 'EN-au', 'en-u-ca-japanese'])('keeps the built-in strings in %s', (locale) => {
+    expect(names(locale)).toEqual(english)
+  })
+
+  it.each([
+    ['de', ['Tag', 'Monat', 'Jahr']],
+    ['ja', ['日', '月', '年']],
+    ['ar', ['يوم', 'الشهر', 'السنة']],
+  ])('names the segments in %s', (locale, dayMonthYear) => {
+    const intl = new Intl.DisplayNames(locale, { type: 'dateTimeField' })
+    expect(names(locale)).toEqual(parts.map(part => intl.of(part)))
+    expect(names(locale).slice(0, 3)).toEqual(dayMonthYear)
+    expect(names(locale).filter(name => english.includes(name))).toEqual([])
+  })
+
+  it('prefers a message over the name of the locale', () => {
+    const t = createTranslate(() => ({ dateFieldDay: 'Kalendertag' }))
+    expect(getDateSegmentLabel(t, 'day', 'de')).toBe('Kalendertag')
+    expect(getDateSegmentLabel(t, 'month', 'de')).toBe('Monat')
+    expect(getDateSegmentLabel(t, 'day', 'en')).toBe('Kalendertag')
+  })
+
+  it('treats spread defaults as nothing set', () => {
+    const t = createTranslate(() => ({ ...defaultTranslations }))
+    expect(getDateSegmentLabel(t, 'day', 'de')).toBe('Tag')
+  })
+
+  it('keeps the built-in strings where Intl.DisplayNames is missing or has no field names', () => {
+    vi.stubGlobal('Intl', { ...Intl, DisplayNames: undefined })
+    expect(names('fr')).toEqual(english)
+    vi.stubGlobal('Intl', { ...Intl, DisplayNames: class { constructor() { throw new RangeError('Invalid option : type') } } })
+    expect(names('es')).toEqual(english)
+  })
+
+  it('keeps the built-in strings for a locale the runtime resolves to English', () => {
+    vi.stubGlobal('Intl', { ...Intl, DisplayNames: class { resolvedOptions = () => ({ locale: 'en-US' }); of = () => 'day' } })
+    expect(names('tlh')).toEqual(english)
+  })
+
+  it.each([
+    ['de', 'Tag', 'Monat', 'Stunde'],
+    ['ja', '日', '月', '時'],
+    ['ar', 'يوم', 'الشهر', 'الساعات'],
+  ])('a %s field announces them from its own locale', async (locale, day, month, hour) => {
+    document.body.innerHTML = ''
+    mount(defineComponent({
+      components: reka as unknown as Record<string, Component>,
+      setup: () => ({ zoned, locale }),
+      template: `
+        <DateFieldRoot v-slot="{ segments }" :default-value="zoned" granularity="minute" :locale="locale">
+          <DateFieldInput v-for="item in segments" :key="item.part" :part="item.part" :data-part="item.part">{{ item.value }}</DateFieldInput>
+        </DateFieldRoot>`,
+    }), { attachTo: document.body })
+    await nextTick()
+
+    const intl = new Intl.DisplayNames(locale, { type: 'dateTimeField' })
+    expect(read(['[data-part="day"]', 'aria-label', ''])).toBe(day)
+    expect(read(['[data-part="month"]', 'aria-label', ''])).toBe(month)
+    expect(read(['[data-part="hour"]', 'aria-label', ''])).toBe(intl.of('hour'))
+    expect(intl.of('hour')).toBe(hour)
+  })
+
+  it('follows the locale of the ConfigProvider, and a change of it', async () => {
+    const config = reactive({ locale: 'de' })
+    await mountFixture({ template: `
+      <DateFieldRoot v-slot="{ segments }">
+        <DateFieldInput v-for="item in segments" :key="item.part" :part="item.part" :data-part="item.part">{{ item.value }}</DateFieldInput>
+      </DateFieldRoot>`, defaults: [] }, undefined, config)
+    expect(read(['[data-part="day"]', 'aria-label', ''])).toBe('Tag')
+
+    config.locale = 'en'
+    await nextTick()
+    await nextTick()
+    expect(read(['[data-part="day"]', 'aria-label', ''])).toBe('day,')
   })
 })
