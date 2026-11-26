@@ -7,6 +7,7 @@ import type { MenuContentHideEvent, MenuContext, MenuRootContext } from '@/Menu/
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { PopupRootStore } from '@/shared/popupHandle'
 import { computed, nextTick, ref, toValue } from 'vue'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { useMenuRoot } from '@/Menu/useMenu'
 import { containsComposed, createPartSurface } from '@/shared'
 import { createPopupRootStore, getPopupRootStore, setPopupRootStore } from '@/shared/popupHandle'
@@ -119,8 +120,11 @@ export function createDropdownMenuContentSurface(
     if (event.defaultPrevented)
       return
     if (!hasInteractedOutside.value) {
+      const scope = event.target
       setTimeout(() => {
-        context.triggerElement.value?.focus()
+        // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
+        if (!hasFocusLeftScope(scope))
+          context.triggerElement.value?.focus()
       }, 0)
     }
     hasInteractedOutside.value = false

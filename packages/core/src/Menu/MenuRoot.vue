@@ -42,8 +42,6 @@ export interface MenuRootContext {
   modal: Ref<boolean>
   /** When `false`, the content and its submenus stay mounted while closed, hidden with CSS. */
   unmountOnHide: Ref<boolean>
-  /** Internal: the mounted content elements of this menu and its submenus. */
-  contentElements?: Set<HTMLElement>
 }
 
 export interface MenuProps {

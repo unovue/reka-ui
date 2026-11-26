@@ -100,11 +100,7 @@ describe('opening a layer during a native pointerdown', () => {
     ['modal Popover', 'modal popover', true],
     ['non-modal Popover, with no CSS override,', 'popover', false],
   ]
-  // TODO(v3-port): #2741 the Select and modal DropdownMenu rows need the `hasFocusLeftScope` check in
-  // their focus return (lists and floating lanes)
-  const isPending = ([, first]: [string, Kind, boolean]) => first === 'select' || first === 'menu'
-  it.skip.each(FIRST_LAYERS.filter(isPending))('closes an open %s and hands the keyboard to the Select that opens', () => {})
-  it.each(FIRST_LAYERS.filter(row => !isPending(row)))('closes an open %s and hands the keyboard to the Select that opens', async (_label, first, clickableUnderModal) => {
+  it.each(FIRST_LAYERS)('closes an open %s and hands the keyboard to the Select that opens', async (_label, first, clickableUnderModal) => {
     const layers = mountLayers(first, clickableUnderModal)
     await open('first')
     expect(layers.onClosedSelectOpenChange).not.toHaveBeenCalled()
@@ -125,8 +121,7 @@ describe('opening a layer during a native pointerdown', () => {
     expect(layers.onClosedSelectOpenChange).not.toHaveBeenCalled()
   })
 
-  // TODO(v3-port): #2741 needs the `hasFocusLeftScope` check in the Select focus return (lists lane)
-  it.skip('closes an open Select when another one is opened by touch', async () => {
+  it('closes an open Select when another one is opened by touch', async () => {
     const layers = mountLayers('select', true)
     await open('first')
 
@@ -231,8 +226,7 @@ describe('closing a layer together with one nested in it', () => {
   })
 
   // Focus that stayed on the Popover's trigger would let the Enter that selected open it again.
-  // TODO(v3-port): #2741 needs the `hasFocusLeftScope` check in the Select focus return (lists lane)
-  it.skip('keeps a Popover closed that was closed by selecting in a Select inside it', async () => {
+  it('keeps a Popover closed that was closed by selecting in a Select inside it', async () => {
     const isOpen = ref(false)
     mount(defineComponent({
       setup: () => () => h(PopoverRoot, { 'open': isOpen.value, 'onUpdate:open': (value: boolean) => isOpen.value = value }, () => [
@@ -252,8 +246,7 @@ describe('closing a layer together with one nested in it', () => {
     expect(get('first-content')).toBeNull()
   })
 
-  // TODO(v3-port): #2741 needs the `hasFocusLeftScope` check in the Select focus return (lists lane)
-  it.skip('keeps a Dialog closed that was closed by selecting in a Select inside it', async () => {
+  it('keeps a Dialog closed that was closed by selecting in a Select inside it', async () => {
     const isOpen = ref(false)
     mount(defineComponent({
       setup: () => () => h(DialogRoot, { 'open': isOpen.value, 'onUpdate:open': (value: boolean) => isOpen.value = value }, () => [
@@ -278,11 +271,10 @@ describe('closing a layer together with one nested in it', () => {
   // The outer layer and the Select open inside it unmount in one pass, after another layer has
   // taken focus. Neither may take it back: the Select's trigger is on its way out with the
   // outer layer, so focus would be dropped on `body` with the other layer still open.
-  // TODO(v3-port): #2741 the modal Dialog row needs the `hasFocusLeftScope` check in the Select focus return (lists lane)
-  it.skip('leaves focus in another layer when a modal Dialog closes with a Select open inside it', () => {})
   it.each<[string, 'popover' | 'dialog', boolean]>([
     ['non-modal Popover', 'popover', false],
     ['modal Popover', 'popover', true],
+    ['modal Dialog', 'dialog', true],
     ['non-modal Dialog', 'dialog', false],
   ])('leaves focus in another layer when a %s closes with a Select open inside it', async (_label, outer, modal) => {
     const isOuterOpen = ref(false)
