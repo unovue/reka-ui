@@ -767,11 +767,11 @@ const translated: Record<string, { translations: Partial<Translations>, checks: 
     ],
   },
   SliderArea: {
-    translations: { sliderAreaRoleDescription: '2D-Regler', sliderMinimum: 'Anfang', sliderMaximum: 'Ende' },
+    translations: { sliderAreaRoleDescription: '2D-Regler', sliderMinimum: 'Anfang', sliderMaximum: 'Schluss' },
     checks: [
       ['[data-thumb="0"]', 'aria-roledescription', '2D-Regler'],
       ['[data-thumb="0"]', 'aria-label', 'Anfang'],
-      ['[data-thumb="1"]', 'aria-label', 'Ende'],
+      ['[data-thumb="1"]', 'aria-label', 'Schluss'],
     ],
   },
   Stepper: {
@@ -864,7 +864,7 @@ describe('translations on ConfigProvider', () => {
       components: reka as unknown as Record<string, Component>,
       template: `
         <ConfigProvider :translations="{ paginationNext: 'Weiter', paginationPrev: 'Zurück' }">
-          <ConfigProvider :translations="{ paginationNext: 'Vor' }">
+          <ConfigProvider :translations="{ paginationNext: 'Voran' }">
             <PaginationRoot :total="30" :items-per-page="10">
               <PaginationList><PaginationFirst data-first /><PaginationPrev data-prev /><PaginationNext data-next /></PaginationList>
             </PaginationRoot>
@@ -873,7 +873,7 @@ describe('translations on ConfigProvider', () => {
     }), { attachTo: document.body })
     await nextTick()
 
-    expect(read(['[data-next]', 'aria-label', ''])).toBe('Vor')
+    expect(read(['[data-next]', 'aria-label', ''])).toBe('Voran')
     expect(read(['[data-prev]', 'aria-label', ''])).toBe('Zurück')
     expect(read(['[data-first]', 'aria-label', ''])).toBe('First Page')
   })
