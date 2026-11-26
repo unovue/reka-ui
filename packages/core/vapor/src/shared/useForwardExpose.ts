@@ -24,26 +24,34 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
   const currentElement = computed(() => toElement(currentRef.value))
 
   const local: Record<string, any> = { ...(instance && getExposed(instance)) }
+  const forwardedChild = () => {
+    const child = currentRef.value as any
+    return child && !(child instanceof Element) ? child : undefined
+  }
   const resolve = (key: PropertyKey) => {
     if (key === '$el')
       return currentElement.value ?? findElement(instance.block)
     // A forwarded child's exposed key wins over this component's own, as in v2 (`useForwardExpose.ts`
-    // defines the child's keys over its own). A Vapor child ref is the child's expose proxy.
-    const child = currentRef.value as any
-    if (child && !(child instanceof Element) && key in child)
+    // defines the child's keys over its own). A Vapor child ref is the child's expose proxy, so only its
+    // own keys count: `key in child` would also match `toString` and the like, over this component's own.
+    const child = forwardedChild()
+    if (child && Object.hasOwn(child, key))
       return child[key]
-    if (key in local)
+    if (Object.hasOwn(local, key))
       return local[key as string]
     return instance.props[key as string]
   }
+  const isOwn = (key: PropertyKey) => key === '$el' || Object.hasOwn(local, key) || Object.hasOwn(instance.props, key) || (!!forwardedChild() && Object.hasOwn(forwardedChild(), key))
   const keys = () => [...new Set(['$el', ...Object.keys(local), ...Object.keys(instance.props)])]
 
   if (instance) {
     setExposed(instance, new Proxy({}, {
       get: (_, key) => resolve(key),
-      has: (_, key) => key === '$el' || key in local || key in instance.props || (!!currentRef.value && key in (currentRef.value as any)),
+      has: (_, key) => isOwn(key),
       ownKeys: () => keys(),
-      getOwnPropertyDescriptor: (_, key) => ({ enumerable: true, configurable: true, value: resolve(key) }),
+      // Only keys this component exposes (or forwards) are own, so an outer `useForwardExpose` that
+      // forwards to this component does not take `toString` and the like for exposed keys either
+      getOwnPropertyDescriptor: (_, key) => isOwn(key) ? { enumerable: true, configurable: true, value: resolve(key) } : undefined,
     }))
   }
 
