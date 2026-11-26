@@ -40,7 +40,9 @@ export interface PaginationRootProps extends PrimitiveProps {
   /**
    * When `true`, keeps the page within the page count. If `total` or `itemsPerPage` drops below
    * the current page, the page moves to the last page and `update:page` is emitted. A `total` of
-   * `0` resets the page to `1`, so keep the previous `total` while new data loads.
+   * `0` resets the page to `1`, so keep the previous `total` while new data loads. Set to `false`
+   * to keep the page as it is while navigation still stays within the page count.
+   * @defaultValue true
    */
   clampPage?: boolean
 }
@@ -68,6 +70,7 @@ const props = withDefaults(defineProps<PaginationRootProps>(), {
   siblingCount: 2,
   defaultPage: 1,
   showEdges: false,
+  clampPage: true,
 })
 const emits = defineEmits<PaginationRootEmits>()
 
@@ -98,9 +101,9 @@ const { page, modelPage, pageCount, setPage, context } = usePagination({
   emit: emits,
 })
 
-// With `clampPage`, move a model page past the page count back into range (on mount too).
-// The watcher starts once `clampPage` is set: at setup, or before the update a prop change
-// makes. Until then a pagination pays one hook for it.
+// With `clampPage` (the default), move a model page past the page count back into range (on mount
+// too). The watcher starts once `clampPage` is on: at setup, or before the update a prop change
+// makes. With `:clamp-page="false"` a pagination pays one hook for it.
 let clampWatch: WatchHandle | undefined
 function watchClampPage() {
   if (!props.clampPage || clampWatch)

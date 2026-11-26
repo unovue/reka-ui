@@ -42,7 +42,11 @@ export interface PinInputRootProps<Type extends PinInputType = 'text'> extends P
   mask?: boolean
   /** When `true`, mobile devices will autodetect the OTP from messages or clipboard, and enable the autocomplete field. */
   otp?: boolean
-  /** When `true` and `required`, every mounted PIN input must be filled before the form can be submitted. Defaults to `false`. */
+  /**
+   * When `true` and `required`, every mounted PIN input must be filled before the form can be submitted.
+   * Set to `false` to accept a shorter, nonempty PIN as a required value.
+   * @defaultValue true
+   */
   requireComplete?: boolean
   /** Input type for the inputs. */
   type?: Type
@@ -96,6 +100,7 @@ import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { formResetBinder } from '@/shared/formReset'
+import { defaultTranslations } from '@/shared/translations'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { orderInputElements, usePinInput } from './usePinInput'
@@ -107,6 +112,7 @@ defineOptions({
 const props = withDefaults(defineProps<PinInputRootProps<Type>>(), {
   placeholder: '',
   type: 'text' as any,
+  requireComplete: true,
 })
 const emits = defineEmits<PinInputRootEmits<Type>>()
 
@@ -196,12 +202,12 @@ const modelValue = model as unknown as Readonly<Ref<PinInputValue<Type>>>
 
 providePinInputRootContext(context)
 
-// `requireComplete`: a required PIN is only valid once every mounted input is filled.
+// `requireComplete` (the default): a required PIN is only valid once every mounted input is filled.
 const { primitiveElement: formInputRef, currentElement: formInput } = usePrimitiveElement()
 watchEffect((onCleanup) => {
   const input = formInput.value as HTMLInputElement | undefined
   if (input && resolvedRequired() && props.requireComplete && !isCompleted.value) {
-    input.setCustomValidity('Please fill in every PIN field.')
+    input.setCustomValidity(context.t('pinInputIncomplete') || defaultTranslations.pinInputIncomplete)
     onCleanup(() => input.setCustomValidity(''))
   }
 })

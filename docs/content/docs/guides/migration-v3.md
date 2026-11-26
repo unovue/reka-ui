@@ -1070,3 +1070,67 @@ To keep a value through a reset, cancel the change:
 ```
 
 `useForm().reset()` resets the form natively, so it follows the same rules. A control of your own built with `useFieldControl()` is not reset for you; see [Resetting](./forms#resetting).
+
+## Pagination keeps the page within the page count
+
+`clampPage` on `PaginationRoot` now defaults to `true` (v2: `false`), and so does the `clampPage` option of `usePagination()`. When `total` or `itemsPerPage` drops so that the current page is past the last page, the page moves to the last page and `update:page` is emitted (reason `'imperative-action'`). A page that is already out of range when the pagination mounts is moved too. A `total` of `0` resets the page to `1`. In v2 the page stayed where it was and only navigation was kept within the page count.
+
+A `total` that drops to `0` while new data loads now sends the user back to page 1. Keep the previous `total` while loading, or set the prop to `false` for the v2 behavior:
+
+```vue
+<!-- v2: the page stayed past the last page -->
+<PaginationRoot v-model:page="page" :total="total">
+
+<!-- v3: same behavior -->
+<PaginationRoot v-model:page="page" :total="total" :clamp-page="false">
+```
+
+`clamp-page` (or `:clamp-page="true"`) is now the default and can be removed.
+
+## NavigationMenu viewport avoids clipping ancestors
+
+`avoidClipping` on `NavigationMenuViewport` now defaults to `true` (v2: `false`), and so does the `avoidClipping` option of `useNavigationMenuViewport()`. The viewport is kept inside the ancestors that clip it (an `overflow` other than `visible`, or paint containment), such as a scrolling sidebar or a card with `overflow: hidden`, instead of only inside the document. With no clipping ancestor it is still kept inside the document.
+
+`--reka-navigation-menu-viewport-left` and `--reka-navigation-menu-viewport-top` are now measured from the viewport's containing block instead of from the root. When the root is that containing block, the values differ only by the root's border, so a viewport under a root with a border moves by the border width. To keep the v2 positioning, set the prop to `false`:
+
+```vue
+<!-- v2: kept inside the document, measured from the root -->
+<NavigationMenuViewport />
+
+<!-- v3: same behavior -->
+<NavigationMenuViewport :avoid-clipping="false" />
+```
+
+`avoid-clipping` (or `:avoid-clipping="true"`) is now the default and can be removed.
+
+## A required PinInput needs every input
+
+`requireComplete` on `PinInputRoot` now defaults to `true` (v2: `false`). A `required` PinInput is valid only once every mounted input has a value, so a form with a partly entered PIN does not submit and the hidden input reports the validation message `Please fill in every PIN field.` (translatable as `pinInputIncomplete`, see [Internationalization](./i18n)). In v2 any nonempty PIN satisfied `required`. A PinInput without `required` is unchanged.
+
+To accept a PIN shorter than the number of inputs, such as a 4 to 6 digit code in 6 inputs, set the prop to `false`:
+
+```vue
+<!-- v2: a partial PIN satisfied `required` -->
+<PinInputRoot v-model="code" name="code" required>
+
+<!-- v3: same behavior -->
+<PinInputRoot v-model="code" name="code" required :require-complete="false">
+```
+
+`require-complete` (or `:require-complete="true"`) is now the default and can be removed.
+
+## Listbox keeps focus when its value changes
+
+`keepFocusOnValueChange` on `ListboxRoot` now defaults to `true` (v2: `false`), and so does the `keepFocusOnValueChange` option of `useListboxRoot()`. When code changes `modelValue` while focus is outside the listbox, for example while the user types in a text input, the selected item is highlighted and becomes the tab stop, but focus stays where it is and the page is not scrolled to the listbox. A virtualized list still scrolls its own viewport to the item. In v2 the change moved focus to the item and scrolled it into view. When focus is already inside the listbox, focus follows the new item as before, and clicks, keyboard navigation and typeahead are unchanged. `ColorSwatchPickerRoot` now has the same prop, with the same default. `ComboboxRoot` and `AutocompleteRoot` are unchanged. `useListboxRoot()` needs its `element` option for this: without it, focus can't be told to be outside, so a programmatic change still moves focus as in v2.
+
+To move focus to the item on every programmatic change, set the prop to `false`:
+
+```vue
+<!-- v2: a value set from code moved focus to the item -->
+<ListboxRoot v-model="fruit">
+
+<!-- v3: same behavior -->
+<ListboxRoot v-model="fruit" :keep-focus-on-value-change="false">
+```
+
+`keep-focus-on-value-change` (or `:keep-focus-on-value-change="true"`) is now the default and can be removed.

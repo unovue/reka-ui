@@ -1081,10 +1081,87 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 
 **Verify.** The type-check passes; in each form with a reset trigger, change every Reka UI control, reset, and each one shows and submits its default; a control you gave a cancelling `beforeUpdate:modelValue` keeps its value.
 
+### 37. Pagination keeps the page within the page count
+
+**What changed.**
+- `clampPage` on `PaginationRoot` defaults to `true` (v2: `false`). When `total` or `itemsPerPage` drops below the current page, the root moves the page to the last page and emits `update:page` (`'imperative-action'`); a page out of range at mount is moved too, and a `total` of `0` resets the page to `1`. v2 kept the page and only kept navigation in range.
+- `usePagination()` defaults `clampPage` to `true` too.
+
+**How to find it.**
+- Every `PaginationRoot` (also `Pagination.Root` and `reka-pagination-root`) and `usePagination(` call. Note whether it sets `clamp-page`, `:clamp-page` or `clampPage`.
+- Where `total` comes from: a request whose `total` is `0` or `undefined` while it loads, or a page read from the URL before the data arrives.
+
+**Rewrite rules.**
+- A root that already sets `clamp-page` (bare, or bound to `true`): remove the attribute; it is the default.
+- A root that binds it to `false` or to a variable: leave unchanged.
+- A root without the prop whose `total` can drop to `0` (or shrink) while data loads and whose page must survive that: add `:clamp-page="false"`, or keep the previous `total` while loading. *Ask* if you cannot tell.
+- Tests that shrink `total` and expect the page to stay past the last page: expect the last page and an `update:page` emit instead, or pass `clampPage: false`.
+
+**Verify.** The type-check passes; shrinking `total` below the current page moves each default root to the last page; a root with `:clamp-page="false"` keeps its page.
+
+### 38. NavigationMenu viewport avoids clipping ancestors
+
+**What changed.**
+- `avoidClipping` on `NavigationMenuViewport` defaults to `true` (v2: `false`): the viewport is kept inside its clipping ancestors (an `overflow` other than `visible`, or paint containment), and inside the document when there is none.
+- `--reka-navigation-menu-viewport-left` and `--reka-navigation-menu-viewport-top` are measured from the viewport's containing block, not the root. When the root is that block, they differ by the root's border.
+- `useNavigationMenuViewport()` defaults `avoidClipping` to `true` too.
+
+**How to find it.**
+- Every `NavigationMenuViewport` (also `NavigationMenu.Viewport` and `reka-navigation-menu-viewport`) and `useNavigationMenuViewport(` call. Note whether it sets `avoid-clipping`, `:avoid-clipping` or `avoidClipping`.
+- Styles that use `--reka-navigation-menu-viewport-left` / `-top` with a hand-tuned offset (for example a `calc(... - 1px)` for the root's border), and roots with a border.
+
+**Rewrite rules.**
+- A viewport that already sets `avoid-clipping` (bare, or bound to `true`): remove the attribute; it is the default.
+- A viewport that binds it to `false` or to a variable: leave unchanged.
+- A viewport without the prop whose styles compensate for the root's border or otherwise depend on root-relative variables: add `:avoid-clipping="false"`, or remove the compensation. *Ask* if you cannot tell.
+- A viewport inside a clipping container that relied on overflowing it (the container is meant to be scrolled or the overflow is intended): add `:avoid-clipping="false"`. *Ask* if you cannot tell.
+
+**Verify.** The type-check passes; each menu's viewport opens under its trigger and, inside a clipping container, stays within it.
+
+### 39. A required PinInput needs every input
+
+**What changed.**
+- `requireComplete` on `PinInputRoot` defaults to `true` (v2: `false`). A `required` PinInput is invalid until every mounted input has a value: the form does not submit and the hidden input's `validationMessage` is `Please fill in every PIN field.` (the new `pinInputIncomplete` translation key). v2 accepted any nonempty PIN.
+- A PinInput without `required` is unchanged.
+
+**How to find it.**
+- Every `PinInputRoot` (also `PinInput.Root` and `reka-pin-input-root`) with `required`, or inside a required `FieldRoot`. Note whether it sets `require-complete`, `:require-complete` or `requireComplete`.
+- Code that accepts a variable-length PIN: fewer characters than inputs, a length check such as `code.length >= 4`, or a `complete` handler that is not the only submit path.
+
+**Rewrite rules.**
+- A root that already sets `require-complete` (bare, or bound to `true`): remove the attribute; it is the default.
+- A root that binds it to `false` or to a variable: leave unchanged.
+- A required root that must accept a PIN shorter than its number of inputs: add `:require-complete="false"`. *Ask* if you cannot tell whether the PIN has a fixed length.
+- A `ConfigProvider` `translations` object for a non-English app: add `pinInputIncomplete` when the app has required PinInputs.
+- Tests that submit a partly filled required PinInput and expect it to submit: fill every input, or pass `requireComplete: false`.
+
+**Verify.** The type-check passes; a required PIN with an empty input blocks submission on each default root; a root with `:require-complete="false"` submits a partial PIN.
+
+### 40. Listbox keeps focus when its value changes
+
+**What changed.**
+- `keepFocusOnValueChange` on `ListboxRoot` defaults to `true` (v2: `false`). A `modelValue` set from code while focus is outside the listbox highlights the item and makes it the tab stop, without focusing it or scrolling the page to it. v2 focused the item and called `scrollIntoView`.
+- With focus inside the listbox, and for clicks, keyboard navigation and typeahead, nothing changed.
+- `useListboxRoot()` defaults `keepFocusOnValueChange` to `true` too. `ColorSwatchPickerRoot` gains the same prop with the same default. `ComboboxRoot`, `AutocompleteRoot` and `useComboboxRoot()` are unchanged.
+- `useListboxRoot()` keeps focus only when its `element` option is passed. Without it, a programmatic change still moves focus as in v2.
+
+**How to find it.**
+- Every `ListboxRoot` (also `Listbox.Root` and `reka-listbox-root`), `ColorSwatchPickerRoot` (also `ColorSwatchPicker.Root` and `reka-color-swatch-picker-root`) and `useListboxRoot(` call. Note whether it sets `keep-focus-on-value-change`, `:keep-focus-on-value-change` or `keepFocusOnValueChange`.
+- Code that assigns a listbox's bound value and then relies on focus being on the selected option (keyboard handling right after, a test asserting `document.activeElement`, a `focusin` handler on the listbox).
+
+**Rewrite rules.**
+- A root that already sets `keep-focus-on-value-change` (bare, or bound to `true`): remove the attribute; it is the default.
+- A root that binds it to `false` or to a variable: leave unchanged.
+- A root without the prop whose code relies on a programmatic value change moving focus or scrolling to the item: add `:keep-focus-on-value-change="false"`. *Ask* if you cannot tell.
+- A `useListboxRoot(` call without `element` keeps the v2 focus move; pass `element` to get the new default.
+- Tests that set the value from code with focus outside and expect the item to be focused: expect focus to stay, or pass `keepFocusOnValueChange: false`.
+
+**Verify.** The type-check passes; setting the value from code while typing in another input keeps focus in that input for each default root.
+
 ### Report
 
 When you are done, give the developer:
 
 1. The list of files you changed, grouped by the section above that required the change.
-2. Every `active` / `inactive` selector, every open or closed selector you could not attribute to a popup trigger or its content, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every combobox whose app code depends on focus returning to the trigger on close with the input outside the content from section 16, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, every Splitter handler that ignores keyboard collapses, cancelled structural layout change or `v-model:layout` suggestion from section 22, every `NavigationMenuContent` double-emit compensation or focus-only `interactOutside` handler from section 23, every alias to a copy without per-component entry points from section 24, every transition on a part, hover-only transition and hand-written unmount delay from section 25, every shadow-root teleport target, document stylesheet for portalled content or shadow DOM workaround from section 27, every drawer `update:open` handler that does more than cancel, hand-written tree selection workaround or select flag without `multiple` from section 28, and every cancelling `beforeUpdate:modelValue` on an uncontrolled `AutocompleteRoot` from section 29, every kept `@internationalized/date` use, existing Temporal polyfill or TypeScript 5 project from section 30, every `TabsRoot` whose empty initial state you could not confirm, every `TabsRoot` whose reliance on automatic activation you could not confirm, every read of an inactive `TabsContent` element from section 31, and every `ComboboxRoot` or `useComboboxRoot()` call from section 34 whose Cancel behavior you could not confirm, and every cast kept for an attribute or listener outside the typed set from section 35, that you left unchanged because the rule said to ask, with file and line.
+2. Every `active` / `inactive` selector, every open or closed selector you could not attribute to a popup trigger or its content, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every combobox whose app code depends on focus returning to the trigger on close with the input outside the content from section 16, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, every Splitter handler that ignores keyboard collapses, cancelled structural layout change or `v-model:layout` suggestion from section 22, every `NavigationMenuContent` double-emit compensation or focus-only `interactOutside` handler from section 23, every alias to a copy without per-component entry points from section 24, every transition on a part, hover-only transition and hand-written unmount delay from section 25, every shadow-root teleport target, document stylesheet for portalled content or shadow DOM workaround from section 27, every drawer `update:open` handler that does more than cancel, hand-written tree selection workaround or select flag without `multiple` from section 28, and every cancelling `beforeUpdate:modelValue` on an uncontrolled `AutocompleteRoot` from section 29, every kept `@internationalized/date` use, existing Temporal polyfill or TypeScript 5 project from section 30, every `TabsRoot` whose empty initial state you could not confirm, every `TabsRoot` whose reliance on automatic activation you could not confirm, every read of an inactive `TabsContent` element from section 31, and every `ComboboxRoot` or `useComboboxRoot()` call from section 34 whose Cancel behavior you could not confirm, every cast kept for an attribute or listener outside the typed set from section 35, and every `PaginationRoot`, `NavigationMenuViewport`, `PinInputRoot` or `ListboxRoot` from sections 37 to 40 whose reliance on the v2 default you could not confirm, that you left unchanged because the rule said to ask, with file and line.
 3. The result of the type-check, lint and test commands, compared with the baseline you recorded at the start.

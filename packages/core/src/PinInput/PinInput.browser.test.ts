@@ -2,9 +2,10 @@ import { mount } from '@vue/test-utils'
 import { expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { h, nextTick, ref } from 'vue'
+import { ConfigProvider } from '@/ConfigProvider'
 import { PinInputInput, PinInputRoot } from '.'
 
-it('accepts a partial required PIN unless complete validation is enabled', async () => {
+it('requires every PIN input by default and accepts a partial required PIN with `requireComplete: false`', async () => {
   const required = ref(true)
   const requireComplete = ref<boolean>()
   const onSubmit = vi.fn((event: Event) => event.preventDefault())
@@ -20,13 +21,17 @@ it('accepts a partial required PIN unless complete validation is enabled', async
   await userEvent.click(inputs[0].element)
   await userEvent.keyboard('0')
   expect(new FormData(form).get('pin')).toBe('0')
-  expect(form.checkValidity()).toBe(true)
-  requireComplete.value = true
-  await nextTick()
   expect(form.checkValidity()).toBe(false)
   expect(formInput.validationMessage).toBe('Please fill in every PIN field.')
   form.requestSubmit()
   expect(onSubmit).not.toHaveBeenCalled()
+
+  requireComplete.value = false
+  await nextTick()
+  expect(form.checkValidity()).toBe(true)
+  requireComplete.value = undefined
+  await nextTick()
+  expect(form.checkValidity()).toBe(false)
 
   await userEvent.click(inputs[1].element)
   await userEvent.keyboard('123')
@@ -46,6 +51,30 @@ it('accepts a partial required PIN unless complete validation is enabled', async
   await nextTick()
   expect(form.checkValidity()).toBe(true)
   expect(new FormData(form).get('pin')).toBe('023')
+  wrapper.unmount()
+})
+
+it('reads the incomplete PIN message from the `ConfigProvider` translations', async () => {
+  const wrapper = mount(() => h(ConfigProvider, { translations: { pinInputIncomplete: 'Bitte alle Felder ausfüllen.' } }, () => h('form', [
+    h(PinInputRoot, { name: 'pin', required: true, defaultValue: ['1', ''] }, () =>
+      Array.from({ length: 2 }, (_, index) => h(PinInputInput, { index }))),
+  ])), { attachTo: document.body })
+  await nextTick()
+  const formInput = document.querySelector('form')!.elements.namedItem('pin') as HTMLInputElement
+  expect(formInput.validationMessage).toBe('Bitte alle Felder ausfüllen.')
+  wrapper.unmount()
+})
+
+it('keeps the English incomplete PIN message for an empty translation', async () => {
+  const wrapper = mount(() => h(ConfigProvider, { translations: { pinInputIncomplete: '' } }, () => h('form', [
+    h(PinInputRoot, { name: 'pin', required: true, defaultValue: ['1', ''] }, () =>
+      Array.from({ length: 2 }, (_, index) => h(PinInputInput, { index }))),
+  ])), { attachTo: document.body })
+  await nextTick()
+  const form = document.querySelector('form')!
+  const formInput = form.elements.namedItem('pin') as HTMLInputElement
+  expect(formInput.validationMessage).toBe('Please fill in every PIN field.')
+  expect(form.checkValidity()).toBe(false)
   wrapper.unmount()
 })
 

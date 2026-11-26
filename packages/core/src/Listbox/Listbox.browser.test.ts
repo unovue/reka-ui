@@ -58,8 +58,8 @@ async function focusInput() {
 
 describe('given a Listbox whose value is set programmatically while focus is outside, in a real browser', () => {
   describe.each([['non-virtual', false], ['virtual', true]])('%s', (_, virtual) => {
-    it('keeps focus on the input with `keepFocusOnValueChange`', async () => {
-      const { selected } = mountListbox({ keepFocusOnValueChange: true, virtual })
+    it('keeps focus on the input by default', async () => {
+      const { selected } = mountListbox({ virtual })
       await settle()
       await focusInput()
 
@@ -71,8 +71,8 @@ describe('given a Listbox whose value is set programmatically while focus is out
       expect(tabStop()).toEqual(['Option 20'])
     })
 
-    it('moves focus to the selected item by default', async () => {
-      const { selected } = mountListbox({ virtual })
+    it('moves focus to the selected item with `keepFocusOnValueChange: false`', async () => {
+      const { selected } = mountListbox({ keepFocusOnValueChange: false, virtual })
       await settle()
       await focusInput()
 
@@ -82,8 +82,8 @@ describe('given a Listbox whose value is set programmatically while focus is out
     })
   })
 
-  it('does not scroll the page to a listbox below the fold with `keepFocusOnValueChange`', async () => {
-    const { selected } = mountListbox({ keepFocusOnValueChange: true, belowFold: true })
+  it('does not scroll the page to a listbox below the fold by default', async () => {
+    const { selected } = mountListbox({ belowFold: true })
     await settle()
     await focusInput()
     window.scrollTo(0, 0)
@@ -96,7 +96,7 @@ describe('given a Listbox whose value is set programmatically while focus is out
     expect(document.activeElement).toBe(input())
   })
 
-  it.each([[true], [undefined]])('moves focus to the new item when focus is already inside the listbox (keepFocusOnValueChange: %s)', async (keepFocusOnValueChange) => {
+  it.each([[undefined], [false]])('moves focus to the new item when focus is already inside the listbox (keepFocusOnValueChange: %s)', async (keepFocusOnValueChange) => {
     const { selected } = mountListbox({ keepFocusOnValueChange })
     await settle()
     // Tab in rather than click, so no user selection is in flight when the value changes.
@@ -109,8 +109,8 @@ describe('given a Listbox whose value is set programmatically while focus is out
     expect(highlighted()).toEqual(['Option 4'])
   })
 
-  it('keeps keyboard navigation and selection working with `keepFocusOnValueChange`', async () => {
-    const { selected } = mountListbox({ keepFocusOnValueChange: true })
+  it('keeps keyboard navigation and selection working by default', async () => {
+    const { selected } = mountListbox()
     await settle()
     await focusInput()
     selected.value = 'Option 2'
@@ -136,7 +136,7 @@ describe('given a Listbox whose value is set programmatically while focus is out
   })
 
   it.each([['non-virtual', false], ['virtual', true]])('%s: moves focus to the new item when the focused item is removed in the same update', async (_, virtual) => {
-    const { selected, shown } = mountListbox({ keepFocusOnValueChange: true, virtual })
+    const { selected, shown } = mountListbox({ virtual })
     await settle()
     await focusInput()
     await userEvent.tab()
@@ -151,7 +151,7 @@ describe('given a Listbox whose value is set programmatically while focus is out
   })
 
   it('highlights the first enabled option of the full list when a virtual list is cleared, without moving focus', async () => {
-    const { selected } = mountListbox({ keepFocusOnValueChange: true, virtual: true, count: 200, disabled: ['Option 0'] })
+    const { selected } = mountListbox({ virtual: true, count: 200, disabled: ['Option 0'] })
     await settle()
     await focusInput()
 
@@ -174,7 +174,7 @@ describe('given a Listbox whose value is set programmatically while focus is out
   })
 
   it.each([['non-virtual', false], ['virtual', true]])('%s: a later change made after focus leaves supersedes an earlier pending highlight', async (_, virtual) => {
-    const { selected } = mountListbox({ keepFocusOnValueChange: true, virtual })
+    const { selected } = mountListbox({ virtual })
     await settle()
     await focusInput()
     await userEvent.tab()
@@ -193,7 +193,7 @@ describe('given a Listbox whose value is set programmatically while focus is out
     expect(tabStop()).toEqual(['Option 8'])
   })
 
-  it.each([[true], [undefined]])('moves focus to the first option when a virtual list is cleared with focus inside (keepFocusOnValueChange: %s)', async (keepFocusOnValueChange) => {
+  it.each([[undefined], [false]])('moves focus to the first option when a virtual list is cleared with focus inside (keepFocusOnValueChange: %s)', async (keepFocusOnValueChange) => {
     const { selected } = mountListbox({ keepFocusOnValueChange, virtual: true, count: 200 })
     await settle()
     await focusInput()

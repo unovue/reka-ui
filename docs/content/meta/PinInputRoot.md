@@ -72,9 +72,10 @@
   },
   {
     'name': 'requireComplete',
-    'description': '<p>When <code>true</code> and <code>required</code>, every mounted PIN input must be filled before the form can be submitted. Defaults to <code>false</code>.</p>\n',
+    'description': '<p>When <code>true</code> and <code>required</code>, every mounted PIN input must be filled before the form can be submitted.\nSet to <code>false</code> to accept a shorter, nonempty PIN as a required value.</p>\n',
     'type': 'boolean',
-    'required': false
+    'required': false,
+    'default': 'true'
   },
   {
     'name': 'required',
@@ -135,7 +136,7 @@
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `otp` | When `true`, mobile devices will autodetect the OTP from messages or clipboard, and enable the autocomplete field. | `boolean` | No | - |
 | `placeholder` | The placeholder character to use for empty pin-inputs. | `string` | No | `""` |
-| `requireComplete` | When `true` and `required`, every mounted PIN input must be filled before the form can be submitted. Defaults to `false`. | `boolean` | No | - |
+| `requireComplete` | When `true` and `required`, every mounted PIN input must be filled before the form can be submitted. Set to `false` to accept a shorter, nonempty PIN as a required value. | `boolean` | No | `true` |
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `type` | Input type for the inputs. | `PinInputType` | No | `"text" as any` |
 

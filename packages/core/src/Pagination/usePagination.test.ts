@@ -21,6 +21,13 @@ describe('usePagination — model', () => {
     expect(usePagination({ itemsPerPage: 10, total: 50, defaultPage: 3 }).page.value).toBe(3)
   })
 
+  it('reads a page past the page count within range unless `clampPage` is `false`', () => {
+    expect(usePagination({ itemsPerPage: 10, total: 50, page: () => 20 }).page.value).toBe(5)
+    const unclamped = usePagination({ itemsPerPage: 10, total: 50, page: () => 20, clampPage: false })
+    expect(unclamped.page.value).toBe(20)
+    expect(unclamped.modelPage.value).toBe(20)
+  })
+
   it('uncontrolled: setPage writes and fires onUpdate once per real change', () => {
     const onUpdate = vi.fn()
     const p = usePagination({ itemsPerPage: 10, total: 100, onUpdate })

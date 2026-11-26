@@ -13,3 +13,5 @@ ba = "ba"
 caf = "caf"
 # French step-announcement examples ("step ... of ...").
 sur = "sur"
+# German translation fixtures ("Bitte alle Felder ausfüllen.")
+alle = "alle"

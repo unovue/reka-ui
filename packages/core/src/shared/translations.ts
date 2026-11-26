@@ -109,6 +109,8 @@ export const defaultTranslations = /* @__PURE__ */ Object.freeze({
   pinInputLabel: 'pin input',
   /** PinInputInput. */
   pinInputLabelIndexed: 'pin input {index} of {total}',
+  /** PinInputRoot: the validation message of a required PIN with an empty input (`requireComplete`). */
+  pinInputIncomplete: 'Please fill in every PIN field.',
 
   /** SliderThumb, SliderAreaThumb: the first of two thumbs. */
   sliderMinimum: 'Minimum',

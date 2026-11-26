@@ -441,9 +441,9 @@ function onInput(event: Event) {
 
 ### Keeping focus when the value changes
 
-By default, changing `modelValue` from code after mount highlights the selected item and moves focus to it. Set `keepFocusOnValueChange` when the value can change while the user is working elsewhere, for example typing in a text input. If focus is outside the listbox at that moment, the item is highlighted and becomes the tab stop, but focus stays where it is and the page is not scrolled to the listbox (a virtualized list still scrolls its own viewport to the item). If focus is already inside the listbox, focus follows the new highlight as usual. Clicking, keyboard navigation and typeahead are not affected.
+Changing `modelValue` from code after mount highlights the selected item. The value can change while the user is working elsewhere, for example typing in a text input. If focus is outside the listbox at that moment, the item is highlighted and becomes the tab stop, but focus stays where it is and the page is not scrolled to the listbox (a virtualized list still scrolls its own viewport to the item). If focus is already inside the listbox, focus follows the new highlight as usual. Clicking, keyboard navigation and typeahead are not affected.
 
-```vue line=22
+```vue
 <script setup lang="ts">
 import { ListboxContent, ListboxItem, ListboxRoot } from 'reka-ui'
 import { ref } from 'vue'
@@ -463,10 +463,7 @@ function onInput(event: Event) {
     aria-label="Fruit"
     @input="onInput"
   >
-  <ListboxRoot
-    v-model="fruit"
-    keep-focus-on-value-change
-  >
+  <ListboxRoot v-model="fruit">
     <ListboxContent>
       <ListboxItem
         v-for="item in fruits"
@@ -476,6 +473,19 @@ function onInput(event: Event) {
         {{ item }}
       </ListboxItem>
     </ListboxContent>
+  </ListboxRoot>
+</template>
+```
+
+Set `:keep-focus-on-value-change="false"` to move focus to the selected item, and scroll it into view, on every programmatic change.
+
+```vue
+<template>
+  <ListboxRoot
+    v-model="fruit"
+    :keep-focus-on-value-change="false"
+  >
+    …
   </ListboxRoot>
 </template>
 ```
