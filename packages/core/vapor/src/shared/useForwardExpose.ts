@@ -27,11 +27,13 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
   const resolve = (key: PropertyKey) => {
     if (key === '$el')
       return currentElement.value ?? findElement(instance.block)
-    if (key in local)
-      return local[key as string]
+    // A forwarded child's exposed key wins over this component's own, as in v2 (`useForwardExpose.ts`
+    // defines the child's keys over its own). A Vapor child ref is the child's expose proxy.
     const child = currentRef.value as any
     if (child && !(child instanceof Element) && key in child)
       return child[key]
+    if (key in local)
+      return local[key as string]
     return instance.props[key as string]
   }
   const keys = () => [...new Set(['$el', ...Object.keys(local), ...Object.keys(instance.props)])]
