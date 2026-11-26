@@ -12,7 +12,7 @@ export interface MenubarTriggerProps extends PrimitiveProps {
 import { mergeProps, onMounted } from 'vue'
 import { useCollectionItem } from '@/Collection'
 import { usePopperAnchor } from '@/Popper/usePopperAnchor'
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { injectMenubarMenuContext } from './MenubarMenu.vue'
 import { injectMenubarRootContext } from './MenubarRoot.vue'
@@ -58,7 +58,7 @@ const roving = useRovingFocusItem({
 
 <template>
   <component
-    :is="renderAs(as, asChild)"
+    :is="renderAsControl(as, asChild)"
     :ref="forwardRef"
     v-bind="mergeProps(anchor.consumerAttrs($attrs), roving.attrs(), { type: as === 'button' ? 'button' : undefined }, trigger.attrs.value, { disabled: disabledAttr(trigger.attrs.value.disabled as boolean | undefined, as, asChild) })"
   >
