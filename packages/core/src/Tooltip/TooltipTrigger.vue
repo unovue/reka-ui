@@ -11,7 +11,7 @@ export interface TooltipTriggerProps extends PopperAnchorProps {}
 import type { PopperAnchorProps } from '@/Popper'
 import { mergeProps, watch } from 'vue'
 import { usePopperAnchor } from '@/Popper/usePopperAnchor'
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { injectTooltipRootContext } from './TooltipRoot.vue'
 import { createTooltipTriggerSurface } from './useTooltip'
 
@@ -47,7 +47,7 @@ watch(triggerElement, (el) => {
 
 <template>
   <component
-    :is="renderAs(as, asChild)"
+    :is="renderAsControl(as, asChild)"
     :ref="forwardRef"
     v-bind="mergeProps({ type: !asChild && as === 'button' ? 'button' : undefined }, $attrs, trigger.attrs.value)"
   >
