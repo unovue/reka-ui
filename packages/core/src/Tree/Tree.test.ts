@@ -853,6 +853,18 @@ describe('given a Tree whose items carry their subtree', () => {
     expect(visits()).toBe(0)
   })
 
+  // The children of a single selected item are not watched, so a change inside them is not a selection change.
+  it('should not watch the children of a single selected item', async () => {
+    const { items } = build()
+    const selected = ref<Node>({ ...items[0] })
+    const { emitted } = mountTree({ modelValue: selected.value }, items)
+
+    selected.value.children!.push({ id: 'a-new' })
+    await nextTick()
+
+    expect(emitted).toHaveLength(0)
+  })
+
   it('should emit when the parent pushes to or splices the selection in place', async () => {
     const { items } = build()
     const selected = ref<Node[]>([])
