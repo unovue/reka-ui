@@ -4,6 +4,7 @@ import type { CheckboxGroupChangeReason } from './useCheckboxGroup'
 import type { FieldRootContext } from '@/Field/FieldRoot.vue'
 import type { PrimitiveHTMLAttributes } from '@/Primitive'
 import type { RovingFocusGroupProps } from '@/RovingFocus'
+import type { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
 import { computed, mergeProps, toRef, useAttrs, watch } from 'vue'
@@ -69,6 +70,12 @@ export interface CheckboxGroupRootContext {
    * @internal
    */
   field?: FieldRootContext
+  /**
+   * What a checkbox of a `rovingFocus` group registers as a roving item with. Handed over by the
+   * group, so a checkbox outside one does not bundle the roving focus and collection code.
+   * @internal
+   */
+  useRovingFocusItem?: typeof useRovingFocusItem
 }
 
 export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
@@ -80,6 +87,7 @@ import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { provideRovingFocusNoActiveItem } from '@/RovingFocus/useRovingFocusGroup'
+import { useRovingFocusItem as useRovingItem } from '@/RovingFocus/useRovingFocusItem'
 import { formResetBinder } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -165,7 +173,9 @@ const rovingFocusProps = computed(() => {
   return rovingFocus.value ? { as: props.as, asChild: props.asChild, loop: props.loop, dir: dir.value, orientation: props.orientation } : {}
 })
 
-provideCheckboxGroupRootContext(field ? { ...context, field: field.context } : context)
+provideCheckboxGroupRootContext(field
+  ? { ...context, field: field.context, useRovingFocusItem: useRovingItem }
+  : { ...context, useRovingFocusItem: useRovingItem })
 
 // `$attrs` isn't reactive, so the Field's wiring is read during render. Its
 // state attributes fill in what's left unset; its aria ids are merged with the consumer's.

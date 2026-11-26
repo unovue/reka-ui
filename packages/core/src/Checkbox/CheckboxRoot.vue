@@ -122,7 +122,6 @@ function ariaControlsOf(group: CheckboxGroupRootContext) {
 <script setup lang="ts" generic="TrueValue = true, FalseValue = false">
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { renderAs } from '@/Primitive/renderAs'
-import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { isEqual } from '@/shared/compare'
 import { formResetBinder } from '@/shared/formReset'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
@@ -239,9 +238,10 @@ useAgentRegistration('checkbox', context, props, currentElement, setChecked)
 // In a `rovingFocus` group the checkbox is a roving item, as a composable (the
 // former `RovingFocusItem` wrapper). The group renders `RovingFocusGroup` only
 // when `rovingFocus` is set, and switching it remounts the checkboxes, so it is
-// read once.
-const roving = checkboxGroupContext?.rovingFocus.value
-  ? useRovingFocusItem({ element: currentElement, focusable: () => !disabled.value })
+// read once. The group hands the composable over, so a standalone checkbox
+// does not bundle the roving focus and collection code.
+const roving = checkboxGroupContext?.rovingFocus.value && checkboxGroupContext.useRovingFocusItem
+  ? checkboxGroupContext.useRovingFocusItem({ element: currentElement, focusable: () => !disabled.value })
   : null
 
 // `attrs` isn't reactive, so the Field's wiring is read during render. Its aria
