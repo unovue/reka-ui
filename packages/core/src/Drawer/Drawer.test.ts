@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { findByText, fireEvent, render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import {
   DrawerBackdrop,
   DrawerClose,
@@ -691,5 +691,55 @@ describe('given nested Drawers', () => {
     await fireEvent.click(getByText('Open parent'))
     await nextTick()
     expect(frontmostHeight(getByTestId('parent'))).toBe(`${PARENT_HEIGHT}px`)
+  })
+})
+
+describe('given a force-mounted DrawerPopup', () => {
+  function renderDrawer(modal: boolean | 'trap-focus') {
+    const open = ref(false)
+    const result = render(defineComponent({
+      setup: () => () => h('div', [
+        h('button', { 'data-testid': 'outside' }, 'Outside'),
+        h(DrawerRoot, { 'open': open.value, modal, 'onUpdate:open': (value: boolean) => open.value = value }, () => [
+          h(DrawerTrigger, () => OPEN_TEXT),
+          h(DrawerPopup, { forceMount: true }, () => [
+            h(DrawerTitle, () => TITLE_TEXT),
+            h('input', { 'data-testid': 'field' }),
+            h(DrawerClose, () => CLOSE_TEXT),
+          ]),
+        ]),
+      ]),
+    }))
+    return { ...result, open }
+  }
+
+  // v3 covers the page under a fully modal drawer with an internal backdrop, not `<body>` pointer-events.
+  const isPageBlocked = () => !!document.querySelector('[data-reka-internal-backdrop]')
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it.each([true, 'trap-focus', false] as const)('acts as an open drawer only while open (modal %s)', async (modal) => {
+    const user = userEvent.setup()
+    const { getByTestId, getByText, open, unmount } = renderDrawer(modal)
+    const content = document.querySelector('[role="dialog"]')!
+    await new Promise(resolve => setTimeout(resolve))
+    expect(content.getAttribute('data-state')).toBe('closed')
+    expect.soft(document.activeElement).toBe(document.body)
+    expect.soft(isPageBlocked()).toBe(false)
+    expect.soft(content.hasAttribute('forcemount')).toBe(false)
+
+    await user.click(getByText(OPEN_TEXT))
+    await vi.waitFor(() => expect(document.activeElement).toBe(getByTestId('field')))
+    expect(isPageBlocked()).toBe(modal === true)
+
+    await user.click(getByText(CLOSE_TEXT))
+    expect(open.value).toBe(false)
+    await vi.waitFor(() => expect(document.activeElement).toBe(getByText(OPEN_TEXT)))
+    expect(document.querySelector('[role="dialog"]')).toBe(content)
+    expect(isPageBlocked()).toBe(false)
+
+    unmount()
   })
 })
