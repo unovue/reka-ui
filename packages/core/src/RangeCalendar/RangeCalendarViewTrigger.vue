@@ -19,7 +19,7 @@ export interface RangeCalendarViewTriggerSlot {
 <script setup lang="ts">
 import { getCalendarViewTriggerSurface } from '@/Calendar/useCalendar'
 import { renderAs } from '@/Primitive/renderAs'
-import { useForwardElement } from '@/shared'
+import { disabledAttr, useForwardElement } from '@/shared'
 import { injectRangeCalendarRootContext } from './RangeCalendarRoot.vue'
 
 const props = withDefaults(defineProps<RangeCalendarViewTriggerProps>(), { as: 'button' })
@@ -37,6 +37,7 @@ const surface = getCalendarViewTriggerSurface(rootContext)
     :ref="forwardRef"
     :type="props.as === 'button' ? 'button' : undefined"
     v-bind="surface.attrs.value"
+    :disabled="disabledAttr(surface.state.value.disabled, as, asChild)"
   >
     <slot
       :heading-value="rootContext.headingValue.value"
