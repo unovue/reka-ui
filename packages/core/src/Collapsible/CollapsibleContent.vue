@@ -15,7 +15,7 @@ export type CollapsibleContentEmits = {
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Presence } from '@/Presence'
 import {
   Primitive,
@@ -117,6 +117,22 @@ function handleBeforeMatch() {
     emits('contentFound')
   })
 }
+
+// Bound on the element, not in the template: with `asChild` a template listener is handed to the
+// child, and a component child that declares the event (or does not pass its attributes on) would
+// keep it from the element. One watcher follows the element for both events.
+let boundElement: HTMLElement | undefined
+function bindListeners(element: HTMLElement | undefined) {
+  if (element === boundElement)
+    return
+  boundElement?.removeEventListener('animationend', handleAnimationEnd)
+  boundElement?.removeEventListener('beforematch', handleBeforeMatch)
+  boundElement = element
+  element?.addEventListener('animationend', handleAnimationEnd)
+  element?.addEventListener('beforematch', handleBeforeMatch)
+}
+watch(currentElement, bindListeners, { immediate: true, flush: 'post' })
+onBeforeUnmount(() => bindListeners(undefined))
 </script>
 
 <template>
@@ -139,8 +155,6 @@ function handleBeforeMatch() {
         [`--reka-collapsible-content-height`]: `${height}px`,
         [`--reka-collapsible-content-width`]: `${width}px`,
       }"
-      @animationend="handleAnimationEnd"
-      @beforematch="handleBeforeMatch"
     >
       <slot v-if="rootContext.unmountOnHide.value ? present : true" />
     </Primitive>
