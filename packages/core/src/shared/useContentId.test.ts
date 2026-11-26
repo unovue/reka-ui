@@ -147,8 +147,7 @@ describe.each(Object.entries(families))('%s', (name, family) => {
     app.unmount()
   })
 
-  // TODO(v3-port): #2866 v3's NavigationMenuTrigger keeps its generated aria-controls over a consumer content id
-  ;(name === 'NavigationMenu (forceMount)' ? it.skip : it)('follows an id the consumer passes to the content', async () => {
+  it('follows an id the consumer passes to the content', async () => {
     const contentProps = ref<Record<string, unknown>>({ id: 'consumer-content' })
     const wrapper = mount(createFixture(family, ref(family.open), 0, contentProps), { attachTo: document.body })
     await settle()

@@ -89,10 +89,7 @@ afterEach(() => {
 })
 
 describe('modal focus and aria-hidden ordering', () => {
-  // TODO(v3-port): #3060 floating lane: v3's DropdownMenuTrigger keeps its generated id over the consumer's `id="trigger"`
-  it.for(CASES)('keeps focus exposed when $name opens, closes and reopens', async ({ name, parts, rootProps, contentProps, modal }, { skip }) => {
-    if (name === 'DropdownMenu')
-      return skip()
+  it.for(CASES)('keeps focus exposed when $name opens, closes and reopens', async ({ parts, rootProps, contentProps, modal }) => {
     const host = createHost()
     mount(defineComponent({
       setup: () => () => h(parts.Root, rootProps, () => [

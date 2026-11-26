@@ -83,7 +83,8 @@ function stepper(title: boolean): Case {
   }
 }
 
-// TODO(v3-port): #3377 the Month/Year picker cases were dropped: those families are deleted in v3
+// v2's Month/Year picker heading cases are not here: v3 folds those pickers into Calendar, whose grids
+// reference a visually hidden heading the root renders rather than a consumer part.
 const cases: Record<string, Case> = {
   DialogTitle: dialog(true),
   DialogDescription: dialog(false),
@@ -213,11 +214,7 @@ function references(referrer: HTMLElement, attribute: string) {
   return referrer.getAttribute(attribute)?.split(/\s+/) ?? []
 }
 
-// TODO(v3-port): #3377 the parts that follow a consumer id on the referenced part in v3 so far
-const FOLLOWS_CONSUMER_ID_IN_V3 = new Set(['DialogTitle', 'DialogDescription', 'AlertDialogTitle', 'AlertDialogDescription', 'DrawerTitle', 'DrawerDescription', 'FieldLabel', 'StepperTitle', 'StepperDescription'])
-
 describe.each(Object.entries(cases))('%s', (name, { generatedId, attribute, render, multipleParts = true }) => {
-  const itFollows = FOLLOWS_CONSUMER_ID_IN_V3.has(name) ? it : it.skip
   const part = { 'data-testid': 'part' }
   const second = { 'data-testid': 'part-2' }
   const referrer = { 'data-testid': 'referrer' }
@@ -232,7 +229,7 @@ describe.each(Object.entries(cases))('%s', (name, { generatedId, attribute, rend
     wrapper.unmount()
   })
 
-  itFollows('points the reference at a consumer id', async () => {
+  it('points the reference at a consumer id', async () => {
     const wrapper = mount(defineComponent({ render: () => render([{ ...part, id: 'consumer-id' }], referrer) }), { attachTo: document.body })
     await settle()
     expect(find('part').id).toBe('consumer-id')
@@ -240,7 +237,7 @@ describe.each(Object.entries(cases))('%s', (name, { generatedId, attribute, rend
     wrapper.unmount()
   })
 
-  itFollows('follows a consumer id that changes after mount', async () => {
+  it('follows a consumer id that changes after mount', async () => {
     const id = ref('first-id')
     const wrapper = mount(defineComponent({ render: () => render([{ ...part, id: id.value }], referrer) }), { attachTo: document.body })
     await settle()
@@ -251,8 +248,7 @@ describe.each(Object.entries(cases))('%s', (name, { generatedId, attribute, rend
     wrapper.unmount()
   })
 
-  // TODO(v3-port): #3377 v3's Dialog, AlertDialog and Drawer reference the last part's consumer id
-  ;(name.startsWith('Stepper') ? it : it.skip)('renders each part\'s own consumer id and references the first, without an update loop', async () => {
+  it('renders each part\'s own consumer id and references the first, without an update loop', async () => {
     const warn = vi.spyOn(console, 'warn')
     onTestFinished(() => warn.mockRestore())
     const wrapper = mount(defineComponent({
@@ -267,7 +263,7 @@ describe.each(Object.entries(cases))('%s', (name, { generatedId, attribute, rend
     wrapper.unmount()
   })
 
-  itFollows('keeps the generated id on a plain part beside one with a consumer id', async () => {
+  it('keeps the generated id on a plain part beside one with a consumer id', async () => {
     const wrapper = mount(defineComponent({
       render: () => render([{ ...part, id: 'consumer-id' }, second], referrer),
     }), { attachTo: document.body })
@@ -293,7 +289,7 @@ describe.each(Object.entries(cases))('%s', (name, { generatedId, attribute, rend
     wrapper.unmount()
   })
 
-  itFollows('releases the reference when the part unmounts and claims it again on remount', async () => {
+  it('releases the reference when the part unmounts and claims it again on remount', async () => {
     const shown = ref(true)
     const wrapper = mount(defineComponent({
       render: () => render(shown.value ? [{ ...part, id: 'consumer-id' }] : [], referrer),
@@ -308,7 +304,7 @@ describe.each(Object.entries(cases))('%s', (name, { generatedId, attribute, rend
     wrapper.unmount()
   })
 
-  ;(FOLLOWS_CONSUMER_ID_IN_V3.has(name) && multipleParts ? it : it.skip)('hands the reference to the next consumer id when the first part unmounts', async () => {
+  it.skipIf(!multipleParts)('hands the reference to the next consumer id when the first part unmounts', async () => {
     const shown = ref(true)
     const wrapper = mount(defineComponent({
       render: () => render([
@@ -355,8 +351,7 @@ describe('server render and hydration with consumer ids', () => {
     expect(container.querySelector('[data-testid="control"]')!.getAttribute('aria-labelledby')).toBe('my-label')
   })
 
-  // TODO(v3-port): #3377 v3's FieldLabel/SelectLabel/SelectItemText do not follow a consumer id
-  it.skip('references a consumer id on SelectLabel and SelectItemText', async () => {
+  it('references a consumer id on SelectLabel and SelectItemText', async () => {
     const container = await hydrate(() => h(SelectRoot, { open: true }, () => [
       h(SelectTrigger, () => 'Open'),
       h(SelectContent, { position: 'popper' }, () => h(SelectViewport, () =>
@@ -431,9 +426,7 @@ describe('a referring part rendered before the part that claims a consumer id', 
       </DropdownMenuGroup></DropdownMenuContent></DropdownMenuRoot>` },
   }
 
-  // TODO(v3-port): #3377 v3's TagsInput, Select, Listbox and Menu parts do not follow a consumer id
-  const itTemplate = (name: string) => name.startsWith('Stepper') ? it : it.skip
-  describe.each(Object.entries(templates))('%s', (name, { template, attribute = 'aria-labelledby' }) => itTemplate(name)('references the consumer id', async () => {
+  describe.each(Object.entries(templates))('%s', (_name, { template, attribute = 'aria-labelledby' }) => it('references the consumer id', async () => {
     const wrapper = mount(defineComponent({ components, template }), { attachTo: document.body })
     await settle()
     expect(document.getElementById('consumer-id')).toBeTruthy()
@@ -492,8 +485,7 @@ describe('consumer ids around Suspense and asChild', () => {
     wrapper.unmount()
   })
 
-  // TODO(v3-port): #3377 v3's ListboxGroupLabel does not follow a consumer id
-  it.skip('references an id on the child element of an asChild part', async () => {
+  it('references an id on the child element of an asChild part', async () => {
     const wrapper = mount(defineComponent({
       render: () => h(ListboxRoot, null, () => h(ListboxContent, () => h(ListboxGroup, { 'data-testid': 'referrer' }, () => [
         h(ListboxGroupLabel, { asChild: true }, () => h('span', { id: 'child-label' }, 'Group')),
@@ -506,8 +498,7 @@ describe('consumer ids around Suspense and asChild', () => {
     wrapper.unmount()
   })
 
-  // TODO(v3-port): #3377 v3's DialogTitle keeps its own id when its asChild child sets one
-  it.skip('follows an asChild title whose child element changes its id', async () => {
+  it('follows an asChild title whose child element changes its id', async () => {
     const id = ref('first-title')
     const wrapper = mount(defineComponent({
       render: () => h(DialogRoot, { defaultOpen: true }, () => h(DialogContent, { 'data-testid': 'referrer' }, () => [
