@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { MenuOpenChangeReason } from './useMenu'
 import type { Direction } from './utils'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { createContext, useDirection } from '@/shared'
+import { createRekaContext, useDirection } from '@/shared'
 
 export interface MenuContext {
   open: ComputedRef<boolean>
@@ -85,10 +85,10 @@ export type MenuEmits = {
 }
 
 export const [injectMenuContext, provideMenuContext]
-  = createContext<MenuContext>(['MenuRoot', 'MenuSub'], 'MenuContext')
+  = createRekaContext<MenuContext>(['MenuRoot', 'MenuSub'], 'MenuContext')
 
 export const [injectMenuRootContext, provideMenuRootContext]
-  = createContext<MenuRootContext>('MenuRoot')
+  = createRekaContext<MenuRootContext>('MenuRoot')
 </script>
 
 <script setup lang="ts">

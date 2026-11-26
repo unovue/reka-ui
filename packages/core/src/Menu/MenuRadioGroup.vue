@@ -4,7 +4,7 @@ import type { MenuGroupProps } from './MenuGroup.vue'
 import type { MenuRadioGroupChangeReason } from './utils'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue } from '@/shared/types'
-import { createContext, useControllableState, useForwardElement, useForwardProps } from '@/shared'
+import { createRekaContext, useControllableState, useForwardElement, useForwardProps } from '@/shared'
 
 interface MenuRadioGroupContext {
   modelValue: Ref<AcceptableValue>
@@ -25,7 +25,7 @@ export type MenuRadioGroupEmits = {
 }
 
 export const [injectMenuRadioGroupContext, provideMenuRadioGroupContext]
-  = createContext<MenuRadioGroupContext>('MenuRadioGroup')
+  = createRekaContext<MenuRadioGroupContext>('MenuRadioGroup')
 </script>
 
 <script setup lang="ts">

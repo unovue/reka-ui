@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardElement, useId } from '@/shared'
+import { createRekaContext, useForwardElement, useId } from '@/shared'
 
 export interface MenuGroupProps extends PrimitiveProps {}
 
@@ -9,7 +9,7 @@ interface MenuGroupContext {
 }
 
 export const [injectMenuGroupContext, provideMenuGroupContext]
-  = createContext<MenuGroupContext>('MenuGroup')
+  = createRekaContext<MenuGroupContext>('MenuGroup')
 </script>
 
 <script setup lang="ts">

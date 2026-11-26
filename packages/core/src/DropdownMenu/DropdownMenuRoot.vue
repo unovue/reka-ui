@@ -4,7 +4,7 @@ import type { Direction } from '../shared/types'
 import type { DropdownMenuHandle } from './handle'
 import type { MenuEmits, MenuOpenChangeReason, MenuProps } from '@/Menu'
 import type { BaseChangeReason } from '@/shared'
-import { createContext, useDirection, useId } from '@/shared'
+import { createRekaContext, useDirection, useId } from '@/shared'
 
 export interface DropdownMenuRootProps<Payload = unknown> extends MenuProps {
   /** The open state of the dropdown menu when it is initially rendered. Use when you do not need to control its open state. */
@@ -37,7 +37,7 @@ export interface DropdownMenuRootContext {
 }
 
 export const [injectDropdownMenuRootContext, provideDropdownMenuRootContext]
-  = createContext<DropdownMenuRootContext>('DropdownMenuRoot')
+  = createRekaContext<DropdownMenuRootContext>('DropdownMenuRoot')
 </script>
 
 <script setup lang="ts" generic="Payload = unknown">
@@ -98,7 +98,10 @@ usePopupHandleAttachment(handleStore)
 </script>
 
 <template>
-  <PopperRoot scope="menu" :reference="handleStore.handle.value ? handleStore.anchor.value : undefined">
+  <PopperRoot
+    scope="menu"
+    :reference="handleStore.handle.value ? handleStore.anchor.value : undefined"
+  >
     <slot
       :open="open"
       :payload="payload"

@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { createContext } from '@/shared'
+import { createRekaContext } from '@/shared'
 
 /** Why the hover card's `open` state changed (#2828); the `reason` of `ChangeEventDetails`. */
 export type HoverCardOpenChangeReason
@@ -68,7 +68,7 @@ export interface HoverCardRootContext {
 }
 
 export const [injectHoverCardRootContext, provideHoverCardRootContext]
-  = createContext<HoverCardRootContext>('HoverCardRoot')
+  = createRekaContext<HoverCardRootContext>('HoverCardRoot')
 </script>
 
 <script setup lang="ts">

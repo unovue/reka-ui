@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { MenuEmits, MenuOpenChangeReason, MenuProps } from '@/Menu'
 import type { BaseChangeReason, Direction } from '@/shared/types'
-import { createContext, useDirection } from '@/shared'
+import { createRekaContext, useDirection } from '@/shared'
 
 export type ContextMenuRootContext = {
   open: ComputedRef<boolean>
@@ -24,7 +24,7 @@ export interface ContextMenuRootProps extends MenuProps {
 export type ContextMenuRootEmits = MenuEmits
 
 export const [injectContextMenuRootContext, provideContextMenuRootContext]
-  = createContext<ContextMenuRootContext>('ContextMenuRoot')
+  = createRekaContext<ContextMenuRootContext>('ContextMenuRoot')
 </script>
 
 <script setup lang="ts">

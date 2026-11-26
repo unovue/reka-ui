@@ -5,7 +5,7 @@ import type { MenubarChangeReason } from './useMenubar'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { useCollection, useCollectionSlot } from '@/Collection'
-import { createContext, useDirection, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useForwardElement } from '@/shared'
 
 export interface MenubarRootProps extends PrimitiveProps {
   /** The controlled value of the menu to open. Can be used as `v-model`. */
@@ -50,7 +50,7 @@ export interface MenubarRootContext {
 }
 
 export const [injectMenubarRootContext, provideMenubarRootContext]
-  = createContext<MenubarRootContext>('MenubarRoot')
+  = createRekaContext<MenubarRootContext>('MenubarRoot')
 </script>
 
 <script setup lang="ts">

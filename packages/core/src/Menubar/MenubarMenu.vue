@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import { createContext, useId } from '@/shared'
+import { createRekaContext, useId } from '@/shared'
 
 export interface MenubarMenuProps {
   /**
@@ -25,7 +25,7 @@ export type MenubarMenuContext = {
 }
 
 export const [injectMenubarMenuContext, provideMenubarMenuContext]
-  = createContext<MenubarMenuContext>('MenubarMenu')
+  = createRekaContext<MenubarMenuContext>('MenubarMenu')
 </script>
 
 <script setup lang="ts">

@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { MenuContext } from './MenuRoot.vue'
 import type { MenuOpenChangeReason } from './useMenu'
 import type { ChangeEventDetails } from '@/shared'
-import { createContext, useControllableState, useId } from '@/shared'
+import { createRekaContext, useControllableState, useId } from '@/shared'
 
 export interface MenuSubContext {
   contentId: string
@@ -14,7 +14,7 @@ export interface MenuSubContext {
 }
 
 export const [injectMenuSubContext, provideMenuSubContext]
-  = createContext<MenuSubContext>('MenuSub')
+  = createRekaContext<MenuSubContext>('MenuSub')
 
 export interface MenuSubProps {
   /** The controlled open state of the menu. Can be used as `v-model:open`. */

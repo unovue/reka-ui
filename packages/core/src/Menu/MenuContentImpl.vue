@@ -17,7 +17,7 @@ import type { RovingFocusGroupEmits } from '@/RovingFocus'
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
 
 import {
-  createContext,
+  createRekaContext,
   useFocusGuards,
   useForwardElement,
 } from '@/shared'
@@ -41,7 +41,7 @@ export interface MenuContentContext {
 }
 
 export const [injectMenuContentContext, provideMenuContentContext]
-  = createContext<MenuContentContext>('MenuContent')
+  = createRekaContext<MenuContentContext>('MenuContent')
 
 /**
  * The element a modal root menu keeps interactive through a hole in its
@@ -50,7 +50,7 @@ export const [injectMenuContentContext, provideMenuContentContext]
  * menu at the new point. Provided by the family's `*Content`.
  */
 export const [injectMenuBackdropCutoutContext, provideMenuBackdropCutoutContext]
-  = createContext<Ref<HTMLElement | undefined>>('MenuContent', 'MenuBackdropCutoutContext')
+  = createRekaContext<Ref<HTMLElement | undefined>>('MenuContent', 'MenuBackdropCutoutContext')
 
 export interface MenuContentImplPrivateProps {
   /**
