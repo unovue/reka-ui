@@ -865,47 +865,6 @@ describe('given a Tree whose items carry their subtree', () => {
     expect(emitted).toHaveLength(0)
   })
 
-  // TODO(v3-port): #3409 v2 emits on in-place mutation of the model (v3 dropped the deep model watch on purpose)
-  it.skip('should emit when the parent pushes to or splices the selection in place', async () => {
-    const { items } = build()
-    const selected = ref<Node[]>([])
-    const { wrapper, emitted } = mountTree({ multiple: true, modelValue: selected.value }, items)
-
-    selected.value.push(items[0])
-    await nextTick()
-    expect(emitted).toHaveLength(1)
-    expect(emitted[0].map((n: Node) => n.id)).toEqual(['a'])
-    expect(wrapper.findAll('[role=treeitem]')[0].attributes('aria-selected')).toBe('true')
-
-    selected.value.splice(0, 1, items[1])
-    await nextTick()
-    expect(emitted).toHaveLength(2)
-    expect(emitted[1].map((n: Node) => n.id)).toEqual(['b'])
-  })
-
-  // TODO(v3-port): #3409 v2 emits on in-place mutation of the model (v3 dropped the deep model watch on purpose)
-  it.skip('should emit when a field of an item in a multiple selection is changed in place', async () => {
-    const { items } = build()
-    const selected = ref<Node[]>([{ ...items[0] }])
-    const { emitted } = mountTree({ multiple: true, modelValue: selected.value }, items)
-
-    selected.value[0].label = 'renamed'
-    await nextTick()
-
-    expect(emitted).toHaveLength(1)
-    expect(emitted[0][0].label).toBe('renamed')
-  })
-
-  // TODO(v3-port): #3409 v2 emits on in-place mutation of the model (v3 dropped the deep model watch on purpose)
-  it.skip('should emit when a field of the selected item is changed in place', async () => {
-    const { items } = build()
-    const selected = ref<Node>({ ...items[0] })
-    const { emitted } = mountTree({ modelValue: selected.value }, items)
-
-    selected.value.label = 'renamed'
-    await nextTick()
-
-    expect(emitted).toHaveLength(1)
-    expect(emitted[0].label).toBe('renamed')
-  })
+  // v2's tests for an emit on an in-place mutation of the model (#3409) are left out:
+  // v3 has no deep model watch, so a mutation in place is not a change (#2967).
 })
