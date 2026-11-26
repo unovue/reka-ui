@@ -112,6 +112,7 @@ import type { EventHookOn } from '@vueuse/core'
 import { createEventHook, useVModel } from '@vueuse/core'
 import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 import { ListboxRoot } from '@/Listbox'
+import { createLazySlotProps } from '@/Listbox/utils'
 import { PopperRoot } from '@/Popper'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { useComboboxContentPositioning } from './useComboboxContentPositioning'
@@ -156,14 +157,10 @@ const open = useVModel(props, 'open', emits, {
 
 // Read when a consumer slot uses them, not when the slot is rendered: the slot is rendered by the
 // root's element, and a read there re-renders it, and through it everything in the combobox.
-const slotProps = {
-  get open() {
-    return open.value
-  },
-  get modelValue() {
-    return modelValue.value
-  },
-}
+const slotProps = createLazySlotProps({
+  open: () => open.value,
+  modelValue: () => modelValue.value,
+})
 
 // `true` while `onOpenChange` is opening the list and will highlight the selected item itself
 let isOpeningInternally = false
@@ -349,7 +346,7 @@ useAgentRegistration('combobox', agentContext, props, parentElement)
       @invalid="emits('invalid', $event as T)"
       @highlight="emits('highlight', $event as any)"
     >
-      <slot v-bind="slotProps" />
+      <slot v-bind="slotProps()" />
     </ListboxRoot>
   </PopperRoot>
 </template>
