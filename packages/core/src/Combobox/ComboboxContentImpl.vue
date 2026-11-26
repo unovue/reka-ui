@@ -4,7 +4,7 @@ import type { ComboboxInteractionType } from './useCombobox'
 import type { DismissableLayerDismissDetails, DismissableLayerEmits, DismissableLayerProps, FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 
-import { createContext, getActiveElement, getOwnerDocument, isHTMLElement, useFocusGuards, useForwardElement, useForwardProps, useHideOthers } from '@/shared'
+import { createContext, getActiveElement, getOwnerDocument, isHTMLElement, useContentId, useContentMounted, useFocusGuards, useForwardElement, useForwardProps, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 
 export type ComboboxContentImplEmits = DismissableLayerEmits
@@ -130,6 +130,10 @@ defineExpose(expose)
 const scrollLocked = useBodyScrollLock(props.present && props.bodyLock)
 watch([() => props.present, () => props.bodyLock], ([present, bodyLock]) => scrollLocked.value = present && bodyLock)
 useFocusGuards(currentElement)
+// A consumer `id` is the content's id, which the input's and trigger's `aria-controls`
+// reference while the element is rendered.
+useContentId(rootContext, currentElement)
+useContentMounted(rootContext, currentElement)
 const ariaHiddenTarget = computed(() => (props.layerPresent ?? props.present) ? rootContext.parentElement.value : undefined)
 useHideOthers(ariaHiddenTarget)
 

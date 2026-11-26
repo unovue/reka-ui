@@ -897,11 +897,11 @@ describe('combobox SSR', () => {
 
   it.each([false, true])('renders on the server and hydrates without mismatches (open: %s)', async (open) => {
     const html = await renderToString(createSSRApp(createSSRCombobox(open)))
-    const controls = html.match(/role="combobox"[^>]*aria-controls="([^"]+)"|aria-controls="([^"]+)"[^>]*role="combobox"/)
-    const contentId = controls?.[1] ?? controls?.[2]
-    expect(contentId).toMatch(/^reka-combobox-.+-content$/)
+    // The server renders no `aria-controls`: it is patched on once the content exists (#3235).
+    expect(html).not.toMatch(/role="combobox"[^>]*aria-controls=|aria-controls="[^"]+"[^>]*role="combobox"/)
+    const contentId = html.match(/id="(reka-combobox-[^"]+-content)"/)?.[1]
     if (open) {
-      expect(html).toContain(`id="${contentId}"`)
+      expect(contentId).toMatch(/^reka-combobox-.+-content$/)
       expect(html).toContain('Blueberry')
     }
 
@@ -917,7 +917,7 @@ describe('combobox SSR', () => {
     warn.mockRestore()
     error.mockRestore()
     expect(messages.filter(message => /hydration/i.test(message))).toEqual([])
-    expect(container.querySelector('[role=combobox]')?.getAttribute('aria-controls')).toBe(contentId)
+    expect(container.querySelector('[role=combobox]')?.getAttribute('aria-controls') ?? undefined).toBe(open ? contentId : undefined)
     app.unmount()
   })
 })

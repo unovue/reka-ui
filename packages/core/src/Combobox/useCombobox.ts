@@ -7,7 +7,7 @@ import type { AcceptableValue } from '@/shared/types'
 import { createEventHook, tryOnScopeDispose } from '@vueuse/core'
 import { computed, isRef, nextTick, ref, toValue } from 'vue'
 import { useListboxRoot } from '@/Listbox/useListbox'
-import { createPartSurface, disclosureState, getActiveElement, getElementByIdFrom, useComposing, useControllableState, useFilter } from '@/shared'
+import { createPartSurface, defineReactiveIds, disclosureState, getActiveElement, getElementByIdFrom, useComposing, useControllableState, useFilter } from '@/shared'
 import { getComboboxItemLabel } from './comboboxItems'
 import { useComboboxContentPositioning } from './useComboboxContentPositioning'
 
@@ -760,6 +760,8 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     items: props.items,
     notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
+  // `contentId` follows a consumer `id` on the content (`useContentId`).
+  defineReactiveIds(context, ['contentId'])
 
   const root = createPartSurface<ComboboxState>(
     () => listbox.root.props.value,

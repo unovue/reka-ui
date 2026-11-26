@@ -3,7 +3,7 @@ import type { ComboboxInputChangeReason, ComboboxOpenChangeReason } from './useC
 import type { ListboxFilterProps } from '@/Listbox'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { getCurrentScope, mergeProps, nextTick, onMounted, onUnmounted, toValue, watch } from 'vue'
-import { getElementByIdFrom, useControllableState, useForwardElement } from '@/shared'
+import { getElementByIdFrom, useControllableState, useForwardElement, useRenderedContentId } from '@/shared'
 
 export type ComboboxInputEmits = {
   /** Called before the input text changes; `details.cancel()` keeps the current text. */
@@ -68,6 +68,8 @@ const { state: modelValue, setState: setText } = useControllableState<string, Co
 
 // role/aria, the open-on-type/focus/click handling, IME composition and the
 // keyboard (routed through `getNavigationIntent`) come from the shared surface.
+// `aria-controls` references the content only while its element is rendered.
+const contentId = useRenderedContentId(rootContext)
 const surface = createComboboxInputSurface(rootContext, {
   modelValue,
   setText: (value, event) => {
@@ -242,6 +244,7 @@ watch(rootContext.filterState, (_newValue, oldValue) => {
     :is="renderAsEmpty(as, asChild)"
     :ref="forwardRef"
     v-bind="fieldContext ? getComboboxInputFieldAttrs(fieldContext, surface.attrs.value, $attrs) : mergeProps(surface.attrs.value, $attrs)"
+    :aria-controls="rootContext.open.value ? contentId : undefined"
   >
     <template
       v-if="rendersChildren(as, asChild)"

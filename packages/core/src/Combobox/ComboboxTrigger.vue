@@ -10,7 +10,7 @@ export interface ComboboxTriggerProps extends PrimitiveProps {
 <script setup lang="ts">
 import { mergeProps, onBeforeUnmount, onMounted, watch } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
-import { useForwardElement } from '@/shared'
+import { useForwardElement, useRenderedContentId } from '@/shared'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 import { getComboboxTriggerSurface } from './useCombobox'
 import { injectComboboxFieldContext } from './useComboboxField'
@@ -23,6 +23,8 @@ const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectComboboxRootContext()
 const surface = getComboboxTriggerSurface(rootContext, () => props.disabled)
+// `aria-controls` references the content only while its element is rendered.
+const contentId = useRenderedContentId(rootContext)
 // Inside a Field, an id of its own: the field's label points at the trigger
 // once there's no input to take focus (a consumer `id` falls through and wins).
 // Its focus and blur are the combobox's, as the input's are: with no input,
@@ -57,6 +59,7 @@ if (fieldContext) {
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
     v-bind="fieldContext ? mergeProps(surface.attrs.value, { onFocus: fieldContext.onFocus, onBlur: fieldContext.onBlur }) : surface.attrs.value"
+    :aria-controls="rootContext.open.value ? contentId : undefined"
   >
     <slot />
   </component>
