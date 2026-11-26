@@ -751,7 +751,8 @@ const translated: Record<string, { translations: Partial<Translations>, checks: 
     ],
   },
   PinInput: {
-    translations: { pinInputLabel: 'PIN', pinInputLabelIndexed: ({ index, total }) => `PIN-Stelle ${index} von ${total}` },
+    // `pinInputIncomplete` is a validation message, not an attribute: `PinInput.browser.test.ts` checks it.
+    translations: { pinInputLabel: 'PIN', pinInputLabelIndexed: ({ index, total }) => `PIN-Stelle ${index} von ${total}`, pinInputIncomplete: 'Bitte alle Felder ausfüllen.' },
     checks: [
       ['[data-pin="1"]', 'aria-label', 'PIN-Stelle 1 von 3'],
       ['[data-pin="3"]', 'aria-label', 'PIN-Stelle 3 von 3'],

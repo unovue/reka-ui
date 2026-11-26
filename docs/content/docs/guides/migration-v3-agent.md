@@ -1118,6 +1118,25 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 
 **Verify.** The type-check passes; each menu's viewport opens under its trigger and, inside a clipping container, stays within it.
 
+### 39. A required PinInput needs every input
+
+**What changed.**
+- `requireComplete` on `PinInputRoot` defaults to `true` (v2: `false`). A `required` PinInput is invalid until every mounted input has a value: the form does not submit and the hidden input's `validationMessage` is `Please fill in every PIN field.` (the new `pinInputIncomplete` translation key). v2 accepted any nonempty PIN.
+- A PinInput without `required` is unchanged.
+
+**How to find it.**
+- Every `PinInputRoot` (also `PinInput.Root` and `reka-pin-input-root`) with `required`, or inside a required `FieldRoot`. Note whether it sets `require-complete`, `:require-complete` or `requireComplete`.
+- Code that accepts a variable-length PIN: fewer characters than inputs, a length check such as `code.length >= 4`, or a `complete` handler that is not the only submit path.
+
+**Rewrite rules.**
+- A root that already sets `require-complete` (bare, or bound to `true`): remove the attribute; it is the default.
+- A root that binds it to `false` or to a variable: leave unchanged.
+- A required root that must accept a PIN shorter than its number of inputs: add `:require-complete="false"`. *Ask* if you cannot tell whether the PIN has a fixed length.
+- A `ConfigProvider` `translations` object for a non-English app: add `pinInputIncomplete` when the app has required PinInputs.
+- Tests that submit a partly filled required PinInput and expect it to submit: fill every input, or pass `requireComplete: false`.
+
+**Verify.** The type-check passes; a required PIN with an empty input blocks submission on each default root; a root with `:require-complete="false"` submits a partial PIN.
+
 ### Report
 
 When you are done, give the developer:

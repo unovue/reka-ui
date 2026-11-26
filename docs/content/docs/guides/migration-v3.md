@@ -1102,3 +1102,19 @@ A `total` that drops to `0` while new data loads now sends the user back to page
 ```
 
 `avoid-clipping` (or `:avoid-clipping="true"`) is now the default and can be removed.
+
+## A required PinInput needs every input
+
+`requireComplete` on `PinInputRoot` now defaults to `true` (v2: `false`). A `required` PinInput is valid only once every mounted input has a value, so a form with a partly entered PIN does not submit and the hidden input reports the validation message `Please fill in every PIN field.` (translatable as `pinInputIncomplete`, see [Internationalization](./i18n)). In v2 any nonempty PIN satisfied `required`. A PinInput without `required` is unchanged.
+
+To accept a PIN shorter than the number of inputs, such as a 4 to 6 digit code in 6 inputs, set the prop to `false`:
+
+```vue
+<!-- v2: a partial PIN satisfied `required` -->
+<PinInputRoot v-model="code" name="code" required>
+
+<!-- v3: same behavior -->
+<PinInputRoot v-model="code" name="code" required :require-complete="false">
+```
+
+`require-complete` (or `:require-complete="true"`) is now the default and can be removed.
