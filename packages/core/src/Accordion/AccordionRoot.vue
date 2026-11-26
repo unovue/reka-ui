@@ -107,6 +107,15 @@ const agentContext = provideAccordionRootContext({
   unmountOnHide,
 })
 useAgentRegistration('accordion', agentContext, props, parentElement)
+
+// The default slot runs inside `Primitive`'s render, so a value read to build its props would
+// re-render that element, and every item below it, on each change. Read through a getter, only a
+// slot that uses `modelValue` pays for that.
+const slotProps = {
+  get modelValue() {
+    return modelValue.value
+  },
+}
 </script>
 
 <template>
@@ -115,6 +124,6 @@ useAgentRegistration('accordion', agentContext, props, parentElement)
     :as-child="asChild"
     :as="as"
   >
-    <slot :model-value="modelValue" />
+    <slot v-bind="slotProps" />
   </Primitive>
 </template>
