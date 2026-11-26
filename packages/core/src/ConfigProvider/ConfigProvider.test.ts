@@ -91,7 +91,8 @@ describe('given a scrollBody ConfigProvider', async () => {
     mount(ConfigProviderTest, { props: { scrollBody: { padding: 20 } }, attachTo: document.body })
     await vi.waitFor(() => expect(document.body.style.paddingRight).toBe('20px'))
     expect(document.body.style.paddingRight).toBe('20px')
-    expect(document.body.style.marginRight).toBe('0px')
+    // The margin is only written when asked for: the body keeps its own
+    expect(document.body.style.marginRight).toBe('')
   })
 
   it('should set the given margin on body', async () => {

@@ -5,6 +5,8 @@ import { defineComponent, h, nextTick } from 'vue'
 import { ConfigProvider } from '@/ConfigProvider'
 import { useBodyScrollLock } from './useBodyScrollLock'
 
+// These cover the explicit `scrollBody: { padding, margin }` offsets. The default (`true`) keeps the
+// layout with `scrollbar-gutter: stable` instead, covered by useBodyScrollLock.test.ts.
 // Headless Chromium draws no scrollbar, so the lock sees no gap to make up for. Reporting a
 // window wider than the document gives it one. No scrollbar really goes away on lock, so
 // instead of standing still the content moves left by exactly the gap that was added.
@@ -34,6 +36,8 @@ function mountLockers(scrollBody?: boolean | ScrollBodyOption) {
     lockers[index].locked = locked
     await nextTick()
     await nextTick()
+    // v3 defers the lock and the unlock by a macrotask
+    await new Promise(resolve => setTimeout(resolve, 0))
   }
 }
 
@@ -79,7 +83,7 @@ describe('useBodyScrollLock, in a real browser', () => {
     { name: 'scrollBody { padding: true }', css: 'body { padding-right: 40px }', scrollBody: { padding: true }, padding: 40, margin: 0 },
   ])('adds the scrollbar gap to the padding of a body with $name, and puts it back', async ({ css, inline, scrollBody, padding, margin }) => {
     styleBody({ css, inline })
-    const setLocked = mountLockers(scrollBody)
+    const setLocked = mountLockers(scrollBody ?? { padding: true })
     const before = measure()
     expect(before).toMatchObject({ paddingRight: `${padding}px`, marginRight: `${margin}px` })
 
@@ -95,7 +99,7 @@ describe('useBodyScrollLock, in a real browser', () => {
 
   it('keeps a body centred with auto margins in place', async () => {
     styleBody({ css: 'body { margin: 0 auto; max-width: 300px }' })
-    const setLocked = mountLockers()
+    const setLocked = mountLockers({ padding: true })
     const before = measure()
     const margin = Number.parseFloat(before.marginRight)
     expect(margin).toBeGreaterThan(GAP)
@@ -115,7 +119,7 @@ describe('useBodyScrollLock, in a real browser', () => {
 
   it('holds the padding until the last of two locks is released', async () => {
     styleBody({ inline: 'padding-right: 20px;' })
-    const setLocked = mountLockers()
+    const setLocked = mountLockers({ padding: true })
     const before = measure()
 
     await setLocked(0, true)
@@ -136,7 +140,7 @@ describe('useBodyScrollLock, in a real browser', () => {
     // The other lock has hidden the scrollbar, so there is no gap left.
     gap = 0
     styleBody({ inline: 'overflow: hidden; padding-right: 35px;' })
-    const setLocked = mountLockers()
+    const setLocked = mountLockers({ padding: true })
     const before = measure()
 
     await setLocked(0, true)
