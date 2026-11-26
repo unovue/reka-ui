@@ -1,6 +1,7 @@
 import type { MaybeRefOrGetter, Ref } from 'vue'
 import type { StringOrNumber } from '@/shared/types'
 import { getCurrentInstance, onMounted, onScopeDispose, shallowRef, toValue, watch } from 'vue'
+import { rendersForeignId } from '@/shared/usePartId'
 
 /**
  * Whether the current component renders inside a `KeepAlive`, so that it can
@@ -30,12 +31,17 @@ export function makeContentId(baseId: string, value: StringOrNumber) {
  * The id a part's element kept from the server render when it differs from the
  * one the client generated (the ids diverge when something else consumed ids
  * before the tabs on one side only). Hydration keeps the server's attribute, so
- * the paired part's reference has to follow the element, not the client id.
- * Pass it to `useTabsPartId` after the consumer `id`.
+ * the paired part's reference has to follow the element, not the client id. The
+ * same goes for an `id` on an `asChild` part's child. `undefined` for a part that
+ * can only render its own id. Pass it to `useTabsPartId` after the consumer `id`.
  *
  * @lifecycle setup
  */
-export function useHydratedId(element: Readonly<Ref<HTMLElement | null>>, generated: () => string | undefined) {
+export function useHydratedId(element: Readonly<Ref<HTMLElement | null>>, generated: () => string | undefined): Readonly<Ref<string | undefined>> | undefined {
+  // Only a part that may render an id other than its own does: a hydrating one (the server's),
+  // or an `asChild` one (its child's). See `rendersForeignId`.
+  if (!getCurrentInstance() || !rendersForeignId())
+    return undefined
   const id = shallowRef<string>()
   onMounted(() => {
     const rendered = element.value?.id
