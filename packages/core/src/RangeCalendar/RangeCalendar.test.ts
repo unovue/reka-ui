@@ -1777,3 +1777,26 @@ describe('unavailable day after the range', () => {
     expect(getByTestId('date-1-19')).toHaveAttribute('data-selection-end')
   })
 })
+
+describe('rangeCalendar - numeric keypad', () => {
+  it('starts a range with the numeric keypad Enter', async () => {
+    const { getByTestId, calendar } = setup({ calendarProps: { placeholder: new Temporal.PlainDate(1980, 1, 20) } })
+    const cell = getByTestId('date-1-5')
+    cell.focus()
+
+    await fireEvent.keyDown(cell, { key: 'Enter', code: 'NumpadEnter' })
+
+    expect(calendar.querySelector('[data-selection-start]')).toBe(cell)
+  })
+
+  // Without NumLock the keypad sends the navigation keys with a `Numpad*` code.
+  it('moves focus with the numeric keypad arrows', async () => {
+    const { getByTestId } = setup({ calendarProps: { placeholder: new Temporal.PlainDate(1980, 1, 20) } })
+    const cell = getByTestId('date-1-5')
+    cell.focus()
+
+    await fireEvent.keyDown(cell, { key: 'ArrowRight', code: 'Numpad6' })
+
+    expect(getByTestId('date-1-6')).toHaveFocus()
+  })
+})

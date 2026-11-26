@@ -4,7 +4,7 @@ import type { DateValue } from '@/date/types'
 import type { Direction } from '@/shared/types'
 import { nextTick } from 'vue'
 import { compareDateValues, toIsoString } from '@/date/temporal'
-import { focusPagination, focusWeekBoundary } from '@/shared/useCalendarKeyboardNavigation'
+import { focusPagination, focusWeekBoundary, getCalendarKey } from '@/shared/useCalendarKeyboardNavigation'
 import { useKbd } from '@/shared/useKbd'
 
 const kbd = useKbd()
@@ -37,7 +37,11 @@ export interface CellKeydownOptions {
   onSelect: (event: KeyboardEvent) => void
 }
 
-/** Keys the cell handles; everything else bubbles untouched. */
+/**
+ * Keys the cell handles (by `event.key`, through `getCalendarKey`, so the numeric
+ * keypad's Enter and, without NumLock, its navigation keys work); everything
+ * else bubbles untouched.
+ */
 const CELL_TRIGGER_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Space', 'PageUp', 'PageDown', 'Home', 'End'])
 
 /**
@@ -163,7 +167,7 @@ export function createCellFocusNavigation(host: CellNavigationHost) {
   }
 
   /** Day view: Home / End / PageUp / PageDown, shared with v2 (`useCalendarKeyboardNavigation`). */
-  function handleDayShortcut(date: DateValue, event: KeyboardEvent) {
+  function handleDayShortcut(date: DateValue, event: KeyboardEvent, key: string) {
     const parentElement = host.parentElement.value
     if (!parentElement)
       return
@@ -174,10 +178,10 @@ export function createCellFocusNavigation(host: CellNavigationHost) {
       maxValue: host.maxValue.value,
       onPlaceholderChange: (value: DateValue) => { host.onPlaceholderChange(value, 'focus-navigation', event) },
     }
-    if (event.code === kbd.HOME || event.code === kbd.END) {
+    if (key === kbd.HOME || key === kbd.END) {
       focusWeekBoundary({
         ...shared,
-        boundary: event.code === kbd.HOME ? 'start' : 'end',
+        boundary: key === kbd.HOME ? 'start' : 'end',
         locale: host.locale.value,
         weekStartsOn: host.weekStartsOn.value,
       })
@@ -185,7 +189,7 @@ export function createCellFocusNavigation(host: CellNavigationHost) {
     }
     focusPagination({
       ...shared,
-      isNext: event.code === kbd.PAGE_DOWN,
+      isNext: key === kbd.PAGE_DOWN,
       isYear: event.shiftKey,
       isOutsideVisibleView: host.isOutsideVisibleView,
       isNextButtonDisabled: host.isNextButtonDisabled,
@@ -197,21 +201,22 @@ export function createCellFocusNavigation(host: CellNavigationHost) {
 
   /** The keydown of the cell for `date`, rendered at `adapter`'s unit. */
   function handleKeydown(event: KeyboardEvent, adapter: CalendarUnitAdapter, date: DateValue, options: CellKeydownOptions) {
-    if (!CELL_TRIGGER_KEYS.has(event.code))
+    const key = getCalendarKey(event)
+    if (!CELL_TRIGGER_KEYS.has(key))
       return
     if (options.disabled)
       return
     const isDayView = adapter.unit === 'day'
     // Modifier combos on Enter/Space (e.g. Ctrl+Enter) are not handled by the cell —
     // let them bubble so parent listeners can react (e.g. submit a form).
-    if ((event.code === kbd.ENTER || event.code === kbd.SPACE_CODE) && (event.ctrlKey || event.metaKey || event.altKey))
+    if ((key === kbd.ENTER || key === kbd.SPACE_CODE) && (event.ctrlKey || event.metaKey || event.altKey))
       return
     event.preventDefault()
     event.stopPropagation()
 
     const sign = host.dir.value === 'rtl' ? -1 : 1
     const stride = host.rowLength.value
-    switch (event.code) {
+    switch (key) {
       case kbd.ARROW_RIGHT:
         shiftFocus(adapter, date, sign, event)
         break
@@ -227,19 +232,19 @@ export function createCellFocusNavigation(host: CellNavigationHost) {
       case kbd.HOME:
       case kbd.END:
         if (isDayView)
-          handleDayShortcut(date, event)
+          handleDayShortcut(date, event, key)
         else
-          focusPageBoundary(adapter, date, event.code === kbd.HOME ? 'start' : 'end', event)
+          focusPageBoundary(adapter, date, key === kbd.HOME ? 'start' : 'end', event)
         break
       case kbd.PAGE_UP:
         if (isDayView)
-          handleDayShortcut(date, event)
+          handleDayShortcut(date, event, key)
         else
           shiftFocusPage(adapter, date, -1, event)
         break
       case kbd.PAGE_DOWN:
         if (isDayView)
-          handleDayShortcut(date, event)
+          handleDayShortcut(date, event, key)
         else
           shiftFocusPage(adapter, date, 1, event)
         break

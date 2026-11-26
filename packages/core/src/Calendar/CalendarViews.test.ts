@@ -2,7 +2,7 @@ import type { Component } from 'vue'
 import type { CalendarRootProps } from './CalendarRoot.vue'
 import type { CalendarUnit, DateValue } from '@/date'
 import userEvent from '@testing-library/user-event'
-import { render } from '@testing-library/vue'
+import { fireEvent, render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h } from 'vue'
@@ -232,6 +232,21 @@ describe('calendar — granularity="month" (replaces MonthPicker)', () => {
     expect(cells()).toHaveLength(13)
     expect(cells()[12]).not.toHaveAttribute('data-disabled')
     expect(prev).toHaveAttribute('data-disabled')
+  })
+
+  it('handles the numeric keypad: Enter selects, keypad arrows and Home / End move', async () => {
+    const onUpdate = vi.fn()
+    const { getByTestId } = setupUnit({ granularity: 'month', defaultPlaceholder: sep5 }, { 'onUpdate:modelValue': onUpdate })
+    const cell = getByTestId('cell-2026-09-01')
+    cell.focus()
+
+    await fireEvent.keyDown(cell, { key: 'ArrowRight', code: 'Numpad6' })
+    expect(getByTestId('cell-2026-10-01')).toHaveFocus()
+    await fireEvent.keyDown(getByTestId('cell-2026-10-01'), { key: 'Home', code: 'Numpad7' })
+    expect(getByTestId('cell-2026-01-01')).toHaveFocus()
+    await fireEvent.keyDown(getByTestId('cell-2026-01-01'), { key: 'Enter', code: 'NumpadEnter' })
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+    expect((onUpdate.mock.calls[0][0] as DateValue).toString()).toBe('2026-01-05')
   })
 
   it('passes the unit to matchers', () => {

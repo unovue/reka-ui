@@ -2,7 +2,7 @@ import type { Component } from 'vue'
 import type { CalendarRootProps } from './CalendarRoot.vue'
 import type { DateValue } from '@/date'
 import userEvent from '@testing-library/user-event'
-import { render } from '@testing-library/vue'
+import { fireEvent, render } from '@testing-library/vue'
 import { Temporal as BasicTemporal } from 'temporal-polyfill-lite'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -1695,5 +1695,38 @@ describe('temporal regressions (#3088 review)', () => {
       globalThis.Temporal = temporal
       warn.mockRestore()
     }
+  })
+})
+
+describe('calendar - numeric keypad', () => {
+  it('selects a date with the numeric keypad Enter', async () => {
+    const { getByTestId, calendar } = setup({ calendarProps: { placeholder: new Temporal.PlainDate(1980, 1, 20) } })
+    const cell = getByTestId('date-1-2')
+    cell.focus()
+
+    await fireEvent.keyDown(cell, { key: 'Enter', code: 'NumpadEnter' })
+
+    expect(getSelectedDay(calendar)).toHaveTextContent('2')
+  })
+
+  // Without NumLock the keypad sends the navigation keys with a `Numpad*` code.
+  it('moves focus with the numeric keypad arrows', async () => {
+    const { getByTestId } = setup({ calendarProps: { placeholder: new Temporal.PlainDate(1980, 1, 20) } })
+    const cell = getByTestId('date-1-2')
+    cell.focus()
+
+    await fireEvent.keyDown(cell, { key: 'ArrowRight', code: 'Numpad6' })
+
+    expect(getByTestId('date-1-3')).toHaveFocus()
+  })
+
+  it('moves to the week end with the numeric keypad End', async () => {
+    const { getByTestId } = setup({ calendarProps: { placeholder: new Temporal.PlainDate(1980, 1, 20) } })
+    const cell = getByTestId('date-1-2')
+    cell.focus()
+
+    await fireEvent.keyDown(cell, { key: 'End', code: 'Numpad1' })
+
+    expect(getByTestId('date-1-5')).toHaveFocus()
   })
 })
