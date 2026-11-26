@@ -162,6 +162,23 @@ describe('selectionSelector', () => {
     scope.stop()
   })
 
+  it('keeps matching a selected Date by reference after it is changed in place', () => {
+    const scope = effectScope()
+    scope.run(() => {
+      // Vue does not make a Date reactive, so nothing reports `setTime()`.
+      const selected = new Date('2026-01-15T00:00:00Z')
+      const model = ref<unknown>(selected)
+      const selector = new SelectionSelector<unknown>(() => model.value)
+      expect(selector.isSelected(selected, selector.createHold())).toBe(true)
+
+      selected.setTime(selected.getTime() + 1000)
+      // An item mounted after the change (a new hold), as `valueComparator` answers.
+      expect(selector.isSelected(selected, selector.createHold())).toBe(valueComparator(model.value, selected))
+      expect(selector.isSelected(new Date(selected), selector.createHold())).toBe(valueComparator(model.value, new Date(selected)))
+    })
+    scope.stop()
+  })
+
   it('stops following the model when the listbox unmounts', async () => {
     let reads = 0
     const entry = {

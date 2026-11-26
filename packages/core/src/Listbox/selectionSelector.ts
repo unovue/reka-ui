@@ -5,6 +5,8 @@ import { shallowRef } from 'vue'
 import { KeyedSelectorImpl, lazySelector, SelectorHold } from '@/shared/createKeyedSelector'
 import { valueComparator } from './utils'
 
+const KEYED_OBJECTS = new Set(['[object Object]', '[object Array]', '[object Map]', '[object Set]'])
+
 type By<T> = string | ((a: T, b: T) => boolean) | undefined
 
 /**
@@ -18,7 +20,8 @@ type By<T> = string | ((a: T, b: T) => boolean) | undefined
  *   value by its `value?.[by]` when that is a primitive.
  * - `undefined` when no key is exact, and the caller compares instead: a function `by`, a string
  *   item under a key `by` (it would need two keys), a `value[by]` that is an object, a symbol or
- *   `NaN`, or a value ohash cannot serialize.
+ *   `NaN`, an object Vue does not track, such as a `Date`, a `URL` or a typed array, or a value ohash
+ *   cannot serialize.
  *
  * @internal
  */
@@ -42,6 +45,10 @@ export function selectionKey(value: unknown, by: By<any>, isModelValue: boolean)
   }
   if (typeof value === 'string')
     return `s:${value}`
+  // Vue only makes plain objects, arrays, maps and sets reactive. Any other object (a `Date`, a
+  // `URL`, a typed array) can change in place unseen, and its key would go stale: compare instead.
+  if (value !== null && typeof value === 'object' && !KEYED_OBJECTS.has(Object.prototype.toString.call(value)))
+    return undefined
   try {
     return `h:${serialize(value)}`
   }
