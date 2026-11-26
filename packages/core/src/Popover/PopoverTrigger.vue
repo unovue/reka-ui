@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PopoverHandle } from './handle'
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardElement, useId, usePartId } from '@/shared'
+import { useForwardElement, useId, usePartId, useRenderedContentId } from '@/shared'
 
 export interface PopoverTriggerProps<Payload = unknown> extends PrimitiveProps {
   /**
@@ -88,9 +88,13 @@ const trigger = rootContext ? getPopoverTriggerSurface(rootContext) : getDetache
 // `aria-labelledby` follows. With `asChild`, an id on the child element wins.
 const ownTriggerSlot = rootContext ? getPopoverOwnTriggerSlot(rootContext) : undefined
 const ownTriggerId = ownTriggerSlot ? usePartId(() => props.id, ownTriggerSlot, 'triggerId', triggerElement) : undefined
+// `aria-controls` references the content only while its element is rendered.
+const contentId = rootContext ? useRenderedContentId(rootContext) : undefined
 const attrs = computed(() => detached.enabled.value
   ? getDetachedTrigger().attrs.value
-  : ownTriggerId ? { ...trigger.attrs.value, id: ownTriggerId.value } : trigger.attrs.value)
+  : ownTriggerId
+    ? { ...trigger.attrs.value, 'id': ownTriggerId.value, 'aria-controls': rootContext!.open.value ? contentId!.value : undefined }
+    : trigger.attrs.value)
 
 // The popper's anchor, unless a `PopoverAnchor` is (or the trigger is detached).
 const anchor = usePopperAnchor({

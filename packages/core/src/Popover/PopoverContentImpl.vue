@@ -49,7 +49,7 @@ import { computed, getCurrentInstance, mergeProps } from 'vue'
 import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer } from '@/DismissableLayer/useDismissableLayer'
 import { FOCUS_SCOPE_WRAPPER, focusScopeOptions, useFocusScope } from '@/FocusScope/useFocusScope'
 import { PopperContent } from '@/Popper'
-import { useFocusGuards, useForwardElement, useForwardProps } from '@/shared'
+import { useContentElement, useContentMounted, useFocusGuards, useForwardElement, useForwardProps } from '@/shared'
 import { splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 import { getPopoverContentSurface } from './usePopover'
@@ -67,6 +67,10 @@ defineExpose(expose)
 
 const rootContext = injectPopoverRootContext()
 useFocusGuards(currentElement)
+// The trigger's `aria-controls` points at the id this element rendered (a hydrated element
+// keeps the server's), and only while it is rendered.
+useContentElement(rootContext, currentElement)
+useContentMounted(rootContext, currentElement)
 
 // id/role/aria-labelledby/data-state come from the shared surface builder
 // (single source with `usePopover()`); the focus scope, the dismissable layer
