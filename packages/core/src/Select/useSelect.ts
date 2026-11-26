@@ -1298,6 +1298,16 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
       context.pressItem(getValue(), reason, ev.detail.originalEvent)
   }
 
+  // Whether a touch press began on this item. The trigger opens the content on a touch
+  // `pointerup`, so the `click` that ends that same tap can land on an item that was just
+  // rendered under the finger; only a tap that started here may select.
+  let touchPressStarted = false
+  // That tap's `pointerup`, handed to `select` as the `originalEvent` just as when it selected itself.
+  let tapPointerUp: PointerEvent | undefined
+  // Whether a selection key is held. An item rendered as a native button turns that key into a
+  // `click` of its own, which must not select a second time.
+  let isSelectionKeyDown = false
+
   async function onPointermove(event: PointerEvent) {
     await nextTick()
     if (event.defaultPrevented)
@@ -1345,16 +1355,6 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
     isFocused.value = false
     isSelectionKeyDown = false
   }
-
-  // Whether a touch press began on this item. The trigger opens the content on a touch
-  // `pointerup`, so the `click` that ends that same tap can land on an item that was just
-  // rendered under the finger; only a tap that started here may select.
-  let touchPressStarted = false
-  // That tap's `pointerup`, handed to `select` as the `originalEvent` just as when it selected itself.
-  let tapPointerUp: PointerEvent | undefined
-  // Whether a selection key is held. An item rendered as a native button turns that key into a
-  // `click` of its own, which must not select a second time.
-  let isSelectionKeyDown = false
 
   const onPointerdown = (event: PointerEvent) => {
     touchPressStarted = isTouch(event)
