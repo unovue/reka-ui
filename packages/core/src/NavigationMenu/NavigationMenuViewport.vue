@@ -16,8 +16,9 @@ export interface NavigationMenuViewportProps extends PrimitiveProps {
   /**
    * When `true`, keeps the viewport inside the ancestors that clip it (an `overflow` other
    * than `visible`, or paint containment) instead of the document, and sets the position
-   * css variables in the coordinates of the viewport's containing block.
-   * @defaultValue false
+   * css variables in the coordinates of the viewport's containing block. When `false`, the
+   * viewport is kept inside the document and the variables are measured from the root.
+   * @defaultValue true
    */
   avoidClipping?: boolean
 }
@@ -37,6 +38,7 @@ defineOptions({
 
 const props = withDefaults(defineProps<NavigationMenuViewportProps>(), {
   align: 'center',
+  avoidClipping: true,
 })
 
 const { forwardRef, currentElement, expose } = useForwardElement()

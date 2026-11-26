@@ -1086,3 +1086,19 @@ A `total` that drops to `0` while new data loads now sends the user back to page
 ```
 
 `clamp-page` (or `:clamp-page="true"`) is now the default and can be removed.
+
+## NavigationMenu viewport avoids clipping ancestors
+
+`avoidClipping` on `NavigationMenuViewport` now defaults to `true` (v2: `false`), and so does the `avoidClipping` option of `useNavigationMenuViewport()`. The viewport is kept inside the ancestors that clip it (an `overflow` other than `visible`, or paint containment), such as a scrolling sidebar or a card with `overflow: hidden`, instead of only inside the document. With no clipping ancestor it is still kept inside the document.
+
+`--reka-navigation-menu-viewport-left` and `--reka-navigation-menu-viewport-top` are now measured from the viewport's containing block instead of from the root. When the root is that containing block, the values differ only by the root's border, so a viewport under a root with a border moves by the border width. To keep the v2 positioning, set the prop to `false`:
+
+```vue
+<!-- v2: kept inside the document, measured from the root -->
+<NavigationMenuViewport />
+
+<!-- v3: same behavior -->
+<NavigationMenuViewport :avoid-clipping="false" />
+```
+
+`avoid-clipping` (or `:avoid-clipping="true"`) is now the default and can be removed.

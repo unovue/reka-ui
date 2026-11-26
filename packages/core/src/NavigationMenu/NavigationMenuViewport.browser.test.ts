@@ -37,7 +37,7 @@ function mountMenu({ scale = '1', align = 'center', vertical = false, panelSize 
   return { get, open }
 }
 
-function mountClippedMenu({ avoidClipping = true, scale = '1', align = 'center', vertical = false, panelSize = 300, outerWidth = 360, outerHeight = 360, outerOverflow = 'hidden', outerStyle = '', rootSize = 300, triggerSize = 100, boundaryStyle = '', rootStyle = '', viewportWrapperStyle = '' }: {
+function mountClippedMenu({ avoidClipping, scale = '1', align = 'center', vertical = false, panelSize = 300, outerWidth = 360, outerHeight = 360, outerOverflow = 'hidden', outerStyle = '', rootSize = 300, triggerSize = 100, boundaryStyle = '', rootStyle = '', viewportWrapperStyle = '' }: {
   scale?: string
   align?: 'start' | 'center' | 'end'
   vertical?: boolean
@@ -549,7 +549,7 @@ describe('navigationMenuViewport positioning in a real browser', () => {
     }).toBeLessThan(1)
   })
 
-  it('clamps to the document, not a clipping ancestor, by default', async () => {
+  it('clamps to the document, not a clipping ancestor, with `avoidClipping: false`', async () => {
     const { get, open } = mountClippedMenu({ avoidClipping: false })
     await open('three')
     await expect.poll(() => {

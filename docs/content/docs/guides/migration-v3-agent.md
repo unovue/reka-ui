@@ -1099,6 +1099,25 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 
 **Verify.** The type-check passes; shrinking `total` below the current page moves each default root to the last page; a root with `:clamp-page="false"` keeps its page.
 
+### 38. NavigationMenu viewport avoids clipping ancestors
+
+**What changed.**
+- `avoidClipping` on `NavigationMenuViewport` defaults to `true` (v2: `false`): the viewport is kept inside its clipping ancestors (an `overflow` other than `visible`, or paint containment), and inside the document when there is none.
+- `--reka-navigation-menu-viewport-left` and `--reka-navigation-menu-viewport-top` are measured from the viewport's containing block, not the root. When the root is that block, they differ by the root's border.
+- `useNavigationMenuViewport()` defaults `avoidClipping` to `true` too.
+
+**How to find it.**
+- Every `NavigationMenuViewport` (also `NavigationMenu.Viewport` and `reka-navigation-menu-viewport`) and `useNavigationMenuViewport(` call. Note whether it sets `avoid-clipping`, `:avoid-clipping` or `avoidClipping`.
+- Styles that use `--reka-navigation-menu-viewport-left` / `-top` with a hand-tuned offset (for example a `calc(... - 1px)` for the root's border), and roots with a border.
+
+**Rewrite rules.**
+- A viewport that already sets `avoid-clipping` (bare, or bound to `true`): remove the attribute; it is the default.
+- A viewport that binds it to `false` or to a variable: leave unchanged.
+- A viewport without the prop whose styles compensate for the root's border or otherwise depend on root-relative variables: add `:avoid-clipping="false"`, or remove the compensation. *Ask* if you cannot tell.
+- A viewport inside a clipping container that relied on overflowing it (the container is meant to be scrolled or the overflow is intended): add `:avoid-clipping="false"`. *Ask* if you cannot tell.
+
+**Verify.** The type-check passes; each menu's viewport opens under its trigger and, inside a clipping container, stays within it.
+
 ### Report
 
 When you are done, give the developer:
