@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { defineComponent, effect, effectScope, nextTick, reactive, ref } from 'vue'
+import { defineComponent, effect, effectScope, markRaw, nextTick, reactive, ref, shallowRef } from 'vue'
 import { ListboxContent, ListboxItem, ListboxRoot } from '.'
 import { selectionKey, SelectionSelector } from './selectionSelector'
 import { valueComparator } from './utils'
@@ -193,6 +193,26 @@ describe('selectionSelector', () => {
       expect(selector.isSelected(selected, selector.createHold())).toBe(valueComparator(model.value, selected))
       const copy = { id: 1, when: new Date(selected.when), tags: [new Date(5)] }
       expect(selector.isSelected(copy, selector.createHold())).toBe(valueComparator(model.value, copy))
+    })
+    scope.stop()
+  })
+
+  it.each([
+    ['markRaw', (v: { id: number }) => markRaw(v)],
+    ['shallowRef', (v: { id: number }) => v],
+  ])('keeps matching a %s model object after its key is changed in place', (_, wrap) => {
+    const scope = effectScope()
+    scope.run(() => {
+      for (const by of ['id', undefined]) {
+        const selected = wrap({ id: 1 }) as { id: number }
+        const model = shallowRef<unknown>(selected)
+        const selector = new SelectionSelector<unknown>(() => model.value, by)
+        expect(selector.isSelected({ id: 1 }, selector.createHold())).toBe(true)
+        selected.id = 2
+        const item = { id: selected.id }
+        // An item mounted after the change (a new hold), as `valueComparator` answers.
+        expect(selector.isSelected(item, selector.createHold())).toBe(valueComparator(model.value, item, by))
+      }
     })
     scope.stop()
   })

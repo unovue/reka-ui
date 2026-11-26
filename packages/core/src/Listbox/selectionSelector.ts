@@ -1,7 +1,7 @@
 import type { ShallowRef } from 'vue'
 import { isClient } from '@vueuse/shared'
 import { serialize } from 'ohash'
-import { shallowRef } from 'vue'
+import { isReactive, shallowRef } from 'vue'
 import { KeyedSelectorImpl, lazySelector, SelectorHold } from '@/shared/createKeyedSelector'
 import { valueComparator } from './utils'
 
@@ -9,24 +9,28 @@ const KEYED_OBJECTS = new Set(['[object Object]', '[object Array]', '[object Map
 
 type By<T> = string | ((a: T, b: T) => boolean) | undefined
 
-/** Whether Vue reports every change inside `value`: no object in it is of a kind Vue leaves alone. */
-function isTracked(value: unknown, seen: Set<object>): boolean {
+/**
+ * Whether Vue reports every change inside `value`: no object in it is of a kind Vue leaves alone.
+ * With `reactive`, every object in it must also be a reactive proxy: a raw object (`markRaw`, or
+ * one held by a `shallowRef`) changes in place unseen.
+ */
+function isTracked(value: unknown, seen: Set<object>, reactive: boolean): boolean {
   if (value === null || typeof value !== 'object' || seen.has(value))
     return true
   const tag = Object.prototype.toString.call(value)
-  if (!KEYED_OBJECTS.has(tag))
+  if (!KEYED_OBJECTS.has(tag) || (reactive && !isReactive(value)))
     return false
   seen.add(value)
   if (tag === '[object Map]') {
     for (const [key, entry] of value as Map<unknown, unknown>) {
-      if (!isTracked(key, seen) || !isTracked(entry, seen))
+      if (!isTracked(key, seen, reactive) || !isTracked(entry, seen, reactive))
         return false
     }
     return true
   }
   const entries = tag === '[object Object]' ? Object.values(value) : value as Iterable<unknown>
   for (const entry of entries) {
-    if (!isTracked(entry, seen))
+    if (!isTracked(entry, seen, reactive))
       return false
   }
   return true
@@ -43,8 +47,8 @@ function isTracked(value: unknown, seen: Set<object>): boolean {
  *   value by its `value?.[by]` when that is a primitive.
  * - `undefined` when no key is exact, and the caller compares instead: a function `by`, a string
  *   item under a key `by` (it would need two keys), a `value[by]` that is an object, a symbol or
- *   `NaN`, a value that is or holds an object Vue does not track, such as a `Date`, a `URL` or a typed array, or a value ohash
- *   cannot serialize.
+ *   `NaN`, a value that is or holds an object Vue does not track, such as a `Date`, a `URL` or a typed array, a model
+ *   object that is not a reactive proxy (`markRaw`, or held by a `shallowRef`), or a value ohash cannot serialize.
  *
  * @internal
  */
@@ -56,6 +60,9 @@ export function selectionKey(value: unknown, by: By<any>, isModelValue: boolean)
   if (typeof by === 'string') {
     if (typeof value === 'string')
       return isModelValue ? `s:${value}` : undefined
+    // The model's key is kept until Vue reports a change, so its object must be one Vue tracks.
+    if (isModelValue && value !== null && typeof value === 'object' && !isReactive(value))
+      return undefined
     const key: unknown = (value as Record<string, unknown> | null)?.[by]
     switch (typeof key) {
       case 'undefined': return 'k:u'
@@ -72,7 +79,7 @@ export function selectionKey(value: unknown, by: By<any>, isModelValue: boolean)
   // `URL`, a typed array) can change in place unseen, and so can one nested in the value. Its
   // key would go stale: compare instead.
   try {
-    if (!isTracked(value, new Set()))
+    if (!isTracked(value, new Set(), isModelValue))
       return undefined
     return `h:${serialize(value)}`
   }
