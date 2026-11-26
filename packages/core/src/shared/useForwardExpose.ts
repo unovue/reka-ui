@@ -80,6 +80,17 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
   // The component the exposed object was last merged for, and the exposed object it had then
   let mergedRef: T | undefined
   let mergedChildExposed: Record<string, any> | null | undefined
+  // The keys that object had then: a child may add or remove a key of its exposed object in place
+  let mergedChildKeys: string[] = []
+
+  function hasMergedKeys(childExposed: Record<string, any> | null | undefined) {
+    let count = 0
+    for (const key in childExposed) {
+      if (mergedChildKeys[count++] !== key)
+        return false
+    }
+    return count === mergedChildKeys.length
+  }
 
   /**
    * Set the forwarded ref and merge the child's exposed values.
@@ -88,19 +99,20 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
    * cached element so detached content can be collected.
    *
    * Vue calls a function ref on every patch of the node it sits on, so a call with the
-   * component that is already forwarded, whose own exposed object has not been replaced,
-   * keeps the merged object instead of building it again.
+   * component that is already forwarded, whose own exposed object has not been replaced and
+   * still has the same keys, keeps the merged object instead of building it again.
    *
    * @param ref - The current DOM element, component instance, or null on removal.
    */
   function forwardRef(ref: Element | T | null) {
-    if (ref && ref === mergedRef && ref === currentRef.value && ref.$.exposed === mergedChildExposed && ref.$el)
+    if (ref && ref === mergedRef && ref === currentRef.value && ref.$.exposed === mergedChildExposed && ref.$el && hasMergedKeys(mergedChildExposed))
       return
 
     // A wrapped null element is still a ref clear.
     currentRef.value = ref && '$el' in ref && !ref.$el ? null : ref
     mergedRef = undefined
     mergedChildExposed = undefined
+    mergedChildKeys = []
 
     if (!ref || !currentRef.value) {
       instance.exposed = ret
@@ -118,6 +130,7 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
       let merged = ret
 
       for (const key in childExposed) {
+        mergedChildKeys.push(key)
         if (merged === ret)
           merged = Object.defineProperties({}, Object.getOwnPropertyDescriptors(ret))
         Object.defineProperty(merged, key, {

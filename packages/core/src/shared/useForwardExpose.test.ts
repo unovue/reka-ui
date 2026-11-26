@@ -549,6 +549,42 @@ describe('useForwardRef', async () => {
     }
   })
 
+  it('should merge again when the forwarded component adds or removes a key of its own expose in place', async () => {
+    const tick = ref(0)
+    const api: Record<string, number> = { first: 1 }
+    const Middle = defineComponent({
+      setup(_, { expose }) {
+        expose(api)
+        return () => h('i')
+      },
+    })
+    const wrapper = mount(defineComponent({
+      setup() {
+        const { forwardRef } = useForwardExpose()
+        return () => h(Middle, { 'ref': forwardRef, 'data-tick': tick.value })
+      },
+    }))
+
+    try {
+      await nextTick()
+      expect(Object.keys(wrapper.vm.$.exposed!)).toEqual(['$el', 'first'])
+
+      api.second = 2
+      tick.value++
+      await nextTick()
+      expect(Object.keys(wrapper.vm.$.exposed!)).toEqual(['$el', 'first', 'second'])
+      expect(wrapper.vm.$.exposed!.second).toBe(2)
+
+      delete api.first
+      tick.value++
+      await nextTick()
+      expect(Object.keys(wrapper.vm.$.exposed!)).toEqual(['$el', 'second'])
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
   it('should update currentElement when as-child conditional child swaps', async () => {
     const toggle = ref(true)
     let renderNode: string | undefined
