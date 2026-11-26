@@ -6,9 +6,9 @@
 export const defaultTranslations = /* @__PURE__ */ Object.freeze({
   /** Calendar, RangeCalendar: the calendar's name, read before the visible month. */
   calendarLabel: 'Event Date',
-  /** CalendarPrev, RangeCalendarPrev. */
+  /** CalendarPrev, RangeCalendarPrev in the day view. */
   calendarPrev: 'Previous page',
-  /** CalendarNext, RangeCalendarNext. */
+  /** CalendarNext, RangeCalendarNext in the day view. */
   calendarNext: 'Next page',
 
   /** CarouselRoot: `aria-roledescription`. */
@@ -80,9 +80,9 @@ export const defaultTranslations = /* @__PURE__ */ Object.freeze({
 
   /** CalendarRoot with `view="month"`: the calendar's name, read before the visible year. */
   monthPickerLabel: 'Month Picker',
-  /** @deprecated Unused: the month pickers became the Calendar `view` prop. Kept so existing translations still type-check. */
+  /** CalendarPrev, RangeCalendarPrev in the month view. */
   monthPickerPrev: 'Previous year',
-  /** @deprecated Unused: the month pickers became the Calendar `view` prop. Kept so existing translations still type-check. */
+  /** CalendarNext, RangeCalendarNext in the month view. */
   monthPickerNext: 'Next year',
 
   /** NumberFieldInput: `aria-roledescription`. */
@@ -134,9 +134,9 @@ export const defaultTranslations = /* @__PURE__ */ Object.freeze({
 
   /** CalendarRoot with `view="year"`: the calendar's name, read before the visible years. */
   yearPickerLabel: 'Year Picker',
-  /** @deprecated Unused: the year pickers became the Calendar `view` prop. Kept so existing translations still type-check. */
+  /** CalendarPrev, RangeCalendarPrev in the year view. */
   yearPickerPrev: 'Previous page',
-  /** @deprecated Unused: the year pickers became the Calendar `view` prop. Kept so existing translations still type-check. */
+  /** CalendarNext, RangeCalendarNext in the year view. */
   yearPickerNext: 'Next page',
 } as const satisfies Record<string, string>)
 

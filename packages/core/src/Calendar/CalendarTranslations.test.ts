@@ -17,6 +17,10 @@ const translations = {
   yearPickerLabel: 'Jahresauswahl',
   calendarPrev: 'Zurück',
   calendarNext: 'Weiter',
+  monthPickerPrev: 'Voriges Jahr',
+  monthPickerNext: 'Nächstes Jahr',
+  yearPickerPrev: 'Frühere Jahre',
+  yearPickerNext: 'Spätere Jahre',
   dateFieldDay: 'Tag',
   dateFieldMonth: 'Monat',
   dateFieldYear: 'Jahr',
@@ -29,17 +33,17 @@ function renderUnder(content: () => any, withTranslations = true) {
 
 describe('calendar translations', () => {
   it.each([
-    ['day', 'Termin, January 2024'],
-    ['month', 'Monatsauswahl, 2024'],
-    ['year', 'Jahresauswahl, 2020 - 2031'],
-  ] as [CalendarUnit, string][])('names the %s view and its buttons from the messages', (granularity, label) => {
+    ['day', 'Termin, January 2024', 'Zurück', 'Weiter'],
+    ['month', 'Monatsauswahl, 2024', 'Voriges Jahr', 'Nächstes Jahr'],
+    ['year', 'Jahresauswahl, 2020 - 2031', 'Frühere Jahre', 'Spätere Jahre'],
+  ] as [CalendarUnit, string, string, string][])('names the %s view and its buttons from the messages', (granularity, label, prev, next) => {
     const { container } = renderUnder(() => h(CalendarRoot, { 'data-root': '', 'defaultPlaceholder': date, 'locale': 'en', granularity }, () => [
       h(CalendarPrev, { 'data-prev': '' }),
       h(CalendarNext, { 'data-next': '' }),
     ]))
     expect(container.querySelector('[data-root]')).toHaveAttribute('aria-label', label)
-    expect(container.querySelector('[data-prev]')).toHaveAttribute('aria-label', 'Zurück')
-    expect(container.querySelector('[data-next]')).toHaveAttribute('aria-label', 'Weiter')
+    expect(container.querySelector('[data-prev]')).toHaveAttribute('aria-label', prev)
+    expect(container.querySelector('[data-next]')).toHaveAttribute('aria-label', next)
   })
 
   it('keeps the English defaults without a provider', () => {
@@ -47,7 +51,8 @@ describe('calendar translations', () => {
       h(CalendarPrev, { 'data-prev': '' }),
     ]), false)
     expect(container.querySelector('[data-root]')).toHaveAttribute('aria-label', 'Month Picker, 2024')
-    expect(container.querySelector('[data-prev]')).toHaveAttribute('aria-label', 'Previous page')
+    // A page of the month view is a year
+    expect(container.querySelector('[data-prev]')).toHaveAttribute('aria-label', 'Previous year')
   })
 
   it('lets calendarLabel and a consumer aria-label win', () => {
