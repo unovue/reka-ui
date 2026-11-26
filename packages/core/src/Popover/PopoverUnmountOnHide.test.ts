@@ -172,8 +172,7 @@ describe.each([
 ])('given Popovers with modal=%s and unmountOnHide=%s', describePopovers)
 
 describe.each([false, true])('given never-opened Popovers with unmountOnHide=%s', (unmountOnHide) => {
-  // TODO(v3-port): #2066 needs v2's internal `present` prop on `PopperContent` (floating lane), which drops the reference while hidden
-  it.skipIf(!unmountOnHide)('should not track the position of hidden content', async () => {
+  it('should not track the position of hidden content', async () => {
     document.body.innerHTML = ''
     const addEventListener = vi.spyOn(window, 'addEventListener')
     const wrapper = mount(Popovers, { attachTo: document.body, props: { unmountOnHide } })
