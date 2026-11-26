@@ -20,40 +20,49 @@ function useMountedContents(context: object) {
 // hidden class. A per-context closure as accessor, an accessor in the object literal, or
 // turning an existing data property into an accessor all switch the whole context to slow
 // (dictionary) properties, which costs a few hundred bytes per context.
-const idProperties = new Map<string, { key: symbol, descriptor: PropertyDescriptor }>()
+const idProperties = new Map<string, { key: symbol, plainKey: symbol, descriptor: PropertyDescriptor }>()
 
 function idProperty(name: string) {
   let property = idProperties.get(name)
   if (!property) {
+    // `plainKey` holds the id itself, `key` its ref, created on the first read: an id nothing
+    // reads (a closed popup's content id) costs no ref.
     const key = Symbol(name)
+    const plainKey = Symbol(`${name} (plain)`)
     property = {
       key,
+      plainKey,
       descriptor: {
         enumerable: true,
         configurable: true,
         // `toRaw`: read through a reactive proxy of the context, `this[key]` would be unwrapped.
-        // The slot holds the plain id until the first read, which puts a ref in its place:
-        // an id nothing reads (a closed popup's content id) costs no ref.
         get(this: object) {
-          const raw = toRaw(this) as Record<symbol, string | Ref<string>>
-          let slot = raw[key]!
-          if (typeof slot === 'string')
-            slot = raw[key] = shallowRef(slot)
-          return slot.value
+          const raw = toRaw(this) as Record<symbol, unknown>
+          const ref = (raw[key] ??= shallowRef(raw[plainKey])) as Ref<string>
+          return ref.value
         },
         set(this: object, value: string) {
-          const raw = toRaw(this) as Record<symbol, string | Ref<string>>
-          const slot = raw[key]!
-          if (typeof slot === 'string')
-            raw[key] = value
-          else
-            slot.value = value
+          const raw = toRaw(this) as Record<symbol, unknown>
+          raw[plainKey] = value
+          const ref = raw[key] as Ref<string> | undefined
+          if (ref)
+            ref.value = value
         },
       },
     }
     idProperties.set(name, property)
   }
   return property
+}
+
+/**
+ * A `defineReactiveIds` id read without tracking it: for the part that writes the id
+ * (a trigger rendering its own id), which never needs to re-render for it.
+ *
+ * @internal
+ */
+export function peekReactiveId<T extends object>(context: T, name: keyof T & string): string {
+  return (toRaw(context) as Record<symbol, string>)[idProperty(name).plainKey]!
 }
 
 /**
@@ -64,11 +73,51 @@ function idProperty(name: string) {
  */
 export function defineReactiveIds<T extends object, K extends keyof T & string>(context: Omit<T, K>, ids: Pick<T, K>): T {
   for (const name in ids) {
-    const { key, descriptor } = idProperty(name)
-    ;(context as Record<symbol, unknown>)[key] = ids[name]
+    const { key, plainKey, descriptor } = idProperty(name)
+    ;(context as Record<symbol, unknown>)[plainKey] = ids[name]
+    ;(context as Record<symbol, unknown>)[key] = undefined
     Object.defineProperty(context, name, descriptor)
   }
   return context as T
+}
+
+/**
+ * Follows a trigger's consumer `id` onto `context.triggerId`: `follow` with the trigger's
+ * attrs picks up an `id` that changed since the last call.
+ */
+class ConsumerIdFollower {
+  consumerId: unknown
+
+  constructor(readonly context: { triggerId: string }, consumerId: unknown) {
+    this.consumerId = consumerId
+  }
+
+  follow(attrs: Record<string, unknown>): void {
+    const id = attrs.id
+    if (id === this.consumerId)
+      return
+    this.consumerId = id
+    if (typeof id === 'string' && id)
+      this.context.triggerId = id
+  }
+}
+
+function setTriggerId(context: { triggerId: string }, consumerId: unknown, generate?: () => string) {
+  if (typeof consumerId === 'string' && consumerId)
+    context.triggerId = consumerId
+  // `generate` first: reading a reactive id creates its ref.
+  else if (generate && !context.triggerId)
+    context.triggerId = generate()
+}
+
+function syncRenderedTriggerId(context: { triggerId: string }, element: Readonly<Ref<HTMLElement | undefined>>) {
+  const syncRendered = () => {
+    const renderedId = element.value?.id
+    if (renderedId && renderedId !== context.triggerId)
+      context.triggerId = renderedId
+  }
+  onMounted(syncRendered)
+  onUpdated(syncRendered)
 }
 
 /**
@@ -93,11 +142,7 @@ export function useTriggerId(
 ) {
   const attrs = useAttrs()
   let consumerId = attrs.id
-  if (typeof consumerId === 'string' && consumerId)
-    context.triggerId = consumerId
-  else if (!context.triggerId && generate)
-    context.triggerId = generate()
-
+  setTriggerId(context, consumerId, generate)
   onBeforeUpdate(() => {
     if (attrs.id === consumerId)
       return
@@ -105,15 +150,28 @@ export function useTriggerId(
     if (typeof consumerId === 'string' && consumerId)
       context.triggerId = consumerId
   })
-  if (!rendered)
-    return
-  const syncRendered = () => {
-    const renderedId = element.value?.id
-    if (renderedId && renderedId !== context.triggerId)
-      context.triggerId = renderedId
-  }
-  onMounted(syncRendered)
-  onUpdated(syncRendered)
+  if (rendered)
+    syncRenderedTriggerId(context, element)
+}
+
+/**
+ * `useTriggerId` without a lifecycle hook per trigger, for a trigger that renders its id with
+ * `peekReactiveId` (untracked): call the returned function from its render with its `$attrs`,
+ * which picks up a consumer `id` that changed, as the trigger renders. The content follows the
+ * new id; the trigger, which does not track it, renders once.
+ *
+ * @internal
+ */
+export function useTriggerIdInRender(
+  context: { triggerId: string },
+  element: Readonly<Ref<HTMLElement | undefined>>,
+  generate?: () => string,
+): ConsumerIdFollower {
+  const attrs = useAttrs()
+  setTriggerId(context, attrs.id, generate)
+  if (rendersForeignId())
+    syncRenderedTriggerId(context, element)
+  return new ConsumerIdFollower(context, attrs.id)
 }
 
 /**
