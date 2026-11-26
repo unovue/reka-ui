@@ -682,7 +682,8 @@ it.each([2, 3])('checks only mounted values after removing populated slot %i', a
   const initialValue = [0, 2, 3, 4]
   const wrapper = mount(PinInputRoot, {
     attachTo: document.body,
-    props: { type: 'number', defaultValue: initialValue },
+    // `mount` resolves the generic root as its default `'text'` type, so the numeric model needs a cast.
+    props: { type: 'number', defaultValue: initialValue as never },
     slots: { default: () => indices.value.map(index => h(PinInputInput, { key: index, index })) },
   })
   try {
