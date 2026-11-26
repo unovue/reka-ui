@@ -5,7 +5,7 @@ import type { CarouselItemSnapStyle, CarouselSnap } from './utils'
 import type { DataOrientation, Direction } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
 import { computed, nextTick, ref, shallowRef, toValue, watch } from 'vue'
-import { chunk } from '@/shared'
+import { chunk, useTranslations } from '@/shared'
 import { compareDocumentOrder } from './dom'
 import { createSurface } from './surface'
 import { compactStyle, getFixedGroupSize, getSnapsByPosition, stepIndex } from './utils'
@@ -75,7 +75,7 @@ export function getCarouselNavigationSurface(context: CarouselRootContext, kind:
   const disabled = () => kind === 'previous' ? !context.canScrollPrev.value : !context.canScrollNext.value
   return createSurface<CarouselNavigationState>(
     () => ({
-      'aria-label': kind === 'previous' ? 'Previous slide' : 'Next slide',
+      'aria-label': context.t(kind === 'previous' ? 'carouselPrev' : 'carouselNext'),
       'aria-controls': context.contentId,
       // `aria-disabled`, not `disabled`: a disabled button would drop the keyboard focus
       // of whoever just pressed it to reach the end.
@@ -111,7 +111,7 @@ export function getCarouselIndicatorSurface(context: CarouselRootContext, index:
   return createSurface<CarouselIndicatorState>(
     () => ({
       // A tab names its panel too (APG tabbed carousel), a button names the action.
-      'aria-label': tabs ? `Slide ${toValue(index) + 1}` : `Go to slide ${toValue(index) + 1}`,
+      'aria-label': context.t(tabs ? 'carouselIndicatorTab' : 'carouselIndicator', { index: toValue(index) + 1 }),
       'id': tabs ? getCarouselTabId(groupId, toValue(index)) : undefined,
       // A tab controls the slides of its own snap; a button the whole content.
       'aria-controls': tabs
@@ -137,7 +137,7 @@ export function getCarouselAutoplayToggleSurface(context: CarouselRootContext): 
   const playing = () => context.rotationEnabled.value && context.playing.value
   return createSurface<CarouselAutoplayToggleState>(
     () => ({
-      'aria-label': playing() ? 'Stop slide rotation' : 'Start slide rotation',
+      'aria-label': context.t(playing() ? 'carouselStopRotation' : 'carouselStartRotation'),
       'aria-controls': context.contentId,
       'disabled': !context.rotationEnabled.value,
       'onClick': (event: MouseEvent) => {
@@ -206,7 +206,7 @@ function getItemLabel(context: CarouselRootContext, index: number): string | und
   if (index === -1)
     return undefined
   const total = context.mounted.value ? context.items.value.length : context.itemCount.value
-  return total ? `${index + 1} of ${total}` : undefined
+  return total ? context.t('carouselSlideLabel', { index: index + 1, total }) : undefined
 }
 
 /**
@@ -246,7 +246,7 @@ export function getCarouselItemSurface(context: CarouselRootContext, element: Re
       return {
         'id': i === -1 ? undefined : getCarouselItemId(context, i),
         'role': tabGroup ? 'tabpanel' : 'group',
-        'aria-roledescription': tabGroup ? undefined : 'slide',
+        'aria-roledescription': tabGroup ? undefined : context.t('carouselSlideRoleDescription'),
         // A tab panel is named by the tab of its snap; a slide group by its position.
         'aria-label': tabGroup ? undefined : getItemLabel(context, i),
         // Labelled by the first group's tab, when several groups hold tabs for the same snaps.
@@ -401,6 +401,7 @@ export function useCarouselContext(
   return {
     baseId,
     contentId: `${baseId}-content`,
+    t: useTranslations(),
     modelValue: computed(() => modelValue.value),
     changeModelValue,
     orientation,

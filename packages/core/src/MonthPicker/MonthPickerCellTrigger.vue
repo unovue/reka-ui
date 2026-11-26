@@ -4,7 +4,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import { endOfMonth, getLocalTimeZone, toCalendar, today } from '@internationalized/date'
 import { computed, nextTick } from 'vue'
 import { isSameYearMonth, toDate } from '@/date'
-import { getCalendarCellTabindex, useKbd } from '@/shared'
+import { getCalendarCellTabindex, getCalendarKey, getRowBoundaryCell, useKbd } from '@/shared'
 
 export interface MonthPickerCellTriggerProps extends PrimitiveProps {
   /** The date value provided to the cell trigger */
@@ -88,14 +88,15 @@ function handleArrowKey(e: KeyboardEvent) {
     return
   // Modifier combos on Enter/Space (e.g. Ctrl+Enter) are not handled by the cell —
   // let them bubble so parent listeners can react (e.g. submit a form).
-  if ((e.code === kbd.ENTER || e.code === kbd.SPACE_CODE) && (e.ctrlKey || e.metaKey || e.altKey))
+  const key = getCalendarKey(e)
+  if ((key === kbd.ENTER || key === kbd.SPACE_CODE) && (e.ctrlKey || e.metaKey || e.altKey))
     return
   e.preventDefault()
   e.stopPropagation()
   const parentElement = rootContext.parentElement.value!
   const sign = rootContext.dir.value === 'rtl' ? -1 : 1
 
-  switch (e.code) {
+  switch (key) {
     case kbd.ARROW_RIGHT:
       shiftFocus(props.month, sign)
       break
@@ -108,6 +109,12 @@ function handleArrowKey(e: KeyboardEvent) {
     case kbd.ARROW_DOWN:
       shiftFocus(props.month, 4)
       break
+    case kbd.HOME:
+      focusRowBoundary('start')
+      break
+    case kbd.END:
+      focusRowBoundary('end')
+      break
     case kbd.PAGE_UP:
       shiftFocusYear(-1)
       break
@@ -117,6 +124,15 @@ function handleArrowKey(e: KeyboardEvent) {
     case kbd.ENTER:
     case kbd.SPACE_CODE:
       changeMonth(props.month)
+  }
+
+  // Home and End go to the first and last enabled month of the row.
+  function focusRowBoundary(boundary: 'start' | 'end') {
+    const target = getRowBoundaryCell(e.currentTarget as HTMLElement, boundary, '[data-reka-month-picker-cell-trigger]')
+    if (!target || target.offset === 0)
+      return
+    rootContext.onPlaceholderChange(props.month.add({ months: target.offset }))
+    target.element.focus()
   }
 
   function shiftFocus(currentMonth: DateValue, add: number, depth = 0) {
@@ -202,7 +218,7 @@ function handleArrowKey(e: KeyboardEvent) {
     :data-focused="isFocusedMonth ? '' : undefined"
     :tabindex="getCalendarCellTabindex(isFocusedMonth, isDisabled, props)"
     @click="handleClick"
-    @keydown.up.down.left.right.space.enter.page-up.page-down="handleArrowKey"
+    @keydown.up.down.left.right.space.enter.home.end.page-up.page-down="handleArrowKey"
   >
     <slot
       :month-value="shortMonthValue"

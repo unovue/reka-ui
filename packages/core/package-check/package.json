@@ -1,0 +1,6 @@
+{
+  "name": "reka-ui-package-check",
+  "type": "module",
+  "private": true,
+  "description": "Stands in for a project that installed reka-ui from npm. Its own package.json keeps `reka-ui` from resolving to packages/core (self-reference), so imports reach the packed copy in ./node_modules."
+}

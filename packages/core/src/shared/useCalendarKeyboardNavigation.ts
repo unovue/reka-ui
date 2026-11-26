@@ -196,3 +196,31 @@ function tryFocusDate(
 
   candidateDay.focus()
 }
+
+/**
+ * The key a calendar cell acts on, with Space spelled out.
+ * `event.code` names the physical key, so the numeric keypad's Enter (`NumpadEnter`) and, without
+ * NumLock, its arrows, Home, End and Page keys (`Numpad8`, …) would match nothing.
+ */
+export function getCalendarKey(event: KeyboardEvent): string {
+  return event.key === ' ' ? 'Space' : event.key
+}
+
+/**
+ * Finds the first (`start`) or last (`end`) enabled cell trigger in the grid row of `current`, for Home and End
+ * in the month and year grids. `offset` is its distance from `current` in cells.
+ */
+export function getRowBoundaryCell(current: HTMLElement, boundary: 'start' | 'end', selector: string): { element: HTMLElement, offset: number } | undefined {
+  const row = current.closest('[role="row"]')
+  if (!row)
+    return
+  const cells = Array.from(row.querySelectorAll<HTMLElement>(selector))
+  const currentIndex = cells.indexOf(current)
+  if (currentIndex === -1)
+    return
+  const enabled = cells.filter(cell => !cell.hasAttribute('data-disabled'))
+  const element = boundary === 'start' ? enabled[0] : enabled.at(-1)
+  if (!element)
+    return
+  return { element, offset: cells.indexOf(element) - currentIndex }
+}

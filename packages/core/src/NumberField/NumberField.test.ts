@@ -330,6 +330,33 @@ describe('numberField', () => {
     expect(input.value).toBe('0')
   })
 
+  it.each([
+    ['Home', kbd.HOME],
+    ['End', kbd.END],
+    ['PageUp', kbd.PAGE_UP],
+    ['PageDown', kbd.PAGE_DOWN],
+    ['ArrowUp', kbd.ARROW_UP],
+    ['ArrowDown', kbd.ARROW_DOWN],
+  ])('should not be changed by %s when readonly', async (_name, key) => {
+    const { input } = setup({ defaultValue: 5, min: 0, max: 10, readonly: true })
+
+    input.focus()
+    await fireEvent.keyDown(input, { key })
+    await nextTick()
+
+    expect(input.value).toBe('5')
+  })
+
+  it('should not be changed by Home or End when disabled', async () => {
+    const { input } = setup({ defaultValue: 5, min: 0, max: 10, disabled: true })
+
+    await fireEvent.keyDown(input, { key: kbd.HOME })
+    await fireEvent.keyDown(input, { key: kbd.END })
+    await nextTick()
+
+    expect(input.value).toBe('5')
+  })
+
   it('should be be focusable when readonly', async () => {
     const { input } = setup({ defaultValue: 0, readonly: true })
 
