@@ -822,6 +822,8 @@ By default the content is removed when the menu closes. Use `:unmount-on-hide="f
 
 While closed, the hidden content does not act as an open menu: it does not take focus, take part in keyboard navigation or typeahead, or react to Escape and outside clicks. Arrow keys still move between the menus, and focus still returns to the trigger when the menubar closes.
 
+`forceMount` on the content works differently: a force-mounted content is not made inert while closed. It keeps the side effects of an open menu, as it always has, and showing or hiding it is up to you. Combine it with `:unmount-on-hide="false"` on the root to make it inert while closed.
+
 ```vue line=6
 <script setup>
 import { MenubarContent, MenubarMenu, MenubarPortal, MenubarRoot, MenubarTrigger } from 'reka-ui'
@@ -854,7 +856,7 @@ Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA
       description: `
         When focus is on <Code>MenubarTrigger</Code>, opens the menubar and focuses the first item.
         <br />
-        When focus is on an item, activates the focused item.
+        When focus is on an item, activates the focused item. While a typeahead search is in progress, adds a space to the search instead (see <Code>spaceExtendsTypeahead</Code>).
       `,
     },
     {
