@@ -9,7 +9,7 @@ import type { AcceptableValue, FormFieldProps } from '@/shared/types'
 import { computed, mergeProps, toRef, useAttrs, watch } from 'vue'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
-import { createContext, useDirection, useFormControl } from '@/shared'
+import { createRekaContext, useDirection, useFormControl } from '@/shared'
 
 export interface CheckboxGroupRootProps<T = AcceptableValue> extends Pick<RovingFocusGroupProps, 'as' | 'asChild' | 'dir' | 'orientation' | 'loop'>, FormFieldProps, /* @vue-ignore */ PrimitiveHTMLAttributes {
   /** The value of the checkbox when it is initially rendered. Use when you do not need to control its value. */
@@ -26,6 +26,11 @@ export interface CheckboxGroupRootProps<T = AcceptableValue> extends Pick<Roving
    * about the limit. Style them with `[aria-disabled="true"]`.
    */
   max?: number | null
+  /**
+   * Every value a parent checkbox (`CheckboxRoot` with `parent`) controls. The parent is
+   * checked when all of them are in the model, unchecked when none are, and indeterminate otherwise.
+   */
+  allValues?: T[]
 }
 
 export type CheckboxGroupRootEmits<T = AcceptableValue> = {
@@ -35,11 +40,22 @@ export type CheckboxGroupRootEmits<T = AcceptableValue> = {
   'update:modelValue': [value: T[], details: ChangeEventDetails<CheckboxGroupChangeReason>]
 }
 
+/** A (non-parent) checkbox of the group, as a parent checkbox reads it. @internal */
+export interface CheckboxGroupItem {
+  value: () => AcceptableValue
+  disabled: () => boolean
+  id: () => string | undefined
+}
+
 export interface CheckboxGroupRootContext {
   modelValue: Ref<AcceptableValue[]>
   rovingFocus: Ref<boolean>
   disabled: Ref<boolean>
   max: Ref<number | null | undefined>
+  /** The values a parent checkbox controls (`allValues`). */
+  allValues: Ref<AcceptableValue[] | undefined>
+  /** The mounted (non-parent) checkboxes while the group has `allValues`, read by a parent checkbox. */
+  items: Set<CheckboxGroupItem>
   /**
    * Route every write through the group's model (`beforeUpdate` + `update`);
    * returns `false` when unchanged or cancelled. Descendants never assign
@@ -55,7 +71,7 @@ export interface CheckboxGroupRootContext {
 }
 
 export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
-  = createContext<CheckboxGroupRootContext>('CheckboxGroupRoot')
+  = createRekaContext<CheckboxGroupRootContext>('CheckboxGroupRoot')
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
@@ -127,6 +143,7 @@ const { modelValue, context, isControlled } = useCheckboxGroup<T>({
   disabled,
   rovingFocus,
   max,
+  allValues: () => props.allValues,
 })
 
 if (field)

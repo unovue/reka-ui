@@ -2,10 +2,10 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { PinInputChangeReason } from './usePinInput'
 import type { PrimitiveProps } from '@/Primitive'
-import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, Translate } from '@/shared'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { createContext, useDirection, useForwardElement } from '@/shared'
-import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
+import { createRekaContext, useDirection, useForwardElement } from '@/shared'
+import VisuallyHiddenInputBubble from '@/VisuallyHidden/VisuallyHiddenInputBubble.vue'
 
 export type PinInputType = 'text' | 'number'
 
@@ -42,6 +42,8 @@ export interface PinInputRootProps<Type extends PinInputType = 'text'> extends P
   mask?: boolean
   /** When `true`, mobile devices will autodetect the OTP from messages or clipboard, and enable the autocomplete field. */
   otp?: boolean
+  /** When `true` and `required`, every mounted PIN input must be filled before the form can be submitted. Defaults to `false`. */
+  requireComplete?: boolean
   /** Input type for the inputs. */
   type?: Type
   /** The reading direction of the combobox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
@@ -71,10 +73,12 @@ export interface PinInputRootContext<Type extends PinInputType = 'text'> {
   setModelValue: (value: PinInputContextValue<Type>, reason?: PinInputChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Writes one input's value (`''` clears it). Returns `false` when unchanged or cancelled. */
   updateModelValueAt: (index: number, value: string, reason?: PinInputChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** The nearest `ConfigProvider`'s translate function, for the built-in labels. */
+  t: Translate
 }
 
 export const [injectPinInputRootContext, providePinInputRootContext]
-  = createContext<PinInputRootContext<PinInputType>>('PinInputRoot')
+  = createRekaContext<PinInputRootContext<PinInputType>>('PinInputRoot')
 
 /**
  * Inside a Field: each mounted input's `index`, so filled can check the entry
@@ -82,13 +86,14 @@ export const [injectPinInputRootContext, providePinInputRootContext]
  * @internal
  */
 export const [injectPinInputFieldSlots, providePinInputFieldSlots]
-  = createContext<Map<HTMLInputElement, () => number> | null>('PinInputRoot', 'PinInputFieldSlots')
+  = createRekaContext<Map<HTMLInputElement, () => number> | null>('PinInputRoot', 'PinInputFieldSlots')
 </script>
 
 <script setup lang="ts" generic="Type extends PinInputType">
-import { mergeProps, useAttrs, watch } from 'vue'
+import { mergeProps, useAttrs, watch, watchEffect } from 'vue'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
+import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { formResetBinder } from '@/shared/formReset'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
@@ -172,7 +177,7 @@ function firstInput() {
 // The composable owns the model (`useControllableState`), `beforeUpdate:` /
 // `update:` and the `complete` watcher; the shell keeps `dir` resolution and
 // the hidden form input.
-const { modelValue: model, currentModelValue, root, context, isControlled } = usePinInput({
+const { modelValue: model, mountedValues, isCompleted, root, context, isControlled } = usePinInput({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   type: () => props.type,
@@ -190,6 +195,16 @@ const { modelValue: model, currentModelValue, root, context, isControlled } = us
 const modelValue = model as unknown as Readonly<Ref<PinInputValue<Type>>>
 
 providePinInputRootContext(context)
+
+// `requireComplete`: a required PIN is only valid once every mounted input is filled.
+const { primitiveElement: formInputRef, currentElement: formInput } = usePrimitiveElement()
+watchEffect((onCleanup) => {
+  const input = formInput.value as HTMLInputElement | undefined
+  if (input && resolvedRequired() && props.requireComplete && !isCompleted.value) {
+    input.setCustomValidity('Please fill in every PIN field.')
+    onCleanup(() => input.setCustomValidity(''))
+  }
+})
 useAgentRegistration('pin-input', context, props)
 
 // A native reset of the owning form puts the value back to `defaultValue`.
@@ -238,13 +253,14 @@ const bindFormReset = formResetBinder(onFormReset)
   >
     <slot :model-value="modelValue" />
 
-    <VisuallyHiddenInput
+    <VisuallyHiddenInputBubble
       :id="resolvedId()"
+      ref="formInputRef"
       as="input"
       feature="focusable"
       aria-hidden="true"
       tabindex="-1"
-      :value="currentModelValue.join('')"
+      :value="mountedValues.join('')"
       :name="resolvedName() ?? ''"
       :disabled="resolvedDisabled()"
       :required="resolvedRequired()"

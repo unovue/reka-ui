@@ -7,7 +7,7 @@ export interface ColorFieldInputProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { mergeProps, nextTick, onBeforeUnmount, useAttrs } from 'vue'
 import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
-import { useForwardElement } from '@/shared'
+import { disabledAttr, useForwardElement } from '@/shared'
 import { injectColorFieldFieldControl, injectColorFieldRootContext } from './ColorFieldRoot.vue'
 import { createColorFieldInputSurface } from './useColorField'
 
@@ -50,8 +50,10 @@ if (fieldControl) {
 // consumer `aria-invalid` wins, then the field's, then the input's own (set
 // when a commit rejected the text).
 function renderAttrs(attrs: Record<string, unknown>) {
+  // An enabled plain non-input tag gets no `disabled="false"`; a component still receives `false`.
+  const disabledBinding = { disabled: disabledAttr(input.attrs.value.disabled as boolean | undefined, props.as, props.asChild) }
   if (!field)
-    return mergeProps(input.attrs.value, attrs)
+    return mergeProps(input.attrs.value, attrs, disabledBinding)
   const aria = field.ariaAttrs(attrs, rootContext.disabled.value)
   return mergeProps(
     field.dataAttributes(),
@@ -64,6 +66,7 @@ function renderAttrs(attrs: Record<string, unknown>) {
       'onFocus': field.onFocus,
       'onBlur': handleFieldBlur,
     },
+    disabledBinding,
   )
 }
 

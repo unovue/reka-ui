@@ -3,10 +3,10 @@ import type { ComputedRef, CSSProperties, Ref } from 'vue'
 import type { ColorAreaAxis, ColorAreaChangeReason } from './useColorArea'
 import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
-import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, Translate } from '@/shared'
 import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { createContext, useDirection, useFormControl, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useFormControl, useForwardElement } from '@/shared'
 
 export interface ColorAreaRootProps extends PrimitiveProps, FormFieldProps {
   /** The color value (controlled). A string is parsed once; emitted values are always `Color` objects. */
@@ -65,10 +65,12 @@ export interface ColorAreaRootContext {
   focusInput: (axis?: ColorAreaAxis) => void
   updateValues: (x: number, y: number, reason?: ColorAreaChangeReason | BaseChangeReason, event?: Event) => boolean
   commitValues: () => void
+  /** The nearest `ConfigProvider`'s translate function, for the built-in labels. */
+  t: Translate
 }
 
 export const [injectColorAreaRootContext, provideColorAreaRootContext]
-  = createContext<ColorAreaRootContext>('ColorAreaRoot')
+  = createRekaContext<ColorAreaRootContext>('ColorAreaRoot')
 
 /**
  * A color area's participation in an ancestor `FieldRoot` (`null` outside
@@ -77,7 +79,7 @@ export const [injectColorAreaRootContext, provideColorAreaRootContext]
  * @internal
  */
 export const [injectColorAreaFieldContext, provideColorAreaFieldContext]
-  = createContext<FieldControlBinding | null>('ColorAreaRoot', 'ColorAreaFieldContext')
+  = createRekaContext<FieldControlBinding | null>('ColorAreaRoot', 'ColorAreaFieldContext')
 </script>
 
 <script setup lang="ts">

@@ -18,7 +18,7 @@ export interface FieldLabelProps extends LabelProps {
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
 import { Label } from '@/Label'
-import { useForwardElement } from '@/shared'
+import { claimReferencedId, useForwardElement } from '@/shared'
 import { injectFieldRootContext } from './FieldRoot.vue'
 
 const props = withDefaults(defineProps<FieldLabelProps>(), {
@@ -29,6 +29,8 @@ const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
 const fieldContext = injectFieldRootContext()
+// The claim is read by `FieldRoot`, so `labelId` keeps naming the label for every control.
+claimReferencedId(fieldContext.labelId, 'id', false)
 
 let unregister: (() => void) | undefined
 onMounted(() => {
@@ -49,7 +51,7 @@ function handleClick(event: MouseEvent) {
 <template>
   <Label
     v-bind="fieldContext.dataAttributes.value"
-    :id="fieldContext.labelId.value ?? undefined"
+    :id="fieldContext.labelId.value && fieldContext.generatedLabelId"
     :ref="forwardRef"
     :as="as"
     :as-child="asChild"
