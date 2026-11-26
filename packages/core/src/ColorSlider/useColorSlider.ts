@@ -3,11 +3,10 @@ import type { ColorSliderRootContext, ColorSliderRootProps } from './ColorSlider
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Color } from '@/shared/color'
 import type { SliderRootProps } from '@/Slider'
-import { computed, hasInjectionContext, toValue } from 'vue'
+import { computed, toValue } from 'vue'
 import { createPartSurface, translationKey, useControllableState, useTranslations } from '@/shared'
 import { colorToHex, convertToSpace, getChannelColorSpace, getChannelRange, getChannelValue, getSliderBackgroundStyle, isEqualColor, normalizeColor, setChannelValue } from '@/shared/color'
 import { createChangeEndTracker } from '@/shared/color/changeEnd'
-import { defaultTranslate } from '@/shared/translations'
 import { resolveDirection } from '@/shared/useDirection'
 
 type Inputs = Pick<ColorSliderRootProps, 'orientation' | 'dir' | 'disabled' | 'inverted' | 'channel' | 'colorSpace' | 'step' | 'modelValue' | 'defaultValue'>
@@ -148,8 +147,7 @@ export function useColorSlider(props: UseColorSliderProps): UseColorSliderReturn
     changeEnd.commit()
   }
 
-  // Outside setup() (a pure call) there is no provider to inject: use the English labels.
-  const t = hasInjectionContext() ? useTranslations() : defaultTranslate
+  const t = useTranslations()
   const context: ColorSliderRootContext = {
     t,
     color,

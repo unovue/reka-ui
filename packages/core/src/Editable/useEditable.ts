@@ -2,9 +2,8 @@ import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { ActivationMode, EditableRootContext, EditableState, SubmitMode } from './EditableRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Direction } from '@/shared/types'
-import { computed, hasInjectionContext, ref, toRaw, toValue, watch } from 'vue'
+import { computed, ref, toRaw, toValue, watch } from 'vue'
 import { createPartSurface, getterRef, translationKey, useControllableState, useTranslations } from '@/shared'
-import { defaultTranslate } from '@/shared/translations'
 import { resolveDirection } from '@/shared/useDirection'
 
 /**
@@ -332,8 +331,7 @@ export function useEditable(props: UseEditableProps = {}): UseEditableReturn {
     }
   }
 
-  // Outside setup() (a pure call) there is no provider to inject: use the English labels.
-  const t = hasInjectionContext() ? useTranslations() : defaultTranslate
+  const t = useTranslations()
   const context: EditableRootContext = {
     t,
     id,

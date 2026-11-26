@@ -2,9 +2,8 @@ import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { PinInputContextValue, PinInputRootContext, PinInputType } from './PinInputRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Direction } from '@/shared/types'
-import { computed, hasInjectionContext, nextTick, ref, shallowRef, toValue, triggerRef, watch } from 'vue'
+import { computed, nextTick, ref, shallowRef, toValue, triggerRef, watch } from 'vue'
 import { createPartSurface, getActiveElement, useArrowNavigation, useComposing, useControllableState, useTranslations } from '@/shared'
-import { defaultTranslate } from '@/shared/translations'
 import { resolveDirection } from '@/shared/useDirection'
 
 /**
@@ -244,8 +243,7 @@ export function usePinInput(props: UsePinInputProps = {}): UsePinInputReturn {
     props.emit?.('complete', committedMountedValues.value)
   }, { deep: true, flush: 'post' })
 
-  // Outside setup() (a pure call) there is no provider to inject: use the English labels.
-  const t = hasInjectionContext() ? useTranslations() : defaultTranslate
+  const t = useTranslations()
   const context: PinInputRootContext<PinInputType> = {
     modelValue,
     t,

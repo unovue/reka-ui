@@ -2,11 +2,10 @@ import type { ComputedRef, CSSProperties, MaybeRefOrGetter, Ref } from 'vue'
 import type { ColorAreaRootContext, ColorAreaRootProps } from './ColorAreaRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Color, ColorChannel } from '@/shared/color'
-import { computed, hasInjectionContext, nextTick, ref, toValue } from 'vue'
+import { computed, nextTick, ref, toValue } from 'vue'
 import { createPartSurface, getterRef, translationKey, useControllableState, useTranslations } from '@/shared'
 import { colorToHex, convertToSpace, getAreaBackgroundStyle, getChannelColorSpace, getChannelRange, getChannelValue, isEqualColor, normalizeColor, setChannelValues } from '@/shared/color'
 import { createChangeEndTracker } from '@/shared/color/changeEnd'
-import { defaultTranslate } from '@/shared/translations'
 import { resolveDirection } from '@/shared/useDirection'
 import { convertValueToPercentage, linearScale } from './utils'
 
@@ -155,8 +154,7 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
       thumbRef.value?.focus()
   }
 
-  // Outside setup() (a pure call) there is no provider to inject: use the English labels.
-  const t = hasInjectionContext() ? useTranslations() : defaultTranslate
+  const t = useTranslations()
   const context: ColorAreaRootContext = {
     t,
     color: workingColor,

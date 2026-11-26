@@ -3,9 +3,8 @@ import type { SliderRootContext } from './SliderRoot.vue'
 import type { SliderOrientation } from './utils'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { DataOrientation, Direction } from '@/shared/types'
-import { computed, hasInjectionContext, ref, toRaw, toValue } from 'vue'
+import { computed, ref, toRaw, toValue } from 'vue'
 import { clamp, createPartSurface, fieldRef, getDecimalCount, getterRef, useControllableState, useTranslations } from '@/shared'
-import { defaultTranslate } from '@/shared/translations'
 import { resolveDirection } from '@/shared/useDirection'
 import {
   ARROW_KEYS,
@@ -406,8 +405,7 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     }
   }
 
-  // Outside setup() (a pure call) there is no provider to inject: use the English labels.
-  const t = hasInjectionContext() ? useTranslations() : defaultTranslate
+  const t = useTranslations()
   const context: SliderRootContext = {
     t,
     modelValue,

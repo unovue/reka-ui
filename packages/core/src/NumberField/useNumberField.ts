@@ -1,9 +1,8 @@
 import type { ComputedRef, HTMLAttributes, MaybeRefOrGetter, Ref } from 'vue'
 import type { NumberFieldRootContext } from './NumberFieldRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
-import { computed, hasInjectionContext, mergeProps, ref, shallowRef, toValue, watch } from 'vue'
+import { computed, mergeProps, ref, shallowRef, toValue, watch } from 'vue'
 import { clamp, createPartSurface, getActiveElement, getterRef, isNullish, snapValueToStep, useComposing, useControllableState, useTranslations } from '@/shared'
-import { defaultTranslate } from '@/shared/translations'
 import { resetControllableState } from '@/shared/useControllableState'
 import { handleDecimalOperation, useNumberFormatter, useNumberParser } from './utils'
 
@@ -400,8 +399,7 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
     set: value => setModelValue(value),
   })
 
-  // Outside setup() (a pure call) there is no provider to inject: use the English labels.
-  const t = hasInjectionContext() ? useTranslations() : defaultTranslate
+  const t = useTranslations()
   const context: NumberFieldRootContext = {
     modelValue: contextModelValue,
     t,

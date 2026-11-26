@@ -1,10 +1,9 @@
 import type { ComputedRef, MaybeRefOrGetter } from 'vue'
 import type { PartSurface, Translate } from '@/shared'
 import type { Color } from '@/shared/color'
-import { computed, hasInjectionContext, toValue } from 'vue'
+import { computed, toValue } from 'vue'
 import { createPartSurface, fieldRef, useTranslations } from '@/shared'
 import { colorToString, getColorContrast, getColorName, normalizeColor } from '@/shared/color'
-import { defaultTranslate } from '@/shared/translations'
 
 export interface UseColorSwatchProps {
   color?: MaybeRefOrGetter<string | Color | undefined>
@@ -86,8 +85,7 @@ function deriveColorSwatch(color: string | Color | undefined, customLabel: strin
  * @lifecycle pure
  */
 export function useColorSwatch(props: UseColorSwatchProps = {}): UseColorSwatchReturn {
-  // Outside setup() (a pure call) there is no provider to inject: use the English labels.
-  const t = hasInjectionContext() ? useTranslations() : defaultTranslate
+  const t = useTranslations()
   const info = computed(() => deriveColorSwatch(toValue(props.color), toValue(props.label), t))
   const root = createPartSurface<ColorSwatchState>(() => {
     const { label, colorString, alpha } = info.value
