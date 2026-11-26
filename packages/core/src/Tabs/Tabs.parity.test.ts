@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { TabsContent, TabsIndicator, TabsList, TabsRoot, TabsTrigger } from '.'
 
-// Compares the parts with what v2 rendered before the selection was read per tab (the snapshots).
+// Pins what the parts render across value shapes, changes and interactions (the snapshots). Ported from
+// v2 (#3410), where they pinned v2's output; regenerated for v3's (checked/unchecked, click activation,
+// hidden panels unmounted).
 async function tick() {
   await nextTick()
   await nextTick()
@@ -22,8 +24,7 @@ function make(model: any, list: any, extra: any = {}, contentExtra: any = {}) {
 }
 
 describe('tabs vs v2', () => {
-  // TODO(v3-port): #3410 snapshots pin v2's Tabs output (active/inactive data-state, mousedown activation, hidden panels kept mounted); v3 changed these  on purpose, and v3's useTabsPartId throws for an undefined value
-  it.skip('value shapes', async () => {
+  it('value shapes', async () => {
     const out: any[] = []
     const list = ref<any[]>(['a', 'b', 1, '1', 0, '', null, undefined, Number.NaN, 2, 'a'])
     for (const m of [undefined, 'a', 'b', 1, '1', 0, '', null, Number.NaN, 2, 'zzz', undefined, 'a']) {
@@ -46,8 +47,7 @@ describe('tabs vs v2', () => {
     expect(out).toMatchSnapshot()
   })
 
-  // TODO(v3-port): #3410 snapshots pin v2's Tabs output (active/inactive data-state, mousedown activation, hidden panels kept mounted); v3 changed these on purpose
-  it.skip('value changes on mounted parts, add/remove, unmount selected', async () => {
+  it('value changes on mounted parts, add/remove, unmount selected', async () => {
     const out: any[] = []
     const model = ref<any>('b')
     const list = ref<any[]>(['a', 'b', 'c'])
@@ -86,8 +86,7 @@ describe('tabs vs v2', () => {
   for (const activationMode of ['automatic', 'manual']) {
     for (const unmountOnHide of [true, false]) {
       for (const forceMount of [false, true]) {
-        // TODO(v3-port): #3410 snapshots pin v2's Tabs output (active/inactive data-state, mousedown activation, hidden panels kept mounted); v3 changed these on purpose
-        it.skip(`interaction ${activationMode} unmountOnHide=${unmountOnHide} forceMount=${forceMount}`, async () => {
+        it(`interaction ${activationMode} unmountOnHide=${unmountOnHide} forceMount=${forceMount}`, async () => {
           const out: any[] = []
           const model = ref<any>(undefined)
           const list = ref<any[]>(['a', 'b', 'c'])
@@ -107,7 +106,7 @@ describe('tabs vs v2', () => {
           await tabs[2].trigger('keydown', { key: 'Enter' })
           await tick()
           out.push(dump(w), model.value)
-          await tabs[0].trigger('mousedown', { button: 0 })
+          await tabs[0].trigger('click')
           await tick()
           out.push(dump(w), model.value)
           await tabs[0].trigger('focus')
