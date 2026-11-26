@@ -6,7 +6,7 @@ import type { KeyedSelector } from '@/shared/createKeyedSelector'
 import { computed, getCurrentInstance, inject, nextTick, provide, ref } from 'vue'
 import { getCollectionMeta, useCollection, useCollectionSlot } from '@/Collection'
 import { callListeners } from '@/shared/callListeners'
-import { createContext } from '@/shared/createContext'
+import { createRekaContext } from '@/shared/createContext'
 import { createKeyedSelector } from '@/shared/createKeyedSelector'
 import { isDisabledItem } from '@/shared/isDisabledItem'
 import { getterRef } from '@/shared/partSurface'
@@ -38,7 +38,7 @@ export interface RovingContext {
 }
 
 export const [injectRovingFocusGroupContext, provideRovingFocusGroupContext]
-  = createContext<RovingContext>('RovingFocusGroup')
+  = createRekaContext<RovingContext>('RovingFocusGroup')
 
 const NO_ACTIVE_ITEM_KEY: InjectionKey<(() => boolean) | undefined> = Symbol('RovingFocusGroupNoActiveItem')
 
