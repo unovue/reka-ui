@@ -1,7 +1,7 @@
 import type { Component, PropType } from 'vue'
 import { defineComponent, getCurrentInstance, h, toRaw } from 'vue'
 import { ariaDisabledAttr } from '@/shared'
-import { Slot } from './Slot'
+import { renderSlotChild } from './Slot'
 
 export type AsTag
   = | 'a'
@@ -142,6 +142,7 @@ export const Primitive = defineComponent({
       }
     }
 
-    return () => h(Slot, attrs, { default: slots.default })
+    // Rendered here, not through a nested `Slot` component: the same nodes for one instance less
+    return () => renderSlotChild(attrs, slots)
   },
 })
