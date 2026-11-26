@@ -3,9 +3,9 @@ import type { PopoverHandle } from './handle'
 import type { PopoverOpenChangeReason, PopoverRootContext } from './PopoverRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import type { PopupRootStore } from '@/shared/popupHandle'
-import { computed, ref, toValue } from 'vue'
-import { createPartSurface, disclosureState, setGeneratedIds, useControllableState } from '@/shared'
-import { createPopupRootStore, setPopupRootStore } from '@/shared/popupHandle'
+import { computed, ref, toRaw, toValue } from 'vue'
+import { createPartSurface, disclosureState, getterRef, setGeneratedIds, useControllableState } from '@/shared'
+import { createPopupRootStore, getPopupRootStore, setPopupRootStore } from '@/shared/popupHandle'
 
 // =============================================================================
 // Headless composable for the Popover (overlay) family — issue #2723.
@@ -30,6 +30,35 @@ let popoverCount = 0
 
 /** The handle-less trigger's id, per Root context; see `getPopoverOwnTriggerSlot`. */
 const ownTriggerSlots = new WeakMap<object, { triggerId: string }>()
+const CONTENT_ID = Symbol('contentId')
+
+// The context's id accessors, shared by every popover. An accessor in the object literal (or
+// a per-popover closure as accessor) puts the whole context on slow dictionary properties.
+// `toRaw`: the context may be read through a reactive proxy.
+const triggerIdProperty: PropertyDescriptor = {
+  enumerable: true,
+  configurable: true,
+  // With a `handle`, the content's `aria-labelledby` follows the active
+  // trigger while it is mounted, and is dropped (`''`) while no mounted
+  // trigger owns the popover, so it never points at a missing id.
+  get(this: object) {
+    const context = toRaw(this)
+    const handleStore = getPopupRootStore(context)!
+    if (!handleStore.handle.value)
+      return ownTriggerSlots.get(context)!.triggerId
+    return handleStore.activeTriggerElement.value ? handleStore.activeTriggerId.value! : ''
+  },
+}
+const contentIdProperty: PropertyDescriptor = {
+  enumerable: true,
+  configurable: true,
+  get(this: object) {
+    return (toRaw(this) as { [CONTENT_ID]: Ref<string> })[CONTENT_ID].value
+  },
+  set(this: object, value: string) {
+    (toRaw(this) as { [CONTENT_ID]: Ref<string> })[CONTENT_ID].value = value
+  },
+}
 
 /**
  * The writable id a `PopoverTrigger` without a handle renders, and that the
@@ -192,7 +221,8 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
     onUpdate: props.onUpdate,
   })
   const modal = computed<boolean>(() => toValue(props.modal) ?? false)
-  const unmountOnHide = computed<boolean>(() => toValue(props.unmountOnHide) ?? true)
+  // A getter, not a computed: it only reads a prop.
+  const unmountOnHide = getterRef<boolean>(() => toValue(props.unmountOnHide) ?? true)
   const hasCustomAnchor = ref(false)
 
   // Writable: a `PopoverTrigger` / `PopoverContent` `id` replaces the generated
@@ -230,26 +260,21 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
     return setState(!open.value, reason, event)
   }
 
-  const context: PopoverRootContext = {
+  // The ids are added as accessors after the literal (see `triggerIdProperty`), which keeps
+  // the context on fast properties.
+  const context = {
     triggerElement,
-    // With a `handle`, the content's `aria-labelledby` follows the active
-    // trigger while it is mounted, and is dropped (`''`) while no mounted
-    // trigger owns the popover, so it never points at a missing id.
-    get triggerId() {
-      if (!handleStore.handle.value)
-        return ownTriggerId.value
-      return handleStore.activeTriggerElement.value ? handleStore.activeTriggerId.value! : ''
-    },
-    get contentId() { return contentId.value },
-    set contentId(value) { contentId.value = value },
     open,
     modal: modal as Ref<boolean>,
     unmountOnHide: unmountOnHide as Ref<boolean>,
     onOpenChange,
     onOpenToggle,
     hasCustomAnchor,
-    notifyOpenComplete: value => props.onOpenComplete?.(value),
-  }
+    notifyOpenComplete: (value: boolean) => props.onOpenComplete?.(value),
+  } as PopoverRootContext
+  ;(context as unknown as { [CONTENT_ID]: Ref<string> })[CONTENT_ID] = contentId
+  Object.defineProperty(context, 'triggerId', triggerIdProperty)
+  Object.defineProperty(context, 'contentId', contentIdProperty)
   setGeneratedIds(context, { contentId: contentId.value })
   const ownTriggerSlot = {
     get triggerId() { return ownTriggerId.value },
