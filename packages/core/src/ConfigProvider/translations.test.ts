@@ -794,13 +794,12 @@ const translated: Record<string, { translations: Partial<Translations>, checks: 
 }
 
 // TODO(v3-port): #3418 the families that look their labels up in v3 so far; the other parts keep hard-coded labels
-const TRANSLATED_IN_V3 = new Set(['Carousel', 'CarouselTabs', 'Pagination', 'SliderArea'])
+const TRANSLATED_IN_V3 = new Set(['Carousel', 'CarouselTabs', 'Pagination', 'SliderArea', 'Stepper'])
 // TODO(v3-port): #3418 the Month/Year pickers are deleted in v3
 const DELETED_IN_V3 = new Set(['MonthPicker', 'MonthRangePicker', 'YearPicker', 'YearRangePicker'])
 // TODO(v3-port): #3418 #3388 v3's ColorArea has no built-in roledescription
 const NO_DEFAULT_LABEL_IN_V3 = new Set(['ColorArea'])
-// TODO(v3-port): #3116 v3's StepperRoot has no `announce` prop
-const NO_CONSUMER_LABEL_IN_V3 = new Set(['Stepper'])
+const NO_CONSUMER_LABEL_IN_V3 = new Set<string>()
 const itDefaults = (name: string) => DELETED_IN_V3.has(name) || NO_DEFAULT_LABEL_IN_V3.has(name) ? it.skip : it
 const itConsumer = (name: string, fixture: Fixture) => DELETED_IN_V3.has(name) || NO_CONSUMER_LABEL_IN_V3.has(name) ? it.skip : it.runIf(fixture.consumer)
 

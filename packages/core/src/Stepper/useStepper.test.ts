@@ -146,7 +146,9 @@ describe('useStepper — surfaces', () => {
     const step = s.getItem(2)
     expect(step.title.attrs.value).toEqual({ id: 'checkout-item-2-title' })
     expect(step.description.attrs.value).toEqual({ id: 'checkout-item-2-description' })
-    expect(step.trigger.attrs.value).toMatchObject({ 'aria-labelledby': 'checkout-item-2-title', 'aria-describedby': 'checkout-item-2-description' })
+    // Named by its title and description (#3296); the description is part of the name, not a description.
+    expect(step.trigger.attrs.value).toMatchObject({ 'aria-labelledby': 'checkout-item-2-title checkout-item-2-description' })
+    expect(step.trigger.attrs.value['aria-describedby']).toBeUndefined()
   })
 
   it('title / description ids follow a reactive step', () => {
@@ -156,7 +158,7 @@ describe('useStepper — surfaces', () => {
     stepNumber.value = 3
     expect(step.title.attrs.value).toEqual({ id: 'checkout-item-3-title' })
     expect(step.description.attrs.value).toEqual({ id: 'checkout-item-3-description' })
-    expect(step.trigger.attrs.value).toMatchObject({ 'aria-labelledby': 'checkout-item-3-title' })
+    expect(step.trigger.attrs.value).toMatchObject({ 'aria-labelledby': 'checkout-item-3-title checkout-item-3-description' })
   })
 })
 

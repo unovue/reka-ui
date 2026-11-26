@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, ref, useAttrs, watchPostEffect } from 'vue'
 import { useForwardElement } from '@/shared'
 
 export interface StepperTriggerProps extends PrimitiveProps {
@@ -23,27 +23,28 @@ const itemContext = injectStepperItemContext()
 // data-state/tabindex/aria and the mousedown/keydown handlers come from the
 // shared surface builder (single source with `useStepper().getItem`); the
 // tag-dependent `type` and the trigger registration stay in the SFC.
-const surface = getStepperTriggerSurface(rootContext, itemContext)
+const isMounted = ref(false)
+onMounted(() => {
+  isMounted.value = true
+})
+const surface = getStepperTriggerSurface(rootContext, itemContext, { attrs: useAttrs(), isMounted })
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
-let registeredElement: HTMLElement | null = null
-
-onMounted(() => {
-  registeredElement = currentElement.value
-  if (registeredElement) {
-    rootContext.itemDisabled.set(registeredElement, () => itemContext.disabled.value)
-    rootContext.totalStepperItems.value.add(registeredElement)
-  }
-})
-
-onUnmounted(() => {
-  if (registeredElement) {
-    rootContext.totalStepperItems.value.delete(registeredElement)
-    rootContext.itemDisabled.delete(registeredElement)
-    registeredElement = null
-  }
+// Follows the element: an `asChild` trigger can swap its element without unmounting.
+watchPostEffect((cleanup) => {
+  const element = currentElement.value
+  if (!element)
+    return
+  rootContext.itemDisabled.set(element, () => itemContext.disabled.value)
+  rootContext.stepperItemValues.set(element, () => itemContext.step.value)
+  rootContext.totalStepperItems.value.add(element)
+  cleanup(() => {
+    rootContext.itemDisabled.delete(element)
+    rootContext.stepperItemValues.delete(element)
+    rootContext.totalStepperItems.value.delete(element)
+  })
 })
 </script>
 

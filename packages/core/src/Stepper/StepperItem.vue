@@ -24,8 +24,14 @@ export interface StepperItemContext {
   descriptionId: string
   step: Readonly<Ref<number>>
   state: Readonly<Ref<StepperState>>
+  /** Whether this is the current step (`step` equals the root value), whatever its `completed` state. */
+  isCurrent: Readonly<Ref<boolean>>
   disabled: Readonly<Ref<boolean>>
   isFocusable: Readonly<Ref<boolean>>
+  /** Whether a `StepperTitle` is rendered for this item. */
+  hasTitle: Ref<boolean>
+  /** Whether a `StepperDescription` is rendered for this item. */
+  hasDescription: Ref<boolean>
 }
 
 export interface StepperItemProps extends PrimitiveProps {

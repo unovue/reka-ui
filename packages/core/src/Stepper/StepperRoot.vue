@@ -5,7 +5,7 @@ import type { StepperChangeReason } from './useStepper'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { Primitive } from '@/Primitive'
-import { createRekaContext, mergeExpose, useDirection, useForwardElement } from '@/shared'
+import { createRekaContext, mergeExpose, useDirection, useForwardElement, useTranslations } from '@/shared'
 import { useStepper } from './useStepper'
 
 export interface StepperRootContext {
@@ -23,6 +23,8 @@ export interface StepperRootContext {
    * to its rendered `disabled` attribute.
    */
   itemDisabled: WeakMap<HTMLElement, () => boolean>
+  /** The step each registered trigger belongs to, which the announcement reads in DOM order. */
+  stepperItemValues: Map<HTMLElement, () => number>
 }
 
 export interface StepperRootProps extends PrimitiveProps {
@@ -44,6 +46,8 @@ export interface StepperRootProps extends PrimitiveProps {
   modelValue?: number
   /** Whether or not the steps must be completed in order. */
   linear?: boolean
+  /** Customize the live announcement using the active step's one-based position and total. Set to `false` to disable the built-in live region. */
+  announce?: ((step: number, total: number) => string) | false
 }
 export type StepperRootEmits = {
   /** Event handler called before the step changes; call `details.cancel()` to keep the current step. */
@@ -57,10 +61,14 @@ export const [injectStepperRootContext, provideStepperRootContext]
 </script>
 
 <script setup lang="ts">
+import { useMutationObserver } from '@vueuse/core'
+import { ref, watchPostEffect } from 'vue'
+
 const props = withDefaults(defineProps<StepperRootProps>(), {
   orientation: 'horizontal',
   linear: true,
   defaultValue: 1,
+  announce: undefined,
 })
 const emits = defineEmits<StepperRootEmits>()
 
@@ -95,6 +103,7 @@ defineSlots<{
 // owns the step model (`useControllableState`), the step navigation and the
 // next/previous-trigger watchers.
 const dir = useDirection(() => props.dir)
+const t = useTranslations()
 
 const {
   modelValue,
@@ -116,12 +125,32 @@ const {
   orientation: () => props.orientation,
   dir,
   linear: () => props.linear,
+  translate: t,
   emit: emits,
 })
 
 provideStepperRootContext(context)
 
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
+
+// Announce the current step by its position among the rendered steps, not by its value.
+const announcement = ref('')
+function updateAnnouncement() {
+  const orderedItems = [...context.totalStepperItems.value]
+    .sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
+  const step = orderedItems.findIndex(item => context.stepperItemValues.get(item)?.() === modelValue.value) + 1
+  if (!step || props.announce === false) {
+    announcement.value = ''
+    return
+  }
+  // Anything that is not a function (e.g. a bare `announce` attribute cast to `true`) uses the default text.
+  const custom = typeof props.announce === 'function' ? props.announce(step, orderedItems.length) : undefined
+  announcement.value = custom ?? t('stepperAnnouncement', { step, total: orderedItems.length })
+}
+watchPostEffect(updateAnnouncement)
+// Keyed moves inside nested components do not update the root or registration set.
+useMutationObserver(currentElement, updateAnnouncement, { childList: true, subtree: true })
+
 defineExpose(mergeExpose(expose, {
   goToStep,
   nextStep,
@@ -159,6 +188,7 @@ defineExpose(mergeExpose(expose, {
     />
 
     <div
+      v-if="announce !== false"
       aria-live="polite"
       aria-atomic="true"
       role="status"
@@ -170,7 +200,7 @@ defineExpose(mergeExpose(expose, {
         margin: 0,
       }"
     >
-      Step {{ modelValue }} of {{ totalSteps }}
+      {{ announcement }}
     </div>
   </Primitive>
 </template>

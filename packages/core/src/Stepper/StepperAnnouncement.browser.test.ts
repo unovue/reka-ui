@@ -1,12 +1,10 @@
-// @ts-nocheck TODO(v3-port): #3116
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { StepperItem, StepperRoot, StepperTitle, StepperTrigger } from '.'
 
-// TODO(v3-port): #3116 v3 announces the model value, not the step position, and has no `announce` prop
-describe.skip('stepper announcements in a real browser', () => {
+describe('stepper announcements in a real browser', () => {
   it.each(['ltr', 'rtl'] as const)('announces zero-based steps after keyboard selection in %s', async (dir) => {
     const fixture = mount(defineComponent({
       setup: () => () => h(StepperRoot, {

@@ -213,18 +213,16 @@ function references(referrer: HTMLElement, attribute: string) {
   return referrer.getAttribute(attribute)?.split(/\s+/) ?? []
 }
 
-// TODO(v3-port): #3377 only v3's Dialog, AlertDialog and Drawer follow a consumer id on the referenced part
-const FOLLOWS_CONSUMER_ID_IN_V3 = new Set(['DialogTitle', 'DialogDescription', 'AlertDialogTitle', 'AlertDialogDescription', 'DrawerTitle', 'DrawerDescription'])
+// TODO(v3-port): #3377 the parts that follow a consumer id on the referenced part in v3 so far
+const FOLLOWS_CONSUMER_ID_IN_V3 = new Set(['DialogTitle', 'DialogDescription', 'AlertDialogTitle', 'AlertDialogDescription', 'DrawerTitle', 'DrawerDescription', 'StepperTitle', 'StepperDescription'])
 
 describe.each(Object.entries(cases))('%s', (name, { generatedId, attribute, render, multipleParts = true }) => {
   const itFollows = FOLLOWS_CONSUMER_ID_IN_V3.has(name) ? it : it.skip
-  // TODO(v3-port): #3296 v3's StepperTrigger is labelled by the title only, so the description is not in its aria-labelledby
-  const itReferenced = name === 'StepperDescription' ? it.skip : it
   const part = { 'data-testid': 'part' }
   const second = { 'data-testid': 'part-2' }
   const referrer = { 'data-testid': 'referrer' }
 
-  itReferenced('keeps the generated id when the consumer passes none', async () => {
+  it('keeps the generated id when the consumer passes none', async () => {
     const wrapper = mount(defineComponent({ render: () => render([part], referrer) }), { attachTo: document.body })
     await settle()
     const id = find('part').id
@@ -253,8 +251,8 @@ describe.each(Object.entries(cases))('%s', (name, { generatedId, attribute, rend
     wrapper.unmount()
   })
 
-  // TODO(v3-port): #3377 v3 references the last part's consumer id (or none)
-  it.skip('renders each part\'s own consumer id and references the first, without an update loop', async () => {
+  // TODO(v3-port): #3377 v3's Dialog, AlertDialog and Drawer reference the last part's consumer id
+  ;(name.startsWith('Stepper') ? it : it.skip)('renders each part\'s own consumer id and references the first, without an update loop', async () => {
     const warn = vi.spyOn(console, 'warn')
     onTestFinished(() => warn.mockRestore())
     const wrapper = mount(defineComponent({
@@ -280,7 +278,7 @@ describe.each(Object.entries(cases))('%s', (name, { generatedId, attribute, rend
     wrapper.unmount()
   })
 
-  itReferenced('drops the reference to a consumer id that becomes empty', async () => {
+  it('drops the reference to a consumer id that becomes empty', async () => {
     const id = ref('consumer-id')
     const wrapper = mount(defineComponent({ render: () => render([{ ...part, id: id.value }], referrer) }), { attachTo: document.body })
     await settle()
@@ -434,14 +432,15 @@ describe('a referring part rendered before the part that claims a consumer id', 
       </DropdownMenuGroup></DropdownMenuContent></DropdownMenuRoot>` },
   }
 
-  // TODO(v3-port): #3377 v3's Stepper, TagsInput, Select, Listbox and Menu parts do not follow a consumer id
-  it.skip.each(Object.entries(templates))('%s', async (_, { template, attribute = 'aria-labelledby' }) => {
+  // TODO(v3-port): #3377 v3's TagsInput, Select, Listbox and Menu parts do not follow a consumer id
+  const itTemplate = (name: string) => name.startsWith('Stepper') ? it : it.skip
+  describe.each(Object.entries(templates))('%s', (name, { template, attribute = 'aria-labelledby' }) => itTemplate(name)('references the consumer id', async () => {
     const wrapper = mount(defineComponent({ components, template }), { attachTo: document.body })
     await settle()
     expect(document.getElementById('consumer-id')).toBeTruthy()
     expect(references(find('referrer'), attribute)).toContain('consumer-id')
     wrapper.unmount()
-  })
+  }))
 })
 
 describe('consumer ids around Suspense and asChild', () => {

@@ -2,9 +2,11 @@ import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { StepperItemContext, StepperState } from './StepperItem.vue'
 import type { StepperRootContext } from './StepperRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
+import type { Translate } from '@/shared/translations'
 import type { DataOrientation, Direction } from '@/shared/types'
 import { computed, nextTick, ref, toValue, watch } from 'vue'
 import { createPartSurface, getActiveElement, useArrowNavigation, useControllableState, useKbd } from '@/shared'
+import { defaultTranslate } from '@/shared/translations'
 import { resolveDirection } from '@/shared/useDirection'
 
 /**
@@ -64,6 +66,8 @@ export function getStepperItemContext(context: StepperRootContext, options: Step
     return true
   })
 
+  const isCurrent = computed(() => context.modelValue.value === step.value)
+
   return {
     get titleId() {
       return toValue(options.titleId)
@@ -73,8 +77,11 @@ export function getStepperItemContext(context: StepperRootContext, options: Step
     },
     step,
     state,
+    isCurrent,
     disabled,
     isFocusable,
+    hasTitle: ref(false),
+    hasDescription: ref(false),
   }
 }
 
@@ -90,7 +97,8 @@ function itemState(context: StepperRootContext, item: StepperItemContext): Stepp
 export function getStepperItemSurface(context: StepperRootContext, item: StepperItemContext): PartSurface<StepperItemState> {
   return createPartSurface<StepperItemState>(
     () => ({
-      'aria-current': item.state.value === 'current' ? 'true' : undefined,
+      // The trigger carries `aria-current="step"`; the item keeps `"true"` for backward compatibility.
+      'aria-current': item.isCurrent.value ? 'true' : undefined,
       'disabled': item.disabled.value || !item.isFocusable.value ? '' : undefined,
       // A container, not a control: its trigger carries the disabled state, so `Primitive`
       // must not add `aria-disabled` for the `disabled` attribute above.
@@ -108,7 +116,41 @@ export function getStepperItemSurface(context: StepperRootContext, item: Stepper
  * `context.itemDisabled.set(el, () => item.disabled.value)` so `goToStep`
  * reads the item's current state instead of the last-rendered attribute.
  */
-export function getStepperTriggerSurface(context: StepperRootContext, item: StepperItemContext): PartSurface<StepperItemState> {
+export interface StepperTriggerNaming {
+  /** The trigger's fallthrough attributes: a consumer `aria-label` or `aria-labelledby` names it. */
+  attrs: Record<string, unknown>
+  /**
+   * Whether the trigger has mounted. Until then, which parts are rendered is unknown: the
+   * title and description report themselves once mounted, and usually come after the trigger.
+   * The server render and the first client render reference both ids so that the server HTML
+   * names the trigger and hydration matches it; an id without an element is ignored.
+   */
+  isMounted: Readonly<Ref<boolean>>
+}
+
+/**
+ * The trigger's `aria-labelledby` and `aria-describedby`: named by its title and description so the
+ * accessible name matches the visible content, referencing only the parts that are rendered, and
+ * leaving the name to a consumer `aria-label` or `aria-labelledby`.
+ */
+function getTriggerNaming(item: StepperItemContext, naming: StepperTriggerNaming | undefined) {
+  const hasConsumerName = !!naming && !!(naming.attrs['aria-label'] || naming.attrs['aria-labelledby'])
+  const isMounted = !!naming?.isMounted.value
+  if (hasConsumerName) {
+    // The description is already part of the name when the trigger names itself by it.
+    return {
+      'aria-labelledby': undefined,
+      'aria-describedby': isMounted && !item.hasDescription.value ? undefined : item.descriptionId,
+    }
+  }
+  const ids = [
+    !isMounted || item.hasTitle.value ? item.titleId : undefined,
+    !isMounted || item.hasDescription.value ? item.descriptionId : undefined,
+  ].filter(Boolean)
+  return { 'aria-labelledby': ids.length ? ids.join(' ') : undefined, 'aria-describedby': undefined }
+}
+
+export function getStepperTriggerSurface(context: StepperRootContext, item: StepperItemContext, naming?: StepperTriggerNaming): PartSurface<StepperItemState> {
   const kbd = useKbd()
   const stepperItems = computed(() => Array.from(context.totalStepperItems.value))
 
@@ -165,8 +207,8 @@ export function getStepperTriggerSurface(context: StepperRootContext, item: Step
     () => ({
       'disabled': item.disabled.value || !item.isFocusable.value ? '' : undefined,
       'tabindex': item.isFocusable.value ? 0 : -1,
-      'aria-describedby': item.descriptionId,
-      'aria-labelledby': item.titleId,
+      'aria-current': item.isCurrent.value ? 'step' : undefined,
+      ...getTriggerNaming(item, naming),
       onMousedown,
       onKeydown,
     }),
@@ -204,6 +246,8 @@ export interface UseStepperProps {
    * server and client: SSR consumers must pass a stable `baseId`.
    */
   baseId?: string
+  /** Looks up the built-in labels; `StepperRoot` passes the `ConfigProvider` one. @defaultValue the English labels */
+  translate?: Translate
   /** Component `emit`; receives `beforeUpdate:modelValue` then `update:modelValue`. */
   emit?: (event: any, ...args: any[]) => void
   /** Called before a change commits; `details.cancel()` vetoes it. */
@@ -281,6 +325,8 @@ export function useStepper(props: UseStepperProps = {}): UseStepperReturn {
   const totalStepperItems = ref<Set<HTMLElement>>(new Set())
   const totalStepperItemsArray = computed(() => Array.from(totalStepperItems.value))
   const itemDisabled = new WeakMap<HTMLElement, () => boolean>()
+  const stepperItemValues = new Map<HTMLElement, () => number>()
+  const t = props.translate ?? defaultTranslate
 
   const isFirstStep = computed(() => modelValue.value === 1)
   const isLastStep = computed(() => modelValue.value === totalStepperItemsArray.value.length)
@@ -355,10 +401,11 @@ export function useStepper(props: UseStepperProps = {}): UseStepperReturn {
     linear: linear as Ref<boolean>,
     totalStepperItems,
     itemDisabled,
+    stepperItemValues,
   }
 
   const root = createPartSurface<StepperRootState>(
-    () => ({ 'role': 'group', 'aria-label': 'progress' }),
+    () => ({ 'role': 'group', 'aria-label': t('stepperLabel') }),
     () => ({ linear: linear.value, orientation: orientation.value }),
   )
 
