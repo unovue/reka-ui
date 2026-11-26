@@ -1,3 +1,5 @@
+import type { CheckedState } from './utils'
+
 export {
   default as CheckboxGroupRoot,
   type CheckboxGroupRootEmits,
@@ -27,6 +29,5 @@ export {
   type UseCheckboxGroupProps,
   type UseCheckboxGroupReturn,
 } from './useCheckboxGroup'
-export type {
-  CheckedState as CheckboxCheckedState,
-} from './utils'
+// A local alias rather than a renamed re-export, which compiler-sfc cannot resolve.
+export type CheckboxCheckedState = CheckedState

@@ -52,7 +52,8 @@ export interface FieldRootProps extends PrimitiveProps {
   validationDebounceTime?: number
 }
 
-export type FieldRootEmits = object
+// `{}` rather than `object`: compiler-sfc resolves an object type literal for `defineEmits`.
+export type FieldRootEmits = {}
 
 /**
  * Optional override passed to `handleControlBlur`/`handleControlInput`, for a

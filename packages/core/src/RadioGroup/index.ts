@@ -1,3 +1,5 @@
+import type { SelectEvent } from './utils'
+
 export {
   default as RadioGroupIndicator,
   type RadioGroupIndicatorProps,
@@ -22,6 +24,5 @@ export {
   type UseRadioGroupProps,
   type UseRadioGroupReturn,
 } from './useRadioGroup'
-export {
-  type SelectEvent as RadioGroupItemSelectEvent,
-} from './utils'
+// A local alias rather than a renamed re-export, which compiler-sfc cannot resolve.
+export type RadioGroupItemSelectEvent = SelectEvent
