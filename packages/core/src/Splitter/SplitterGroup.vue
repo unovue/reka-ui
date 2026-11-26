@@ -236,6 +236,8 @@ useWindowSplitterPanelGroupBehavior({
   commitLayout,
   panelGroupElement: panelGroupElementRef,
   getPanelDataWithPercentConstraints,
+  getPanelSizeBeforeCollapse,
+  setPanelSizeBeforeCollapse,
 })
 
 watchEffect((onCleanup) => {
@@ -483,7 +485,9 @@ function registerResizeHandle(dragHandleId: string) {
       keyboardResizeBy,
       panelGroupElement,
     )
-    if (delta === 0)
+    // No movement changes nothing, except in a drag that has already moved the
+    // layout: the pointer is back where it started, so is the layout.
+    if (delta === 0 && (!initialLayout || compareLayouts(prevLayout, initialLayout)))
       return
 
     // Support RTL layouts
@@ -690,6 +694,33 @@ function unregisterPanel(panelData: PanelData) {
   }
 }
 
+/**
+ * Remembers the size (in percent) a panel had before it collapsed, in the
+ * panel's own unit, so expanding it can restore that size.
+ */
+function setPanelSizeBeforeCollapse(panelData: PanelData, panelSize: number) {
+  const sizeUnit = panelData.constraints.sizeUnit ?? '%'
+  const groupSize = groupSizeInPixels.value ?? getGroupSizeInPixels()
+  const sizeBeforeCollapse = sizeUnit === 'px' && groupSize
+    ? (panelSize / 100) * groupSize
+    : panelSize
+
+  panelSizeBeforeCollapseRef.value.set(panelData.id, sizeBeforeCollapse)
+}
+
+/** The size (in percent) a panel had before it collapsed, if it is known. */
+function getPanelSizeBeforeCollapse(panelData: PanelData): number | null | undefined {
+  const prevPanelSize = panelSizeBeforeCollapseRef.value.get(panelData.id)
+  const sizeUnit = panelData.constraints.sizeUnit ?? '%'
+  const groupSize = groupSizeInPixels.value ?? getGroupSizeInPixels()
+
+  return sizeUnit === 'px' && groupSize
+    ? prevPanelSize != null
+      ? (prevPanelSize / groupSize) * 100
+      : null
+    : prevPanelSize
+}
+
 function collapsePanel(panelData: PanelData) {
   const { layout: prevLayout, panelDataArray } = eagerValuesRef.value
 
@@ -712,13 +743,7 @@ function collapsePanel(panelData: PanelData) {
     if (panelSize !== collapsedSize) {
       // Store size before collapse;
       // This is the size that gets restored if the expand() API is used.
-      const sizeUnit = panelData.constraints.sizeUnit ?? '%'
-      const groupSize = groupSizeInPixels.value ?? getGroupSizeInPixels()
-      const sizeBeforeCollapse = sizeUnit === 'px' && groupSize
-        ? (panelSize / 100) * groupSize
-        : panelSize
-
-      panelSizeBeforeCollapseRef.value.set(panelData.id, sizeBeforeCollapse)
+      setPanelSizeBeforeCollapse(panelData, panelSize)
 
       const isLastPanel
         = findPanelDataIndex(panelDataArray, panelData)
@@ -770,18 +795,7 @@ function expandPanel(panelData: PanelData) {
 
     if (fuzzyCompareNumbers(panelSize, collapsedSize) <= 0) {
       // Restore this panel to the size it was before it was collapsed, if possible.
-      const prevPanelSize = panelSizeBeforeCollapseRef.value.get(
-        panelData.id,
-      )
-      const sizeUnit = panelData.constraints.sizeUnit ?? '%'
-      const groupSize = groupSizeInPixels.value ?? getGroupSizeInPixels()
-
-      const restoredSize
-        = sizeUnit === 'px' && groupSize
-          ? prevPanelSize != null
-            ? (prevPanelSize / groupSize) * 100
-            : null
-          : prevPanelSize
+      const restoredSize = getPanelSizeBeforeCollapse(panelData)
 
       const baseSize
         = restoredSize != null && restoredSize >= minSize

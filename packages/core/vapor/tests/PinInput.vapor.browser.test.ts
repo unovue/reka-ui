@@ -36,8 +36,8 @@ describe('pin input (Vapor)', () => {
 
   it('asChild in both forms', async () => {
     await mount(Fixture)
-    const first = expectAdopted('pin-adopted', { 'aria-label': 'First', 'autocomplete': 'false' })
-    expectSlotted('pin-slotted', { 'aria-label': 'Second', 'autocomplete': 'false' })
+    const first = expectAdopted('pin-adopted', { 'aria-label': 'First', 'autocomplete': 'off' })
+    expectSlotted('pin-slotted', { 'aria-label': 'Second', 'autocomplete': 'off' })
     await userEvent.click(first)
     await userEvent.keyboard('4')
     await until(() => expect(document.activeElement?.id).toBe('pin-slotted'))

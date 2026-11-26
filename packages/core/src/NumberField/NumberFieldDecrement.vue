@@ -12,10 +12,13 @@ export interface NumberFieldDecrementProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { useTranslations } from '@/shared'
 
 const props = withDefaults(defineProps<NumberFieldDecrementProps>(), {
   as: 'button',
 })
+
+const t = useTranslations()
 
 const rootContext = injectNumberFieldRootContext()
 const isDisabled = computed(() => rootContext.disabled?.value || rootContext.readonly.value || props.disabled || rootContext.isDecreaseDisabled.value)
@@ -34,7 +37,7 @@ onTrigger(() => {
     v-bind="props"
     ref="primitiveElement"
     tabindex="-1"
-    aria-label="Decrease"
+    :aria-label="t('numberFieldDecrement')"
     :type="as === 'button' ? 'button' : undefined"
     :style="{
       userSelect: isPressed ? 'none' : undefined,

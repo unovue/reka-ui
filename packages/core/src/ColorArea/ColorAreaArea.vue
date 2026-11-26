@@ -7,12 +7,15 @@ export interface ColorAreaAreaProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { useTranslations } from '@/shared'
 import { injectColorAreaRootContext } from './ColorAreaRoot.vue'
 import { linearScale } from './utils'
 
 const props = withDefaults(defineProps<ColorAreaAreaProps>(), {
   as: 'div',
 })
+
+const t = useTranslations()
 
 const rootContext = injectColorAreaRootContext()
 const { primitiveElement, currentElement: areaElement } = usePrimitiveElement()
@@ -64,14 +67,24 @@ function handlePointerMove(event: PointerEvent) {
   }
 }
 
+// A drag ends on `pointerup`, but also when the browser cancels the pointer or takes the capture away
+// (a touch turning into a scroll, a system gesture, an alert). Each of them commits once.
+function endDrag() {
+  if (!isDragging.value)
+    return
+
+  isDragging.value = false
+  rootContext.commitValues()
+}
+
 function handlePointerUp(event: PointerEvent) {
   if (!isDragging.value)
     return
 
   const target = event.target as HTMLElement
+  // Ends the drag first, so the `lostpointercapture` that the release fires finds nothing to commit.
+  endDrag()
   target.releasePointerCapture(event.pointerId)
-  isDragging.value = false
-  rootContext.commitValues()
 }
 
 // Keyboard navigation
@@ -116,10 +129,12 @@ function handleKeyDown(event: KeyboardEvent) {
   }
 
   event.preventDefault()
-  rootContext.updateValues(
-    rootContext.xValue.value + xDelta,
-    rootContext.yValue.value + yDelta,
-  )
+  const previousX = rootContext.xValue.value
+  const previousY = rootContext.yValue.value
+  rootContext.updateValues(previousX + xDelta, previousY + yDelta)
+  // Each key press is a finished change, as it is for the sliders. A press at the edge changes nothing.
+  if (rootContext.xValue.value !== previousX || rootContext.yValue.value !== previousY)
+    rootContext.commitValues()
 }
 </script>
 
@@ -129,7 +144,7 @@ function handleKeyDown(event: KeyboardEvent) {
     :as-child="asChild"
     :as="as"
     role="application"
-    aria-roledescription="Color picker"
+    :aria-roledescription="t('colorAreaRoleDescription')"
     :aria-disabled="rootContext.disabled.value ? 'true' : undefined"
     :data-disabled="rootContext.disabled.value ? '' : undefined"
     :style="{
@@ -139,6 +154,8 @@ function handleKeyDown(event: KeyboardEvent) {
     @pointerdown="handlePointerDown"
     @pointermove="handlePointerMove"
     @pointerup="handlePointerUp"
+    @pointercancel="endDrag"
+    @lostpointercapture="endDrag"
   >
     <slot />
   </Primitive>
