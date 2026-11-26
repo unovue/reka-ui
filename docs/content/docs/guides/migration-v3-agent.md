@@ -1081,6 +1081,24 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 
 **Verify.** The type-check passes; in each form with a reset trigger, change every Reka UI control, reset, and each one shows and submits its default; a control you gave a cancelling `beforeUpdate:modelValue` keeps its value.
 
+### 37. Pagination keeps the page within the page count
+
+**What changed.**
+- `clampPage` on `PaginationRoot` defaults to `true` (v2: `false`). When `total` or `itemsPerPage` drops below the current page, the root moves the page to the last page and emits `update:page` (`'imperative-action'`); a page out of range at mount is moved too, and a `total` of `0` resets the page to `1`. v2 kept the page and only kept navigation in range.
+- `usePagination()` defaults `clampPage` to `true` too.
+
+**How to find it.**
+- Every `PaginationRoot` (also `Pagination.Root` and `reka-pagination-root`) and `usePagination(` call. Note whether it sets `clamp-page`, `:clamp-page` or `clampPage`.
+- Where `total` comes from: a request whose `total` is `0` or `undefined` while it loads, or a page read from the URL before the data arrives.
+
+**Rewrite rules.**
+- A root that already sets `clamp-page` (bare, or bound to `true`): remove the attribute; it is the default.
+- A root that binds it to `false` or to a variable: leave unchanged.
+- A root without the prop whose `total` can drop to `0` (or shrink) while data loads and whose page must survive that: add `:clamp-page="false"`, or keep the previous `total` while loading. *Ask* if you cannot tell.
+- Tests that shrink `total` and expect the page to stay past the last page: expect the last page and an `update:page` emit instead, or pass `clampPage: false`.
+
+**Verify.** The type-check passes; shrinking `total` below the current page moves each default root to the last page; a root with `:clamp-page="false"` keeps its page.
+
 ### Report
 
 When you are done, give the developer:

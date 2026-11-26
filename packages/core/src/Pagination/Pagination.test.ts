@@ -278,8 +278,8 @@ describe('when the page count shrinks', () => {
   it.each([
     { model: { defaultPage: 10 }, change: { total: 20 } },
     { model: { page: 10 }, change: { itemsPerPage: 50 } },
-  ])('keeps the page but navigates within the new page count with $model', async ({ model, change }) => {
-    const wrapper = mountPagination(model)
+  ])('keeps the page but navigates within the new page count with `clampPage: false` and $model', async ({ model, change }) => {
+    const wrapper = mountPagination({ clampPage: false, ...model })
 
     await wrapper.setProps(change)
     expect(wrapper.get('output').text()).toBe('10')
@@ -295,8 +295,8 @@ describe('when the page count shrinks', () => {
   it.each([
     { model: { defaultPage: 10 }, change: { total: 20 } },
     { model: { page: 10 }, change: { itemsPerPage: 50 } },
-  ])('moves to the new last page with `clampPage` and $model', async ({ model, change }) => {
-    const wrapper = mountPagination({ clampPage: true, ...model })
+  ])('moves to the new last page by default with $model', async ({ model, change }) => {
+    const wrapper = mountPagination(model)
     expect(wrapper.get('output').text()).toBe('10')
 
     await wrapper.setProps(change)
@@ -311,7 +311,7 @@ describe('when the page count shrinks', () => {
   })
 
   it('brings an out-of-range page into range on mount and when `clampPage` turns on', async () => {
-    const wrapper = mountPagination({ page: 20, total: 50 })
+    const wrapper = mountPagination({ clampPage: false, page: 20, total: 50 })
     expect(wrapper.get('output').text()).toBe('20')
     expect(wrapper.emitted('update:page')).toBeUndefined()
 
@@ -319,7 +319,7 @@ describe('when the page count shrinks', () => {
     expect(wrapper.get('output').text()).toBe('5')
     expect(pages(wrapper)).toEqual([5])
 
-    const mounted = mountPagination({ clampPage: true, defaultPage: 20, total: 50 })
+    const mounted = mountPagination({ defaultPage: 20, total: 50 })
     expect(mounted.get('output').text()).toBe('5')
     expect(pages(mounted)).toEqual([5])
   })
@@ -372,7 +372,7 @@ describe('when the page count shrinks', () => {
   })
 
   it('emits a correction once with a controlled page', async () => {
-    const wrapper = mountPagination({ clampPage: true, page: 3, total: 50 })
+    const wrapper = mountPagination({ page: 3, total: 50 })
 
     await wrapper.setProps({ page: 20 })
     await nextTick()

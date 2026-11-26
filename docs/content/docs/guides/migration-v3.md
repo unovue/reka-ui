@@ -1070,3 +1070,19 @@ To keep a value through a reset, cancel the change:
 ```
 
 `useForm().reset()` resets the form natively, so it follows the same rules. A control of your own built with `useFieldControl()` is not reset for you; see [Resetting](./forms#resetting).
+
+## Pagination keeps the page within the page count
+
+`clampPage` on `PaginationRoot` now defaults to `true` (v2: `false`), and so does the `clampPage` option of `usePagination()`. When `total` or `itemsPerPage` drops so that the current page is past the last page, the page moves to the last page and `update:page` is emitted (reason `'imperative-action'`). A page that is already out of range when the pagination mounts is moved too. A `total` of `0` resets the page to `1`. In v2 the page stayed where it was and only navigation was kept within the page count.
+
+A `total` that drops to `0` while new data loads now sends the user back to page 1. Keep the previous `total` while loading, or set the prop to `false` for the v2 behavior:
+
+```vue
+<!-- v2: the page stayed past the last page -->
+<PaginationRoot v-model:page="page" :total="total">
+
+<!-- v3: same behavior -->
+<PaginationRoot v-model:page="page" :total="total" :clamp-page="false">
+```
+
+`clamp-page` (or `:clamp-page="true"`) is now the default and can be removed.

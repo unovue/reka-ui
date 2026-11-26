@@ -208,9 +208,9 @@ const currentPage = ref(1)
 
 ### Keep the page within the page count
 
-When `total` or `itemsPerPage` shrinks, for example after filtering a list, the current page can end up past the last page. Set `clampPage` to move it to the last page and emit `update:page`.
+When `total` or `itemsPerPage` shrinks, for example after filtering a list, the current page can end up past the last page. By default (`clampPage`), the page moves to the last page and `update:page` is emitted.
 
-A `total` of `0` resets the page to `1`, so keep the previous `total` while new data loads.
+A `total` of `0` resets the page to `1`, so keep the previous `total` while new data loads, or set `:clamp-page="false"` to keep the page as it is. Navigation still stays within the page count: Next is disabled past the last page and Previous lands on the last page.
 
 ```vue line=10
 <script setup lang="ts">
@@ -222,7 +222,7 @@ const total = ref(100)
 </script>
 
 <template>
-  <PaginationRoot v-model:page="currentPage" :total="total" :items-per-page="10" clamp-page>
+  <PaginationRoot v-model:page="currentPage" :total="total" :items-per-page="10" :clamp-page="false">
     ...
   </PaginationRoot>
 </template>

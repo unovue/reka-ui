@@ -137,7 +137,7 @@ export interface UsePaginationProps {
   showEdges?: MaybeRefOrGetter<boolean | undefined>
   /**
    * When `true`, `page` reads within the page count. Moving the model back into range is the
-   * caller's job (`PaginationRoot` does it with `setPage`). @defaultValue `false`
+   * caller's job (`PaginationRoot` does it with `setPage`). @defaultValue `true`
    */
   clampPage?: MaybeRefOrGetter<boolean | undefined>
   /** Looks up the built-in labels; `PaginationRoot` passes the `ConfigProvider` one. @defaultValue the English labels */
@@ -152,7 +152,7 @@ export interface UsePaginationProps {
 
 export interface UsePaginationReturn {
   page: ComputedRef<number>
-  /** The page the model holds, which may be past the page count unless `clampPage` is set. */
+  /** The page the model holds, which may be past the page count when `clampPage` is `false`. */
   modelPage: ComputedRef<number>
   pageCount: ComputedRef<number>
   /** The visible page range (pages and ellipses). */
@@ -197,8 +197,8 @@ export function usePagination(props: UsePaginationProps): UsePaginationReturn {
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const showEdges = computed(() => toValue(props.showEdges) ?? false)
   // Navigation always lands within the page count. Reading an out-of-range page back into range
-  // is opt-in, because a `total` that drops while data loads would otherwise lose the current page.
-  const page = computed(() => toValue(props.clampPage) ? clamp(modelPage.value, 1, pageCount.value) : modelPage.value)
+  // is the default; `clampPage: false` keeps it for a `total` that drops while data loads.
+  const page = computed(() => (toValue(props.clampPage) ?? true) ? clamp(modelPage.value, 1, pageCount.value) : modelPage.value)
 
   function setPage(value: number, reason: PaginationChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
     return setState(clamp(value, 1, pageCount.value), reason, event)
