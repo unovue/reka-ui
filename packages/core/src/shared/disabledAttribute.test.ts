@@ -159,13 +159,9 @@ function render(c: Case, disabled: boolean, as: As) {
 // TODO(v3-port): #3327 parts that still render their element with `renderAs`, so an enabled one rendered as a
 // non-button element gets disabled="false". Switching the part to `renderAsControl` fixes it; remove it here then.
 const OMIT_PENDING = new Set([
-  'CalendarNext',
-  'CalendarPrev',
   'CheckboxRoot',
   'ColorFieldInput',
   'ComboboxTrigger',
-  'DatePickerTrigger',
-  'DateRangePickerTrigger',
   'DrawerSwipeArea',
   'DropdownMenuTrigger',
   'EditableCancelTrigger',
@@ -175,8 +171,6 @@ const OMIT_PENDING = new Set([
   'MenubarTrigger',
   'NavigationMenuTrigger',
   'PinInputInput',
-  'RangeCalendarNext',
-  'RangeCalendarPrev',
   'SelectTrigger',
   'SwitchRoot',
   'TagsInputInput',

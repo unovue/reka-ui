@@ -78,11 +78,11 @@ export const defaultTranslations = /* @__PURE__ */ Object.freeze({
   /** EditableCancelTrigger. */
   editableCancel: 'cancel',
 
-  /** MonthPicker, MonthRangePicker: the picker's name, read before the visible year. */
+  /** CalendarRoot with `view="month"`: the calendar's name, read before the visible year. */
   monthPickerLabel: 'Month Picker',
-  /** MonthPickerPrev, MonthRangePickerPrev. */
+  /** @deprecated Unused: the month pickers became the Calendar `view` prop. Kept so existing translations still type-check. */
   monthPickerPrev: 'Previous year',
-  /** MonthPickerNext, MonthRangePickerNext. */
+  /** @deprecated Unused: the month pickers became the Calendar `view` prop. Kept so existing translations still type-check. */
   monthPickerNext: 'Next year',
 
   /** NumberFieldInput: `aria-roledescription`. */
@@ -132,11 +132,11 @@ export const defaultTranslations = /* @__PURE__ */ Object.freeze({
   /** ToastViewport: the default of its `label` prop. */
   toastViewportLabel: 'Notifications ({hotkey})',
 
-  /** YearPicker, YearRangePicker: the picker's name, read before the visible years. */
+  /** CalendarRoot with `view="year"`: the calendar's name, read before the visible years. */
   yearPickerLabel: 'Year Picker',
-  /** YearPickerPrev, YearRangePickerPrev. */
+  /** @deprecated Unused: the year pickers became the Calendar `view` prop. Kept so existing translations still type-check. */
   yearPickerPrev: 'Previous page',
-  /** YearPickerNext, YearRangePickerNext. */
+  /** @deprecated Unused: the year pickers became the Calendar `view` prop. Kept so existing translations still type-check. */
   yearPickerNext: 'Next page',
 } as const satisfies Record<string, string>)
 

@@ -794,7 +794,7 @@ const translated: Record<string, { translations: Partial<Translations>, checks: 
 }
 
 // TODO(v3-port): #3418 the families that look their labels up in v3 so far; the other parts keep hard-coded labels
-const TRANSLATED_IN_V3 = new Set(['Carousel', 'CarouselTabs', 'Pagination', 'SliderArea', 'Stepper'])
+const TRANSLATED_IN_V3 = new Set(['Calendar', 'Carousel', 'CarouselTabs', 'DateField', 'DatePicker', 'DateRangeField', 'DateRangePicker', 'Pagination', 'RangeCalendar', 'SliderArea', 'Stepper', 'TimeField', 'TimeRangeField'])
 // TODO(v3-port): #3418 the Month/Year pickers are deleted in v3
 const DELETED_IN_V3 = new Set(['MonthPicker', 'MonthRangePicker', 'YearPicker', 'YearRangePicker'])
 // TODO(v3-port): #3418 #3388 v3's ColorArea has no built-in roledescription
@@ -891,8 +891,7 @@ describe('translations on ConfigProvider', () => {
 
 describe('a nested ConfigProvider', () => {
   // What v2 has always done, which the guide describes: only the translations are inherited.
-  // TODO(v3-port): #3418 v3's CalendarRoot does not call useTranslations
-  it.skip('goes back to the default locale and dir unless it is given them again', async () => {
+  it('goes back to the default locale and dir unless it is given them again', async () => {
     document.body.innerHTML = ''
     mount(defineComponent({
       components: reka as unknown as Record<string, Component>,

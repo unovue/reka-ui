@@ -444,9 +444,6 @@ describe('a referring part rendered before the part that claims a consumer id', 
 })
 
 describe('consumer ids around Suspense and asChild', () => {
-  // TODO(v3-port): #3377 stand-ins for the deleted MonthPicker parts, so the skipped tests below still type-check
-  const { MonthPickerRoot, MonthPickerGrid, MonthPickerHeader, MonthPickerHeading } = {} as Record<string, any>
-
   function deferred() {
     let resolve!: () => void
     const promise = new Promise<void>(r => resolve = r)
@@ -462,16 +459,15 @@ describe('consumer ids around Suspense and asChild', () => {
     })
   }
 
-  // TODO(v3-port): #3377 needs a Month/Year picker, deleted in v3
-  it.skip('skips a part whose async setup is pending and references the claim once it resolves', async () => {
+  it('skips a part whose async setup is pending and references the claim once it resolves', async () => {
     const { promise, resolve } = deferred()
     const Async = asyncPart(promise)
     const wrapper = mount(defineComponent({
-      render: () => h(Suspense, null, () => h(MonthPickerRoot, null, () => [
+      render: () => h(Suspense, null, () => h(StepperRoot, { defaultValue: 1 }, () => h(StepperItem, { step: 1 }, () => [
         h(Async),
-        h(MonthPickerGrid, { 'data-testid': 'referrer' }),
-        h(MonthPickerHeader, () => h(MonthPickerHeading, { id: 'consumer-id' })),
-      ])),
+        h(StepperTrigger, { 'data-testid': 'referrer' }, () => 'Step'),
+        h(StepperTitle, { id: 'consumer-id' }, () => 'Title'),
+      ]))),
     }), { attachTo: document.body })
     await settle()
     resolve()
@@ -480,16 +476,15 @@ describe('consumer ids around Suspense and asChild', () => {
     wrapper.unmount()
   })
 
-  // TODO(v3-port): #3377 needs a Month/Year picker, deleted in v3
-  it.skip('updates a referring part waiting in a Suspense boundary\'s pending branch', async () => {
+  it('updates a referring part waiting in a Suspense boundary\'s pending branch', async () => {
     const { promise, resolve } = deferred()
     const Async = asyncPart(promise)
     const wrapper = mount(defineComponent({
-      components: { MonthPickerRoot, MonthPickerGrid, MonthPickerHeader, MonthPickerHeading, Async },
-      template: `<MonthPickerRoot>
-        <Suspense><div><MonthPickerGrid data-testid="referrer" /><Async /></div></Suspense>
-        <MonthPickerHeader><MonthPickerHeading id="consumer-id" /></MonthPickerHeader>
-      </MonthPickerRoot>`,
+      components: { StepperRoot, StepperItem, StepperTrigger, StepperTitle, Async },
+      template: `<StepperRoot :default-value="1"><StepperItem :step="1">
+        <Suspense><div><StepperTrigger data-testid="referrer">Step</StepperTrigger><Async /></div></Suspense>
+        <StepperTitle id="consumer-id">Title</StepperTitle>
+      </StepperItem></StepperRoot>`,
     }), { attachTo: document.body })
     await settle()
     resolve()
