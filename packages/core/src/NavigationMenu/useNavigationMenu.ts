@@ -1392,13 +1392,13 @@ export function useNavigationMenuViewport(options: UseNavigationMenuViewportOpti
   const content = ref<HTMLElement>()
   const avoidClipping = () => toValue(options.avoidClipping) ?? true
 
-  // The clipping ancestors, their resizes and the window's are followed from the first time
-  // `avoidClipping` is on (the watcher below calls this), so a viewport with `avoidClipping: false`
-  // observes nothing and listens to nothing.
+  // The clipping ancestors, their resizes and the window's are followed from the first time the
+  // viewport opens with `avoidClipping` on (the watcher below calls this): a closed viewport, or one
+  // with `avoidClipping: false`, observes nothing and listens to nothing.
   const scope = getCurrentScope()
   let isTrackingClipping = false
   function trackClipping() {
-    if (isTrackingClipping || !avoidClipping())
+    if (isTrackingClipping || !open.value || !avoidClipping())
       return
     isTrackingClipping = true
     const track = () => {
