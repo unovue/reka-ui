@@ -371,9 +371,7 @@ describe('given a Popover with a consumer id on the trigger (#3059)', () => {
 })
 
 describe('given a Popover with an id only on the asChild trigger element', () => {
-  // TODO(v3-port): #3060 an `id` on the asChild child is not adopted by the trigger: the shared part-id
-  // code (`usePartId`, core lane) only reads the part's own `id` prop
-  it.skip('points content aria-labelledby at the id the trigger actually renders', async () => {
+  it('points content aria-labelledby at the id the trigger actually renders', async () => {
     const Harness = defineComponent({
       render() {
         return h(PopoverRoot, null, {

@@ -85,9 +85,9 @@ const trigger = rootContext ? getPopoverTriggerSurface(rootContext) : getDetache
 
 // Without a `handle`, the trigger renders its own id (its `id` prop, else the
 // Root's generated trigger id) and mirrors it into the Root, so the content's
-// `aria-labelledby` follows.
+// `aria-labelledby` follows. With `asChild`, an id on the child element wins.
 const ownTriggerSlot = rootContext ? getPopoverOwnTriggerSlot(rootContext) : undefined
-const ownTriggerId = ownTriggerSlot ? usePartId(() => props.id, ownTriggerSlot, 'triggerId') : undefined
+const ownTriggerId = ownTriggerSlot ? usePartId(() => props.id, ownTriggerSlot, 'triggerId', triggerElement) : undefined
 const attrs = computed(() => detached.enabled.value
   ? getDetachedTrigger().attrs.value
   : ownTriggerId ? { ...trigger.attrs.value, id: ownTriggerId.value } : trigger.attrs.value)
