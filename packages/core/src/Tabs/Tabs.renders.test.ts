@@ -9,10 +9,10 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '.'
 
 const COUNT = 1000
 /** Components a single trigger or content is made of, with room for the list around them. */
-const MAX_UPDATES = 40
+const MAX_UPDATES = 20
 
 function mountTabs(template: string) {
-  const updates = { count: 0, names: new Map<string, number>() }
+  const updates = { count: 0, names: new Map<string, number>(), created: 0 }
   const Fixture = defineComponent({
     components: { TabsRoot, TabsList, TabsTrigger, TabsContent },
     setup() {
@@ -27,6 +27,9 @@ function mountTabs(template: string) {
       plugins: [{
         install(app: App) {
           app.mixin({
+            beforeCreate() {
+              updates.created++
+            },
             beforeUpdate() {
               updates.count++
               const name = this.$options.name ?? this.$options.__name ?? 'anonymous'
@@ -98,6 +101,27 @@ describe('tabs render counts', () => {
     expect(panels[0].attributes('data-state')).toBe('inactive')
     expect(updates.count, JSON.stringify([...updates.names])).toBeLessThanOrEqual(MAX_UPDATES)
   }, 30_000)
+
+  it('mounts a trigger as two components', async () => {
+    const { wrapper, updates } = mountTabs(`
+<TabsRoot default-value="tab-0">
+  <TabsList>
+    <TabsTrigger v-for="tab in tabs.slice(0, 10)" :key="tab" :value="tab">{{ tab }}</TabsTrigger>
+  </TabsList>
+</TabsRoot>`)
+    unmount = () => wrapper.unmount()
+    const withTen = updates.created
+    wrapper.unmount()
+    const { wrapper: other, updates: fewer } = mountTabs(`
+<TabsRoot default-value="tab-0">
+  <TabsList>
+    <TabsTrigger v-for="tab in tabs.slice(0, 5)" :key="tab" :value="tab">{{ tab }}</TabsTrigger>
+  </TabsList>
+</TabsRoot>`)
+    unmount = () => other.unmount()
+    // The trigger and the element it renders: no roving-focus or collection wrapper per trigger.
+    expect((withTen - fewer.created) / 5).toBe(2)
+  })
 
   it('still hands the current value to a default slot that reads it', async () => {
     const { wrapper } = mountTabs(`
