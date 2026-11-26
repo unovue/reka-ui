@@ -7,7 +7,7 @@ import type { AcceptableValue } from '@/shared/types'
 import { createEventHook, tryOnScopeDispose } from '@vueuse/core'
 import { computed, isRef, nextTick, ref, toValue } from 'vue'
 import { useListboxRoot } from '@/Listbox/useListbox'
-import { createPartSurface, disclosureState, getActiveElement, getElementByIdFrom, useComposing, useControllableState, useFilter } from '@/shared'
+import { createPartSurface, disclosureState, getActiveElement, getElementByIdFrom, useComposing, useControllableState, useFilter, useTranslations } from '@/shared'
 import { getComboboxItemLabel } from './comboboxItems'
 import { useComboboxContentPositioning } from './useComboboxContentPositioning'
 
@@ -155,6 +155,7 @@ export function getComboboxTriggerSurface(
   disabled?: MaybeRefOrGetter<boolean | undefined>,
 ): PartSurface<ComboboxTriggerState> {
   const isDisabled = computed(() => toValue(disabled) || context.disabled.value || false)
+  const t = useTranslations()
   let pointerType: string | undefined
   // The open state when the press began: focusing the input on mousedown can
   // open the popup first (`openOnFocus`), and the press must not then close it.
@@ -162,7 +163,7 @@ export function getComboboxTriggerSurface(
   return createPartSurface<ComboboxTriggerState>(
     () => ({
       'tabindex': '-1',
-      'aria-label': 'Show popup',
+      'aria-label': t('comboboxTrigger'),
       'aria-haspopup': 'listbox',
       'aria-expanded': context.open.value,
       'aria-controls': context.contentId,
