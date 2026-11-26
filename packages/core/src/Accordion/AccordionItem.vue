@@ -41,7 +41,8 @@ export const [injectAccordionItemContext, provideAccordionItemContext]
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { CollapsibleRoot } from '@/Collapsible'
+import { provideCollapsibleRootContext } from '@/Collapsible/CollapsibleRoot.vue'
+import { Primitive } from '@/Primitive'
 import { useAgentItem } from '@/shared/useAgentRegistration'
 
 const props = withDefaults(
@@ -92,6 +93,18 @@ provideAccordionItemContext(defineReactiveIds({
   value: computed(() => props.value),
 }, ['triggerId']))
 
+// The item is its own collapsible root: `AccordionTrigger` and `AccordionContent` read this context
+// as they would under a `CollapsibleRoot`, without the component and its `v-model` state in
+// between. The open state belongs to the accordion, so toggling it here does nothing, as an
+// `update:open` nobody listened to did.
+provideCollapsibleRootContext(defineReactiveIds({
+  contentId: '',
+  disabled,
+  open,
+  unmountOnHide: computed(() => props.unmountOnHide ?? rootContext.unmountOnHide.value),
+  onOpenToggle: () => {},
+}, ['contentId']))
+
 function handleArrowKey(e: KeyboardEvent) {
   const target = e.target as HTMLElement
   const allCollectionItems: HTMLElement[] = Array.from(rootContext.parentElement.value?.querySelectorAll('[data-reka-collection-item]') ?? [])
@@ -114,17 +127,14 @@ function handleArrowKey(e: KeyboardEvent) {
 </script>
 
 <template>
-  <CollapsibleRoot
-    :data-orientation="rootContext.orientation"
-    :data-disabled="dataDisabled"
-    :data-state="dataState"
-    :disabled="disabled"
-    :open="open"
+  <Primitive
     :as="props.as"
     :as-child="props.asChild"
-    :unmount-on-hide="props.unmountOnHide ?? rootContext.unmountOnHide.value"
+    :data-state="dataState"
+    :data-disabled="dataDisabled"
+    :data-orientation="rootContext.orientation"
     @keydown.up.down.left.right.home.end="handleArrowKey"
   >
     <slot :open="open" />
-  </CollapsibleRoot>
+  </Primitive>
 </template>
