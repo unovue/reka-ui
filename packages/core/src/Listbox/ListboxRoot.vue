@@ -130,10 +130,11 @@ import { isClient } from '@vueuse/shared'
 import { nextTick, ref, toRefs, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { createKeyedSelector } from '@/shared/createKeyedSelector'
+import { useLazySlotProps } from '@/shared/lazySlotProps'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { SelectionSelector } from './selectionSelector'
-import { compare, createLazySlotProps } from './utils'
+import { compare } from './utils'
 
 const props = withDefaults(defineProps<ListboxRootProps>(), {
   max: 0,
@@ -178,7 +179,7 @@ const selection = new SelectionSelector<T>(() => modelValue.value, props.by)
 
 // Read when a consumer slot uses it, not when the slot is rendered: the slot is rendered by this
 // root's element, and a model read there re-renders it, and through it every item, on each selection.
-const slotProps = createLazySlotProps({ modelValue: () => modelValue.value })
+const slotProps = useLazySlotProps({ modelValue: () => modelValue.value })
 
 // Blocks a multiple selection that would go over `max`, emitting `invalid` with the first value
 // over the limit. Returns `true` when the selection is blocked.

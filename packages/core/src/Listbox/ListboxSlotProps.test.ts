@@ -16,6 +16,28 @@ const Child = defineComponent({
 })
 
 describe('root slot props spread onto a child with v-bind', () => {
+  it('listbox: <Child v-bind="slotProps"> inside a nested slot follows the model', async () => {
+    const model = ref<any>('a')
+    const Inner = defineComponent({ setup: (_, { slots }) => () => h('section', slots.default?.()) })
+    const wrapper = mount(defineComponent({
+      components: { ListboxRoot, ListboxContent, ListboxItem, Child, Inner },
+      setup: () => ({ model }),
+      template: `<ListboxRoot v-model="model" v-slot="slotProps">
+        <Inner><Child v-bind="slotProps" /></Inner>
+        <ListboxContent><ListboxItem v-for="v in ['a','b','c']" :key="v" :value="v">{{ v }}</ListboxItem></ListboxContent>
+      </ListboxRoot>`,
+    }), { attachTo: document.body })
+    await tick()
+    expect(wrapper.find('.child').text()).toBe('a|undefined')
+    await wrapper.findAll('[role=option]')[1].trigger('click')
+    await tick()
+    expect(wrapper.find('.child').text()).toBe('b|undefined')
+    await wrapper.findAll('[role=option]')[2].trigger('click')
+    await tick()
+    expect(wrapper.find('.child').text()).toBe('c|undefined')
+    wrapper.unmount()
+  })
+
   it('listbox: <Child v-bind="slotProps"> follows the model', async () => {
     const model = ref<any>('a')
     const wrapper = mount(defineComponent({
