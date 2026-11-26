@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { ListboxContent, ListboxItem, ListboxRoot } from '.'
 
 // An `as-child` item (or one whose `as` is a component) renders its slot
@@ -67,7 +67,8 @@ describe('as-child ListboxItem slot updates', () => {
 
   it('same with `as` set to a component (its slot renders in that component)', async () => {
     window.HTMLElement.prototype.scrollIntoView = vi.fn()
-    const Row = defineComponent({ template: '<li v-bind="$attrs"><slot /></li>', inheritAttrs: false })
+    // A compiled component (it has a render function): `as` renders a template-only object as a `div` (#3271).
+    const Row = defineComponent({ inheritAttrs: false, setup: (_, { attrs, slots }) => () => h('li', attrs, slots.default?.()) })
     const label = ref('Apple')
     const model = ref<string>()
     const w = mount(defineComponent({
