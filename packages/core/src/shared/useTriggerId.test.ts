@@ -122,8 +122,9 @@ describe('trigger ids', () => {
 
   describe.each(Object.entries(families))('given a %s', (name, family) => {
     beforeEach(({ task, skip }) => {
-      // TODO(v3-port): #3060 no v3 trigger renders the id of its asChild child
-      if (task.name.startsWith('with an id on the asChild child'))
+      // TODO(v3-port): #3060 overlays/floating lanes: v3's Popover, menu and NavigationMenu triggers keep the id passed
+      // down over the id on their asChild child
+      if (task.name.startsWith('with an id on the asChild child') && name !== 'Accordion' && name !== 'Tabs')
         skip()
       if (task.name.startsWith('with an id on the trigger') && IGNORES_CONSUMER_ID_IN_V3.has(name))
         skip()

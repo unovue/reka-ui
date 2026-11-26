@@ -11,7 +11,7 @@ export interface AccordionTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { mergeProps } from 'vue'
+import { mergeProps, onMounted, onUpdated, shallowRef } from 'vue'
 import { injectCollapsibleRootContext } from '@/Collapsible/CollapsibleRoot.vue'
 import { getCollapsibleTriggerSurface } from '@/Collapsible/useCollapsible'
 import { renderAsControl } from '@/Primitive/renderAs'
@@ -25,8 +25,16 @@ const props = defineProps<AccordionTriggerProps>()
 
 const rootContext = injectAccordionRootContext()
 const itemContext = injectAccordionItemContext()
+// With `asChild`, an `id` on the child element overrides the one passed down: once rendered, the
+// element's id is the one the content's `aria-labelledby` follows.
+const renderedId = shallowRef<string>()
 // Rendered on the element; mirrored into the item context for the content's `aria-labelledby`.
-const triggerId = usePartId(() => props.id, itemContext, 'triggerId')
+const triggerId = usePartId(() => props.id || renderedId.value, itemContext, 'triggerId')
+function syncRenderedId() {
+  const id = itemContext.currentRef.value?.id
+  if (id && id !== triggerId.value)
+    renderedId.value = id
+}
 
 const surface = getAccordionTriggerSurface(rootContext, itemContext)
 // Provided by `AccordionItem`. The trigger renders what a `CollapsibleTrigger` rendered around it, with
@@ -35,6 +43,8 @@ const collapsibleSurface = getCollapsibleTriggerSurface(injectCollapsibleRootCon
 
 const { forwardRef, expose } = useForwardElement(itemContext.currentRef)
 defineExpose(expose)
+onMounted(syncRenderedId)
+onUpdated(syncRenderedId)
 </script>
 
 <template>
