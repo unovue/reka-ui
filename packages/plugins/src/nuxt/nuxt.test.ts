@@ -7,6 +7,7 @@ import RekaModule from '.'
 vi.mock('@nuxt/kit', () => ({
   defineNuxtModule: (definition: unknown) => definition,
   addComponent: vi.fn(),
+  addImports: vi.fn(),
   addVitePlugin: vi.fn(),
 }))
 
