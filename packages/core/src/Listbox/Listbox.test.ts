@@ -1407,8 +1407,7 @@ describe('given a Listbox with `keepFocusOnValueChange`', () => {
 
   const propsOf = (component: unknown) => (component as { props: Record<string, unknown> }).props
 
-  // TODO(v3-port): #3325 ColorSwatchPickerRoot (fields lane) still inherits `keepFocusOnValueChange`
-  it.skip('is not a prop of the components built on Listbox', () => {
+  it('is not a prop of the components built on Listbox', () => {
     expect(propsOf(ListboxRoot)).toHaveProperty('keepFocusOnValueChange')
     expect(propsOf(ComboboxRoot)).toHaveProperty('highlightOnHover')
     expect(propsOf(ComboboxRoot)).not.toHaveProperty('keepFocusOnValueChange')
