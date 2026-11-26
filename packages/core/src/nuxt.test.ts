@@ -76,10 +76,25 @@ describe('nuxt module', () => {
   })
 })
 
-// TODO(v3-port): #3381 maintainer decision: v3 exports ~80 headless use* composables (useRender, useAccordion,
-// useToast, ...). Registering them all would add them to every Nuxt app's auto-imports; not decided yet.
-it.skip('registers every exported composable for auto-import', () => {
-  const registered = new Set<string>(utilities.utilities)
-  const composableNames = Object.keys(RekaUI).filter(name => /^use[A-Z]/.test(name))
-  expect(composableNames.filter(name => !registered.has(name))).toEqual([])
+// Only v2's set is auto-imported. v3's headless `use*` composables (useRender, useAccordion, ...)
+// stay explicit imports, so they add no names to every Nuxt app's auto-imports.
+it('auto-imports v2\'s composables, each of them exported', () => {
+  expect([...utilities.utilities].sort()).toEqual([
+    'createContext',
+    'createToastManager',
+    'useBodyScrollLock',
+    'useDateFormatter',
+    'useDirection',
+    'useEmitAsProps',
+    'useFilter',
+    'useForwardExpose',
+    'useForwardProps',
+    'useForwardPropsEmits',
+    'useId',
+    'useLocale',
+    'useStateMachine',
+    'useToastManager',
+    'withDefault',
+  ])
+  expect(utilities.utilities.filter(name => !(name in RekaUI))).toEqual([])
 })
