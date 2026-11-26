@@ -17,8 +17,8 @@ import { renderAs } from '@/Primitive/renderAs'
 
 defineProps<MenuGroupProps>()
 
-const id = useId(undefined, 'reka-menu-group')
-provideMenuGroupContext({ id })
+// The template reads the id through the context, which follows a consumer `id` on the label.
+const context = provideMenuGroupContext({ id: useId(undefined, 'reka-menu-group') })
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
@@ -29,7 +29,7 @@ defineExpose(expose)
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
     role="group"
-    :aria-labelledby="id"
+    :aria-labelledby="context.id"
   >
     <slot />
   </component>
