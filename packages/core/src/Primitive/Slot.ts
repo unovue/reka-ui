@@ -1,6 +1,8 @@
 import type { Slots, VNode } from 'vue'
+import type { BlockVNode } from './stableSlot'
 import { cloneVNode, Comment, defineComponent, getCurrentInstance, mergeProps } from 'vue'
 import { ariaDisabledAttr, isPlainTag, renderSlotFragments } from '@/shared'
+import { dynamicChildrenOf, trackStableSlot } from './stableSlot'
 
 /**
  * The `asChild` render: merges `attrs` into the first non-comment node of the default slot and
@@ -11,7 +13,9 @@ export function renderSlotChild(attrs: Record<string, unknown>, slots: Slots): V
   if (!slots.default)
     return null
 
-  const children = renderSlotFragments(slots.default())
+  // A compiler-stable slot is called with block tracking on, see `trackStableSlot`
+  const tracked = trackStableSlot(slots)
+  const children = renderSlotFragments(tracked ? tracked.children : slots.default())
   const firstNonCommentChildrenIndex = children.findIndex(child => child.type !== Comment)
   if (firstNonCommentChildrenIndex === -1)
     return children
@@ -30,7 +34,7 @@ export function renderSlotChild(attrs: Record<string, unknown>, slots: Slots): V
   // shares them, #1580) or `attrs`
   if (mergedProps !== attrs)
     delete mergedProps.ref
-  const cloned = cloneVNode({ ...firstNonCommentChildren, props: {} }, mergedProps)
+  const cloned: BlockVNode = cloneVNode({ ...firstNonCommentChildren, props: {} }, mergedProps)
   // A part passes `disabled: false` through when it can't see the element (`disabledAttr`).
   // On a plain tag without the property it would render `disabled="false"`, so drop it there. A
   // custom element keeps it, it may default `disabled` to `true`. `cloneVNode` merged the props
@@ -43,8 +47,13 @@ export function renderSlotChild(attrs: Record<string, unknown>, slots: Slots): V
   if (ariaDisabled)
     cloned.props!['aria-disabled'] = ariaDisabled
 
-  if (children.length === 1)
+  if (children.length === 1) {
+    // The only node: hand it what Vue tracked in the slot, so that it is patched as a block. A
+    // node that is a block of its own (the root of a `v-if`) already has it
+    if (tracked && !cloned.dynamicChildren)
+      cloned.dynamicChildren = dynamicChildrenOf(tracked, firstNonCommentChildren)
     return cloned
+  }
 
   children[firstNonCommentChildrenIndex] = cloned
   return children

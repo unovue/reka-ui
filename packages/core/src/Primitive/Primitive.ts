@@ -1,7 +1,9 @@
 import type { Component, PropType } from 'vue'
-import { defineComponent, getCurrentInstance, h, toRaw } from 'vue'
+import type { BlockVNode } from './stableSlot'
+import { createVNode, defineComponent, getCurrentInstance, h, toRaw } from 'vue'
 import { ariaDisabledAttr } from '@/shared'
 import { renderSlotChild } from './Slot'
+import { FULL_PROPS, trackStableSlot } from './stableSlot'
 
 export type AsTag
   = | 'a'
@@ -138,7 +140,17 @@ export const Primitive = defineComponent({
         const tag = unsafe ? 'div' : rawProps.as
         // Native `disabled` only works on form controls, so expose it with `aria-disabled` elsewhere
         const ariaDisabled = ariaDisabledAttr(tag, attrs)
-        return h(tag, ariaDisabled ? { ...attrs, 'aria-disabled': ariaDisabled } : attrs, { default: slots.default })
+        const elementProps = ariaDisabled ? { ...attrs, 'aria-disabled': ariaDisabled } : attrs
+        // An element with the content of a compiler-stable slot renders as a block, like the
+        // element of a compiled template: Vue then patches only what can change in the content,
+        // and no longer updates every child component with slots whenever this one renders
+        const tracked = typeof tag === 'string' ? trackStableSlot(slots) : undefined
+        if (tracked) {
+          const vnode: BlockVNode = createVNode(tag, elementProps, tracked.children, FULL_PROPS)
+          vnode.dynamicChildren = tracked.dynamicChildren
+          return vnode
+        }
+        return h(tag, elementProps, { default: slots.default })
       }
     }
 
