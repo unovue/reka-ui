@@ -2,7 +2,7 @@
 import type { ComputedRef } from 'vue'
 import type { RadioProps } from './Radio.vue'
 import type { SelectEvent } from './utils'
-import { createContext, useForwardElement, useForwardScopeId } from '@/shared'
+import { createRekaContext, useForwardElement, useForwardScopeId } from '@/shared'
 
 export interface RadioGroupItemProps extends Omit<RadioProps, 'checked'> {}
 export type RadioGroupItemEmits = {
@@ -15,7 +15,7 @@ export interface RadioGroupItemContext {
 }
 
 export const [injectRadioGroupItemContext, provideRadiogroupItemContext]
-  = createContext<RadioGroupItemContext>('RadioGroupItem')
+  = createRekaContext<RadioGroupItemContext>('RadioGroupItem')
 </script>
 
 <script setup lang="ts">

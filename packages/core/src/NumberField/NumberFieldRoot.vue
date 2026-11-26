@@ -5,7 +5,7 @@ import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { FormFieldProps } from '@/shared/types'
-import { createContext, useFormControl, useForwardElement, useLocale } from '@/shared'
+import { createRekaContext, useFormControl, useForwardElement, useLocale } from '@/shared'
 
 export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   defaultValue?: number
@@ -84,11 +84,11 @@ export interface NumberFieldRootContext {
   id: Ref<string | undefined>
 }
 
-export const [injectNumberFieldRootContext, provideNumberFieldRootContext] = createContext<NumberFieldRootContext>('NumberFieldRoot')
+export const [injectNumberFieldRootContext, provideNumberFieldRootContext] = createRekaContext<NumberFieldRootContext>('NumberFieldRoot')
 
 /** @internal The root's Field binding, for `NumberFieldInput`. Only provided inside a `FieldRoot`. */
 export const [injectNumberFieldFieldControl, provideNumberFieldFieldControl]
-  = createContext<FieldControlBinding | null>('NumberFieldRoot', 'NumberFieldFieldControl')
+  = createRekaContext<FieldControlBinding | null>('NumberFieldRoot', 'NumberFieldFieldControl')
 </script>
 
 <script setup lang="ts">

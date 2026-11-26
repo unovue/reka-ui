@@ -6,7 +6,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { createContext, useDirection, useFormControl, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useFormControl, useForwardElement } from '@/shared'
 
 export interface ColorAreaRootProps extends PrimitiveProps, FormFieldProps {
   /** The color value (controlled). A string is parsed once; emitted values are always `Color` objects. */
@@ -68,7 +68,7 @@ export interface ColorAreaRootContext {
 }
 
 export const [injectColorAreaRootContext, provideColorAreaRootContext]
-  = createContext<ColorAreaRootContext>('ColorAreaRoot')
+  = createRekaContext<ColorAreaRootContext>('ColorAreaRoot')
 
 /**
  * A color area's participation in an ancestor `FieldRoot` (`null` outside
@@ -77,7 +77,7 @@ export const [injectColorAreaRootContext, provideColorAreaRootContext]
  * @internal
  */
 export const [injectColorAreaFieldContext, provideColorAreaFieldContext]
-  = createContext<FieldControlBinding | null>('ColorAreaRoot', 'ColorAreaFieldContext')
+  = createRekaContext<FieldControlBinding | null>('ColorAreaRoot', 'ColorAreaFieldContext')
 </script>
 
 <script setup lang="ts">

@@ -5,7 +5,7 @@ import type { SliderChangeReason } from './useSlider'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import { useCollection, useCollectionSlot } from '@/Collection'
-import { createContext, useDirection, useFormControl, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useFormControl, useForwardElement } from '@/shared'
 
 type ThumbAlignment = 'contain' | 'overflow'
 
@@ -67,7 +67,7 @@ export interface SliderRootContext {
 }
 
 export const [injectSliderRootContext, provideSliderRootContext]
-  = createContext<SliderRootContext>('SliderRoot')
+  = createRekaContext<SliderRootContext>('SliderRoot')
 </script>
 
 <script setup lang="ts">

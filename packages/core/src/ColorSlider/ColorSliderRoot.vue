@@ -5,7 +5,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
 import type { DataOrientation, Direction, FormFieldProps } from '@/shared/types'
-import { createContext, useDirection, useFormControl, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useFormControl, useForwardElement } from '@/shared'
 
 export interface ColorSliderRootProps extends PrimitiveProps, FormFieldProps {
   /** The color value (controlled). A string is parsed once; emitted values are always `Color` objects. */
@@ -58,7 +58,7 @@ export interface ColorSliderRootContext {
 }
 
 export const [injectColorSliderRootContext, provideColorSliderRootContext]
-  = createContext<ColorSliderRootContext>('ColorSliderRoot')
+  = createRekaContext<ColorSliderRootContext>('ColorSliderRoot')
 </script>
 
 <script setup lang="ts">

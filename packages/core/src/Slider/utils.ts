@@ -1,7 +1,7 @@
 import type { ComputedRef } from 'vue'
 import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { Translate } from '@/shared/translations'
-import { clamp, createContext } from '@/shared'
+import { clamp, createRekaContext } from '@/shared'
 import { defaultTranslate } from '@/shared/translations'
 
 export function getNextSortedValues(prevValues: number[] = [], nextValue: number, atIndex: number) {
@@ -175,7 +175,7 @@ export function getSliderThumbTransform(orientation: 'horizontal' | 'vertical', 
 }
 
 export const [injectSliderOrientationContext, provideSliderOrientationContext]
-  = createContext<SliderOrientation>('SliderRoot')
+  = createRekaContext<SliderOrientation>('SliderRoot', 'SliderOrientationContext')
 
 /**
  * A slider's participation in an ancestor `FieldRoot` (`null` outside one).
@@ -185,4 +185,4 @@ export const [injectSliderOrientationContext, provideSliderOrientationContext]
  * @internal
  */
 export const [injectSliderFieldContext, provideSliderFieldContext]
-  = createContext<FieldControlBinding | null>('SliderRoot', 'SliderFieldContext')
+  = createRekaContext<FieldControlBinding | null>('SliderRoot', 'SliderFieldContext')

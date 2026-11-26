@@ -4,7 +4,7 @@ import type { PinInputChangeReason } from './usePinInput'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { createContext, useDirection, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useForwardElement } from '@/shared'
 import VisuallyHiddenInputBubble from '@/VisuallyHidden/VisuallyHiddenInputBubble.vue'
 
 export type PinInputType = 'text' | 'number'
@@ -76,7 +76,7 @@ export interface PinInputRootContext<Type extends PinInputType = 'text'> {
 }
 
 export const [injectPinInputRootContext, providePinInputRootContext]
-  = createContext<PinInputRootContext<PinInputType>>('PinInputRoot')
+  = createRekaContext<PinInputRootContext<PinInputType>>('PinInputRoot')
 
 /**
  * Inside a Field: each mounted input's `index`, so filled can check the entry
@@ -84,7 +84,7 @@ export const [injectPinInputRootContext, providePinInputRootContext]
  * @internal
  */
 export const [injectPinInputFieldSlots, providePinInputFieldSlots]
-  = createContext<Map<HTMLInputElement, () => number> | null>('PinInputRoot', 'PinInputFieldSlots')
+  = createRekaContext<Map<HTMLInputElement, () => number> | null>('PinInputRoot', 'PinInputFieldSlots')
 </script>
 
 <script setup lang="ts" generic="Type extends PinInputType">

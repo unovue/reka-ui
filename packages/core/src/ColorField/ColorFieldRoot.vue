@@ -6,7 +6,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
 import type { FormFieldProps } from '@/shared/types'
-import { createContext, useFormControl, useForwardElement } from '@/shared'
+import { createRekaContext, useFormControl, useForwardElement } from '@/shared'
 
 export interface ColorFieldRootProps extends PrimitiveProps, FormFieldProps {
   /** The color value (controlled). A string is parsed once; emitted values are always `Color` objects. */
@@ -69,7 +69,7 @@ export interface ColorFieldRootContext {
 }
 
 export const [injectColorFieldRootContext, provideColorFieldRootContext]
-  = createContext<ColorFieldRootContext>('ColorFieldRoot')
+  = createRekaContext<ColorFieldRootContext>('ColorFieldRoot')
 
 /** @internal The root's Field binding, for `ColorFieldInput`. Only provided inside a `FieldRoot`. */
 export interface ColorFieldFieldControl {
@@ -80,7 +80,7 @@ export interface ColorFieldFieldControl {
 
 /** @internal */
 export const [injectColorFieldFieldControl, provideColorFieldFieldControl]
-  = createContext<ColorFieldFieldControl | null>('ColorFieldRoot', 'ColorFieldFieldControl')
+  = createRekaContext<ColorFieldFieldControl | null>('ColorFieldRoot', 'ColorFieldFieldControl')
 </script>
 
 <script setup lang="ts">

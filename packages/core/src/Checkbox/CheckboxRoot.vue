@@ -5,7 +5,7 @@ import type { CheckedState } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
-import { createContext, disabledAttr, getRootNode, isValueEqualOrExist, useFormControl, useForwardElement, useForwardScopeId } from '@/shared'
+import { createRekaContext, disabledAttr, getRootNode, isValueEqualOrExist, useFormControl, useForwardElement, useForwardScopeId } from '@/shared'
 import { injectCheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 
 export interface CheckboxRootProps<TrueValue = boolean, FalseValue = TrueValue> extends PrimitiveProps, FormFieldProps {
@@ -51,7 +51,7 @@ export interface CheckboxRootContext {
 }
 
 export const [injectCheckboxRootContext, provideCheckboxRootContext]
-  = createContext<CheckboxRootContext>('CheckboxRoot')
+  = createRekaContext<CheckboxRootContext>('CheckboxRoot')
 
 // Ids for checkboxes whose group gets `allValues` after they mount.
 let lateIdCount = 0

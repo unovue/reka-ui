@@ -5,7 +5,7 @@ import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { createContext, mergeExpose, useDirection, useFormControl, useForwardElement } from '@/shared'
+import { createRekaContext, mergeExpose, useDirection, useFormControl, useForwardElement } from '@/shared'
 
 export type ActivationMode = 'focus' | 'dblclick' | 'none'
 export type SubmitMode = 'blur' | 'enter' | 'none' | 'both'
@@ -76,7 +76,7 @@ export type EditableRootEmits = {
 }
 
 export const [injectEditableRootContext, provideEditableRootContext]
-  = createContext<EditableRootContext>('EditableRoot')
+  = createRekaContext<EditableRootContext>('EditableRoot')
 
 /** @internal The root's Field binding, for the parts. Only provided inside a `FieldRoot`. */
 export interface EditableFieldControl {
@@ -87,7 +87,7 @@ export interface EditableFieldControl {
 
 /** @internal */
 export const [injectEditableFieldControl, provideEditableFieldControl]
-  = createContext<EditableFieldControl | null>('EditableRoot', 'EditableFieldControl')
+  = createRekaContext<EditableFieldControl | null>('EditableRoot', 'EditableFieldControl')
 </script>
 
 <script setup lang="ts">
