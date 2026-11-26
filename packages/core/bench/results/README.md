@@ -40,7 +40,7 @@ Largest wins:
 
 Geomean over the 57 families both have: v3 retains ×0.57 the heap and mounts ×0.45 the components of v2 now. What is still open on v2:
 
-- **Selection re-renders every item** in Select (7 per item; v3 19 in total), RadioGroup (5 per item; v3 12 in total), ToggleGroup (5; v3 2), Tree (4; v3 1) and DropdownMenu (4; v3 3). Tabs is now ahead of v3 (16 updates against 4 per tab).
+- **Selection re-renders every item** (component updates for one selection at 1,000 items, v2 now against v3; the count scales with the list unless marked constant): Select 7,038 (7 per item) against 19 (constant); RadioGroup 5,009 (5 per item) against 12 (constant); ToggleGroup 5,001 (5 per item) against 2,001 (2 per item); Tree 4,001 (4 per item) against 1,001 (1 per item); DropdownMenu 4,021 (4 per item) against 3,011 (3 per item). Tabs is now ahead of v3: 16 (constant) against 4,006 (4 per tab).
 - **Closed Select** still mounts its items: 170 KB per instance and 21.7 KB per item against 29.5 KB and 0.06 KB.
 - **Closed popups**: Menubar 223 KB against 58 KB; Dialog, Popover, Tooltip and DropdownMenu about twice v3.
 - **Calendar / RangeCalendar**: 664 / 781 KB against 332 / 358 KB.
