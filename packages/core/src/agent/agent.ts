@@ -249,7 +249,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
   // Without a page, as during server rendering, there is nothing to read or drive.
   const noPage = () => typeof document === 'undefined'
   // Components set up before the bridge never registered, and content their portals moved is never shown.
-  if (import.meta.env.DEV && !noPage() && document.querySelector('[data-v-app]'))
+  if (process.env.NODE_ENV !== 'production' && !noPage() && document.querySelector('[data-v-app]'))
     console.warn('[reka-ui] createAgent ran after an app mounted: components set up before it are not seen, and content their portals moved stays hidden from agents. Create the bridge before app.mount().')
 
   // The refs an `act` call has had on the page, which its values may list.
