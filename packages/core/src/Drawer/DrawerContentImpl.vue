@@ -53,6 +53,10 @@ const props = withDefaults(defineProps<DrawerContentImplProps & {
 })
 const emits = defineEmits<DrawerContentImplEmits>()
 
+// BaseUI swipe-release constants (DrawerViewport.tsx)
+const MIN_SWIPE_THRESHOLD = 10
+const FAST_SWIPE_VELOCITY = 0.5
+
 const rootContext = injectDrawerRootContext()
 const { forwardRef, currentElement } = useForwardExpose()
 useContentId(rootContext, currentElement)
@@ -109,7 +113,10 @@ useResizeObserver(currentElement, ([entry]) => {
     return
   if (rootContext.hasNestedDrawer.value && rootContext.popupHeight.value > 0)
     return
-  const h = entry.contentRect.height
+  // The border box (BaseUI parity: `offsetHeight`), as the snap offsets translate
+  // the whole popup: the content box leaves a padded or bordered popup short of
+  // its snap points. Without layout (jsdom) the entry's size stands in.
+  const h = currentElement.value?.offsetHeight || entry.contentRect.height
   rootContext.onPopupHeightChange(h)
   currentElement.value?.style.setProperty(DRAWER_CSS_VARS.height, `${h}px`)
 })
@@ -186,7 +193,7 @@ const { isSwiping, dragOffset, restore: restoreSwipe } = useSwipeDismiss({
         restoreSwipe()
     })
   },
-  onRelease(velocity) {
+  onRelease(velocity, details) {
     // Write the `--drawer-swipe-strength` CSS var so consumer transitions can
     // scale their duration with release velocity. Ported from BaseUI
     // `DrawerViewport.tsx:resolveSwipeRelease`.
@@ -245,7 +252,22 @@ const { isSwiping, dragOffset, restore: restoreSwipe } = useSwipeDismiss({
     // For snap-point drawers, this callback fully decides the open/close +
     // transform outcome above, so tell finishSwipe to skip its own
     // dismiss-vs-cancel branch.
-    return hasSnapPoints.value
+    if (hasSnapPoints.value)
+      return true
+
+    // Without snap points the drawer closes on a fast swipe, or when released
+    // past half of its size; a shorter, slower drag settles back open.
+    // Ported from BaseUI `DrawerViewport.tsx` (`onRelease`).
+    const { direction } = details
+    if (!el || !direction)
+      return { dismiss: false }
+    const directionalDelta = getDisplacement(direction, details.deltaX, details.deltaY)
+    if (directionalDelta <= 0)
+      return { dismiss: false }
+    if (getDisplacement(direction, details.velocityX, details.velocityY) >= FAST_SWIPE_VELOCITY)
+      return { dismiss: true }
+    const size = (direction === 'left' || direction === 'right') ? el.offsetWidth : el.offsetHeight
+    return { dismiss: directionalDelta > Math.max(size * 0.5, MIN_SWIPE_THRESHOLD) }
   },
   onSwipingChange(swiping) {
     rootContext.onSwipingChange(swiping)

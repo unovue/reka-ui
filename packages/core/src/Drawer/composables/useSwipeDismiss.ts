@@ -10,6 +10,16 @@ export interface SwipeProgressDetails {
   direction: SwipeDirection | undefined
 }
 
+export interface SwipeReleaseDetails {
+  /** The dismissable direction the drag adopted, if it moved in one. */
+  direction: SwipeDirection | undefined
+  deltaX: number
+  deltaY: number
+  /** Velocity of the whole gesture, in px/ms: the drag offset over the time since the first move. */
+  velocityX: number
+  velocityY: number
+}
+
 export interface UseSwipeDismissOptions {
   enabled: MaybeRef<boolean>
   elementRef: Ref<HTMLElement | null | undefined>
@@ -33,9 +43,10 @@ export interface UseSwipeDismissOptions {
    * Fired on release with the measured velocity vector. Return `true` to signal
    * that the callback fully owns the open/close + transform outcome (e.g. the
    * snap-point release math), so `finishSwipe` skips its own dismiss-vs-cancel
-   * decision (no `data-swipe-dismissed`, no `onDismiss`/`onCancel`).
+   * decision (no `data-swipe-dismissed`, no `onDismiss`/`onCancel`). Return
+   * `{ dismiss }` to make that decision in place of the default threshold.
    */
-  onRelease?: (velocity: { x: number, y: number }) => boolean | void
+  onRelease?: (velocity: { x: number, y: number }, details: SwipeReleaseDetails) => boolean | { dismiss: boolean } | void
   onSwipingChange?: (swiping: boolean) => void
 }
 
@@ -46,6 +57,7 @@ const MIN_DRAG_THRESHOLD = 1
 // margin the cross axis must beat the drawer axis by to win it.
 const AXIS_LOCK_SLOP = 6
 const AXIS_LOCK_BIAS = 2
+const MIN_VELOCITY_DURATION_MS = 50
 const MIN_RELEASE_VELOCITY_DURATION_MS = 16
 const MAX_RELEASE_VELOCITY_AGE_MS = 80
 const DEFAULT_IGNORE_SELECTOR = 'button,a,input,select,textarea,label,[role="button"]'
@@ -180,6 +192,8 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
   let swipeProgress = 0
   let lastDragSample: { x: number, y: number, time: number } | null = null
   let lastVelocity = { x: 0, y: 0 }
+  // When the drag started moving, for the velocity of the whole gesture.
+  let swipeStartTime: number | null = null
   let lockedAxis: 'horizontal' | 'vertical' | null = null
   let activePointerId: number | null = null
   let pointerStarted = false
@@ -238,6 +252,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     swipeProgress = 0
     lastDragSample = null
     lastVelocity = { x: 0, y: 0 }
+    swipeStartTime = null
     lockedAxis = null
   }
 
@@ -343,6 +358,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     // Determine direction lock on first move
     if (isFirstMove) {
       isFirstMove = false
+      swipeStartTime = Number.isFinite(time) && time > 0 ? time : null
       const absX = Math.abs(rawDx)
       const absY = Math.abs(rawDy)
       if (hasVertical.value && hasHorizontal.value) {
@@ -455,7 +471,17 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     // and transform outcome — don't run the dismiss-vs-cancel branch, which
     // would otherwise set a stray `data-swipe-dismissed` on a drawer that
     // actually snapped to a point, or clear CSS vars onRelease already wrote.
-    const releaseHandled = onRelease?.(velocity) === true
+    const duration = swipeStartTime !== null && now > swipeStartTime ? now - swipeStartTime : 0
+    const velocityDuration = duration > 0 ? Math.max(duration, MIN_VELOCITY_DURATION_MS) : 0
+    const release = onRelease?.(velocity, {
+      direction: intendedDirection,
+      deltaX: dragOffset.value.x,
+      deltaY: dragOffset.value.y,
+      velocityX: velocityDuration > 0 ? dragOffset.value.x / velocityDuration : 0,
+      velocityY: velocityDuration > 0 ? dragOffset.value.y / velocityDuration : 0,
+    })
+    const releaseHandled = release === true
+    const releaseDecision = typeof release === 'object' ? release.dismiss : undefined
     let dismissed = false
 
     if (!releaseHandled) {
@@ -464,8 +490,8 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
         velocity.x,
         velocity.y,
       )
-      const shouldDismiss = !cancelledSwipe
-        && (displacement >= threshold || velInDirection > 0.3)
+      const shouldDismiss = releaseDecision
+        ?? (!cancelledSwipe && (displacement >= threshold || velInDirection > 0.3))
 
       if (shouldDismiss && onDismiss?.() !== false) {
         // BaseUI parity: on dismiss, keep the drag transform in place so the

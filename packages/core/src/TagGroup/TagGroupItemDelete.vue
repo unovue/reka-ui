@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { ariaDisabledAttr, useForwardExpose, useId } from '@/shared'
+import { ariaDisabledAttr, useForwardExpose, useId, useTranslations } from '@/shared'
 
 export interface TagGroupItemDeleteProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with the delete button. */
@@ -16,6 +16,8 @@ import { injectTagGroupItemContext } from './TagGroupItem.vue'
 const props = withDefaults(defineProps<TagGroupItemDeleteProps>(), {
   as: 'button',
 })
+
+const t = useTranslations()
 
 const itemContext = injectTagGroupItemContext()
 const { forwardRef } = useForwardExpose()
@@ -46,7 +48,7 @@ function handleClick(event: MouseEvent) {
     :as="props.as"
     :as-child="props.asChild"
     :type="props.as === 'button' ? 'button' : undefined"
-    aria-label="Remove"
+    :aria-label="t('tagGroupRemove')"
     :aria-labelledby="`${id} ${itemContext.id}`"
     :tabindex="tabindex"
     :data-disabled="disabled ? '' : undefined"
