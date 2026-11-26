@@ -18,9 +18,10 @@ import { getDrawerTitleSurface } from './useDrawer'
 
 const props = withDefaults(defineProps<DrawerTitleProps>(), { as: 'h2' })
 const rootContext = injectDrawerRootContext()
+const { forwardRef, currentElement, expose } = useForwardElement()
 // Rendered on the element; mirrored into the context for the content's `aria-*`.
-const id = usePartId(() => props.id, rootContext, 'titleId')
-const { forwardRef, expose } = useForwardElement()
+// With `asChild`, an id on the child element wins.
+const id = usePartId(() => props.id, rootContext, 'titleId', currentElement)
 defineExpose(expose)
 const title = getDrawerTitleSurface(rootContext)
 </script>
