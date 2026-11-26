@@ -151,6 +151,23 @@ function trackCutouts(backdrop: HTMLElement, cutouts: Element[], view: Window): 
 }
 
 /**
+ * A positioned backdrop paints above in-flow content that is not positioned,
+ * whatever their order: an unstyled `DialogContent` would sit under its own
+ * backdrop. Such an anchor becomes `position: relative` (no offsets, so it does
+ * not move) while the backdrop is mounted, which puts it back above the
+ * backdrop in tree order. Returns the restore.
+ */
+function liftStaticAnchor(anchor: Element, view: Window): (() => void) | undefined {
+  if (!(anchor instanceof view.HTMLElement) || view.getComputedStyle(anchor).position !== 'static')
+    return undefined
+  const original = anchor.style.position
+  anchor.style.position = 'relative'
+  return () => {
+    anchor.style.position = original
+  }
+}
+
+/**
  * Mounts the internal backdrop right below `layer` (see
  * `BackdropPlacement`) and returns the unmount. `cutout` stays interactive
  * through a hole in the backdrop (e.g. a Combobox input or a ContextMenu
@@ -182,6 +199,8 @@ export function mountInternalBackdrop(layer: HTMLElement, cutout?: Element | nul
   })
   const stopTrackingCutout = cutouts.length ? trackCutouts(backdrop, cutouts, view) : undefined
 
+  // In `<body>` the anchor is reached through a hole in the backdrop instead.
+  const restoreAnchor = inBody ? undefined : liftStaticAnchor(anchor, view)
   if (inBody)
     layer.ownerDocument.body.append(backdrop)
   else
@@ -190,6 +209,7 @@ export function mountInternalBackdrop(layer: HTMLElement, cutout?: Element | nul
 
   return () => {
     stopTrackingCutout?.()
+    restoreAnchor?.()
     if (backdrops.get(layer) === backdrop)
       backdrops.delete(layer)
     backdrop.remove()
