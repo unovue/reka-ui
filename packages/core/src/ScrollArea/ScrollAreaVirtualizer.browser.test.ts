@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref } from 'vue'
+import { isMacWebKit } from '@/test/browser'
 import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport, ScrollAreaVirtualizer } from '.'
 
 const options = Array.from({ length: 1000 }, (_, index) => `Item ${index}`)
@@ -85,13 +86,23 @@ describe('vertical ScrollArea virtualization in a real browser', () => {
     await expect.poll(() => renderedIndexes().length).toBeGreaterThan(0)
 
     await userEvent.wheel(viewport(), { delta: { y: 400 }, times: 10 })
-    await expect.poll(() => viewport().scrollTop).toBe(4000)
-    await settle()
+    // How far a wheel delta scrolls is up to the engine (Chromium 4000px here, Firefox less),
+    // so wait for the scroll to stop and read where it ended.
+    let scrollTop = -1
+    await expect.poll(async () => {
+      const previous = scrollTop
+      await settle()
+      scrollTop = viewport().scrollTop
+      return scrollTop === previous
+    }).toBe(true)
+    expect(scrollTop).toBeGreaterThan(50 * ROW)
 
-    // 4000px / 32px = row 125 at the top, with 12 rows of overscan on each side
-    expect(firstVisibleIndex()).toBe(125)
-    await expect.poll(() => renderedIndexes()).toEqual(Array.from({ length: 34 }, (_, index) => 113 + index))
-    expect(document.querySelector<HTMLElement>('[data-index="125"]')!.getBoundingClientRect().top).toBe(viewport().getBoundingClientRect().top)
+    // The row at the scroll position at the top, with the rows in view and 12 rows of overscan on each side
+    const first = Math.floor(scrollTop / ROW)
+    const last = Math.ceil((scrollTop + 320) / ROW) - 1
+    expect(firstVisibleIndex()).toBe(first)
+    await expect.poll(() => renderedIndexes()).toEqual(Array.from({ length: last - first + 25 }, (_, index) => first - 12 + index))
+    expect(document.querySelector<HTMLElement>(`[data-index="${first}"]`)!.getBoundingClientRect().top).toBe(viewport().getBoundingClientRect().top - (scrollTop % ROW))
   })
 
   it('moves the thumb with the scroll position', async () => {
@@ -208,7 +219,8 @@ describe.each(['vertical', 'horizontal'] as const)('given a focused control in a
     mountList()
     await expect.poll(() => control(5)).not.toBeNull()
     const focused = control(5)!
-    await userEvent.click(focused)
+    // Focused from script: after a click inside a scroller, WebKit's Shift+Tab doesn't move.
+    focused.focus()
     expect(document.activeElement).toBe(focused)
 
     scrollTo(500 * SIZE)
@@ -233,7 +245,8 @@ describe.each(['vertical', 'horizontal'] as const)('given a focused control in a
     expect(horizontal ? firstInView.left - row.left : firstInView.top - row.top).toBe(495 * SIZE)
   })
 
-  it('moves the focus to the next row and scrolls it into view on Tab', async () => {
+  // Tabs to a button or link: see `isMacWebKit`.
+  it.skipIf(isMacWebKit)('moves the focus to the next row and scrolls it into view on Tab', async () => {
     await focusRowAndScrollAway()
 
     await userEvent.tab()
@@ -248,7 +261,8 @@ describe.each(['vertical', 'horizontal'] as const)('given a focused control in a
     expect(renderedIndexes().includes(500)).toBe(false)
   })
 
-  it('moves the focus to the previous row and scrolls it into view on Shift+Tab', async () => {
+  // Tabs to a button or link: see `isMacWebKit`.
+  it.skipIf(isMacWebKit)('moves the focus to the previous row and scrolls it into view on Shift+Tab', async () => {
     await focusRowAndScrollAway()
 
     await userEvent.tab({ shift: true })
@@ -283,7 +297,8 @@ describe.each(['vertical', 'horizontal'] as const)('given a focused control in a
     expect(document.activeElement).toBe(focused)
   })
 
-  it('keeps the row for the control that takes the focus next', async () => {
+  // Focuses a button with a click: see `isMacWebKit`.
+  it.skipIf(isMacWebKit)('keeps the row for the control that takes the focus next', async () => {
     await focusRowAndScrollAway()
 
     const next = control(503)!
