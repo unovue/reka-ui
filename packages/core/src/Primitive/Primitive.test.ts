@@ -317,13 +317,13 @@ describe('test Primitive functionalities', () => {
     // A setup context costs an attrs proxy and an `expose` closure per instance, and Primitive
     // wraps nearly every part
     const plain = mount(Primitive)
-    expect(plain.vm.$.setupContext).toBeNull()
+    expect((plain.vm.$ as any).setupContext).toBeNull()
 
     const asChild = mount(Primitive, { props: { asChild: true }, slots: { default: '<div />' } })
     const instances: any[] = []
     for (let vnode = asChild.vm.$.subTree; vnode?.component; vnode = vnode.component.subTree)
       instances.push(vnode.component)
-    expect(asChild.vm.$.setupContext).toBeNull()
+    expect((asChild.vm.$ as any).setupContext).toBeNull()
     for (const instance of instances)
       expect(instance.setupContext).toBeNull()
   })

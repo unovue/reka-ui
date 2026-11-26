@@ -26,7 +26,7 @@ describe('given a ScrollAreaViewport', () => {
     { attrs: { tabindex: null }, expected: undefined },
   ])('renders $expected for viewport attributes $attrs', ({ attrs, expected }) => {
     const wrapper = mount(ScrollAreaRoot, {
-      slots: { default: () => h(ScrollAreaViewport, attrs) },
+      slots: { default: () => h(ScrollAreaViewport, attrs as Record<string, unknown>) },
     })
 
     expect(wrapper.get('[data-reka-scroll-area-viewport]').attributes('tabindex')).toBe(expected)
@@ -161,7 +161,8 @@ describe('given a virtualized ScrollArea', () => {
     Object.defineProperty(viewport, 'scrollWidth', { value: 2500 })
     Object.defineProperty(viewport, 'clientWidth', { value: 200 })
 
-    wrapper.findComponent(ScrollAreaVirtualizer).vm.virtualizer.scrollToOffset(500)
+    const { virtualizer } = wrapper.findComponent(ScrollAreaVirtualizer).vm as any
+    virtualizer.scrollToOffset(500)
     expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ left: -500 }))
   })
 
@@ -198,7 +199,7 @@ describe('given a virtualized ScrollArea', () => {
   it('keeps the measured sizes when the estimateSize callback is replaced, until measure() is called', async () => {
     const wrapper = mount(VirtualScrollArea, { attachTo: document.body, props: { estimateSize: () => 25 } })
     await flush()
-    const { virtualizer } = wrapper.findComponent(ScrollAreaVirtualizer).vm
+    const { virtualizer } = wrapper.findComponent(ScrollAreaVirtualizer).vm as any
     const measure = vi.spyOn(virtualizer, 'measure')
     expect(wrapper.find('[data-reka-virtualizer]').attributes('style')).toContain('height: 2500px')
 
@@ -263,7 +264,7 @@ describe('given a virtualized ScrollArea', () => {
     const wrapper = mount(VirtualScrollArea, { attachTo: document.body })
     await flush()
 
-    const { virtualizer } = wrapper.findComponent(ScrollAreaVirtualizer).vm
+    const { virtualizer } = wrapper.findComponent(ScrollAreaVirtualizer).vm as any
     expect(virtualizer.getTotalSize()).toBe(2500)
     expect(virtualizer.options.count).toBe(100)
   })
@@ -486,7 +487,9 @@ describe('given a visible scrollbar', () => {
   it('listens for wheel events on the scrollbar, not on the document', async () => {
     // jsdom has no ResizeObserver
     vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} })
-    onTestFinished(() => vi.unstubAllGlobals())
+    onTestFinished(() => {
+      vi.unstubAllGlobals()
+    })
     const documentListener = vi.spyOn(document, 'addEventListener')
     const elementListener = vi.spyOn(HTMLElement.prototype, 'addEventListener')
     const wrapper = mount(ScrollArea, { attachTo: document.body, props: { type: 'always' } })
@@ -510,7 +513,9 @@ describe('given a visible scrollbar', () => {
 describe('given a scrollbar dragged before a viewport is mounted', () => {
   it('does not throw on pointer down and up', async () => {
     vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} })
-    onTestFinished(() => vi.unstubAllGlobals())
+    onTestFinished(() => {
+      vi.unstubAllGlobals()
+    })
     const errors: unknown[] = []
     const wrapper = mount(ScrollAreaRoot, {
       attachTo: document.body,

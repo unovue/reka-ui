@@ -274,7 +274,7 @@ describe('given a Presence with an exit animation', () => {
           const open = present.value
           return h('div', [
             h('button', { onClick: () => present.value = !present.value }, 'Toggle'),
-            h(Presence, { present: open, forceMount }, ({ present: isPresent }) => h('span', {
+            h(Presence, { present: open, forceMount }, { default: ({ present: isPresent }: { present: boolean }) => h('span', {
               'data-testid': 'content',
               'data-present': isPresent,
               'style': {
@@ -283,7 +283,7 @@ describe('given a Presence with an exit animation', () => {
                 animationPlayState: 'paused',
               },
               'onAfterLeave': afterLeave,
-            }, 'Content')),
+            }, 'Content') }),
           ])
         }
       },

@@ -95,7 +95,8 @@ describe('tabs render counts, parts in the root slot', () => {
     await nextTick()
     const triggers = wrapper.findAll('[role=tab]')
     expect(triggers).toHaveLength(COUNT)
-    triggers[0].element.focus()
+    const first = triggers[0].element as HTMLElement
+    first.focus()
     await nextTick()
     updates.count = 0
     updates.names.clear()
