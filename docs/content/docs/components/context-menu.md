@@ -771,6 +771,31 @@ import { ContextMenuContent, ContextMenuPortal, ContextMenuRoot, ContextMenuTrig
 }
 ```
 
+### Keep the content mounted when closed
+
+By default the content is removed when the menu closes. Use `:unmount-on-hide="false"` on `ContextMenuRoot` to keep it, and the content of its submenus, mounted and only hide it, for example to preserve the state of the elements inside it between openings.
+
+While closed, the hidden content does not act as an open menu: it does not trap focus, take part in keyboard navigation or typeahead, block pointer events outside of it, lock the body scroll or hide the rest of the page from assistive technologies. Focus still returns to where it was before the menu opened.
+
+```vue line=6
+<script setup>
+import { ContextMenuContent, ContextMenuPortal, ContextMenuRoot, ContextMenuTrigger } from 'reka-ui'
+</script>
+
+<template>
+  <ContextMenuRoot :unmount-on-hide="false">
+    <ContextMenuTrigger>Right click here</ContextMenuTrigger>
+    <ContextMenuPortal>
+      <ContextMenuContent>
+        …
+      </ContextMenuContent>
+    </ContextMenuPortal>
+  </ContextMenuRoot>
+</template>
+```
+
+`forceMount` on the content works differently: a force-mounted content is not made inert while closed. It keeps the side effects of an open menu, as it always has, and showing or hiding it is up to you. Combine it with `:unmount-on-hide="false"` on the root to make it inert while closed.
+
 ## Real-world examples
 
 - [Data Table](/examples/data-table): Compose Checkbox, DropdownMenu, ContextMenu, ScrollArea and Pagination into a sortable, selectable table.
@@ -785,7 +810,7 @@ Uses [roving tabindex](https://www.w3.org/WAI/ARIA/apg/patterns/kbd_roving_tabin
   :data="[
     {
       keys: ['Space'],
-      description: `<span>Activates the focused item.</span>`
+      description: `<span>Activates the focused item. While a typeahead search is in progress, adds a space to the search instead (see <Code>spaceExtendsTypeahead</Code>).</span>`
     },
     {
       keys: ['Enter'],
