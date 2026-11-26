@@ -36,8 +36,8 @@ const PENDING_META: Record<string, string> = {}
  * Key = part name, value = the reason.
  */
 const UNDOCUMENTED_PARTS: Record<string, string> = {
-  DrawerPopup: 'alias of DrawerContent, mentioned in its section',
-  DrawerBackdrop: 'alias of DrawerOverlay, mentioned in its section',
+  DrawerProvider: 'described in the Indent section, which reads from it',
+  DrawerVirtualKeyboardProvider: 'takes no props, its section describes it in prose',
   ScrollAreaScrollbarGlimpse: 'rendered by ScrollAreaScrollbar when the root `type` is `glimpse`, not used directly',
   VisuallyHiddenInput: 'internal, not exported from the package entry',
 }
