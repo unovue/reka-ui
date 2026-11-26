@@ -18,6 +18,7 @@ export interface TooltipContentImplProps
     PopperContentProps,
     | 'side'
     | 'sideOffset'
+    | 'fallbackAxisSideDirection'
     | 'align'
     | 'alignOffset'
     | 'avoidCollisions'
@@ -147,6 +148,7 @@ const layer = useDismissableLayer(dismissableLayerOptions(currentElement, () => 
 <template>
   <PopperContent
     :ref="forwardRef"
+    scope="tooltip"
     v-bind="mergeProps(mergeProps(layer.attrs(), layerWrapper.rest), mergeProps(content.attrs.value, { ...$attrs, ...popperContentProps }, { style: CONTENT_STYLE }))"
   >
     <slot />

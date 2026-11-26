@@ -38,7 +38,7 @@ const rootContext = injectContextMenuRootContext()
 // `data-*` state live in the composable. The anchor is the pointer
 // position (`reference`), not the trigger.
 const trigger = createContextMenuTriggerSurface(rootContext, { disabled: () => props.disabled })
-usePopperAnchor({ element: NO_ELEMENT, reference: () => trigger.reference.value })
+usePopperAnchor({ element: NO_ELEMENT, reference: () => trigger.reference.value, scope: 'menu' })
 
 onMounted(() => {
   if (currentElement.value) {

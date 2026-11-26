@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { DropdownMenuHandle } from './handle'
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardElement, useId } from '@/shared'
+import { disabledAttr, useForwardElement, useId } from '@/shared'
 
 export interface DropdownMenuTriggerProps<Payload = unknown> extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -100,14 +100,14 @@ const trigger = rootContext ? getDropdownMenuTriggerSurface(rootContext, () => p
 const attrs = computed(() => detached.enabled.value ? getDetachedTrigger().attrs.value : trigger.attrs.value)
 
 // The menu's anchor, unless the trigger is detached.
-const anchor = usePopperAnchor({ consumerAttrs: true, element: triggerElement, enabled: () => !detached.enabled.value })
+const anchor = usePopperAnchor({ consumerAttrs: true, element: triggerElement, enabled: () => !detached.enabled.value, scope: 'menu' })
 </script>
 
 <template>
   <component
     :is="renderAs(as, props.asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps(anchor.consumerAttrs($attrs), { type: as === 'button' ? 'button' : undefined }, attrs)"
+    v-bind="mergeProps(anchor.consumerAttrs($attrs), { type: as === 'button' ? 'button' : undefined }, attrs, { disabled: disabledAttr(attrs.disabled as boolean | undefined, as, props.asChild) })"
   >
     <slot />
   </component>

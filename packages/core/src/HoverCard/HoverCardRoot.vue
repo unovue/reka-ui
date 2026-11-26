@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { createContext } from '@/shared'
+import { createRekaContext } from '@/shared'
 
 /** Why the hover card's `open` state changed (#2828); the `reason` of `ChangeEventDetails`. */
 export type HoverCardOpenChangeReason
@@ -45,7 +45,12 @@ export interface HoverCardRootContext {
    * so its outcome is only known when the timer fires; `reason`/`event` travel
    * with it into `beforeUpdate:open` / `update:open`.
    */
-  onOpen: (reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event) => void
+  onOpen: (reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event, owner?: object) => void
+  /**
+   * Withdraws `owner`'s pending open request (see `onOpen`); the open timer is
+   * cleared once no other requester is left. Never writes `open`.
+   */
+  onCancelOpen?: (owner: object) => void
   /**
    * Cancels a pending open and closes after `closeDelay`, unless text is being
    * selected or the pointer is down on the content. Deferred like `onOpen`.
@@ -63,7 +68,7 @@ export interface HoverCardRootContext {
 }
 
 export const [injectHoverCardRootContext, provideHoverCardRootContext]
-  = createContext<HoverCardRootContext>('HoverCardRoot')
+  = createRekaContext<HoverCardRootContext>('HoverCardRoot')
 </script>
 
 <script setup lang="ts">
@@ -104,7 +109,7 @@ provideHoverCardRootContext(context)
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="hover-card">
     <slot :open="open" />
   </PopperRoot>
 </template>

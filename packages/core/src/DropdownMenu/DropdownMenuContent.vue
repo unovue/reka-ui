@@ -10,7 +10,7 @@ export interface DropdownMenuContentProps extends MenuContentProps {}
 </script>
 
 <script setup lang="ts">
-import { MenuContent } from '@/Menu'
+import { injectMenuContext, MenuContent } from '@/Menu'
 import { provideMenuBackdropCutoutContext } from '@/Menu/MenuContentImpl.vue'
 import { omitEntryFocusListener } from '@/Menu/utils'
 import { useForwardElement, useForwardPropsEmits } from '@/shared'
@@ -37,6 +37,7 @@ provideMenuBackdropCutoutContext(rootContext.triggerElement)
 // handlers bind AFTER the forwarded emits, so they still see a consumer's
 // `preventDefault()`.
 const content = createDropdownMenuContentSurface(rootContext)
+injectMenuContext().onContentHide(content.onContentHide)
 </script>
 
 <template>

@@ -17,8 +17,10 @@ export interface MenuSubContentProps extends Omit<MenuContentImplProps, 'disable
 </script>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Presence } from '@/Presence'
 import { useForwardElement, useForwardPropsEmits } from '@/shared'
+import { vShowWhenKept } from '@/shared/vShowWhenKept'
 import MenuContentImpl, { injectMenuContentContext } from './MenuContentImpl.vue'
 import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
 import { injectMenuSubContext } from './MenuSub.vue'
@@ -39,6 +41,15 @@ const parentContentContext = injectMenuContentContext()
 const { forwardRef, currentElement: subContentElement, expose } = useForwardElement()
 defineExpose(expose)
 
+// As in `MenuContent`: a submenu follows its root's `unmountOnHide`.
+const staysMounted = computed(() => !rootContext.unmountOnHide.value)
+const hidesWhenClosed = computed(() => staysMounted.value && !props.forceMount)
+const keptArg = computed(() => hidesWhenClosed.value ? 'kept' : null)
+// A closing content still mounted for its exit animation hands Escape, outside interaction
+// and the accessibility tree back to the layer below at once. A force-mounted content keeps
+// its layer while closed, as before.
+const layerPresent = computed(() => menuContext.open.value || !!props.forceMount)
+
 // `appear`: a submenu that is already open when its parent menu opens is
 // created open, and enters from `data-starting-style` with its parent
 // (Base UI's `animateInitialOpen`, #2827). Kept out of the template: a comment
@@ -48,8 +59,9 @@ defineExpose(expose)
 
 <template>
   <Presence
+    v-slot="{ present }"
     :present="menuContext.open.value"
-    :force-mount="forceMount"
+    :force-mount="forceMount || staysMounted"
     appear
     @complete="menuContext.notifyOpenComplete"
   >
@@ -57,6 +69,9 @@ defineExpose(expose)
       v-bind="forwarded"
       :id="menuSubContext.contentId"
       :ref="forwardRef"
+      v-show-when-kept:[keptArg]="hidesWhenClosed ? present : true"
+      :present="staysMounted ? present : true"
+      :layer-present="(staysMounted ? present : true) && layerPresent"
       :aria-labelledby="menuSubContext.triggerId"
       align="start"
       :side="rootContext.dir.value === 'rtl' ? 'left' : 'right'"

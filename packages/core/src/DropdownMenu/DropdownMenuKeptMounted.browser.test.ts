@@ -258,7 +258,8 @@ describe.each([
       const { open } = await mountLayers(otherKind, { otherTrigger: CLICKABLE_UNDER_MODAL })
 
       await openKept()
-      await userEvent.click(get('other-trigger')!)
+      // A modal menu's backdrop covers the page, so the click lands on it, at the trigger's place
+      await userEvent.click(get('other-trigger')!, { force: modal })
       await expectKeptClosed(open)
       // A modal menu takes the first click outside to close
       if (modal && !get('other-content'))
@@ -266,7 +267,9 @@ describe.each([
       await expectOtherLayerOwnsFocus()
     })
 
-    it('leaves focus in that layer when it is closed from outside while that layer is open', async () => {
+    // A modal menu's backdrop covers the page while it is open, so no other layer can be opened
+    // with a click beside it.
+    it.skipIf(modal)('leaves focus in that layer when it is closed from outside while that layer is open', async () => {
       const { open } = await mountLayers(otherKind, { otherTrigger: CLICKABLE_UNDER_MODAL, dismissable: false })
 
       await openKept()

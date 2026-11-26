@@ -3,12 +3,12 @@ import type { MenuContentContext } from './MenuContentImpl.vue'
 import type { MenuContext, MenuRootContext } from './MenuRoot.vue'
 import type { Direction, GraceIntent, Side } from './utils'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface, SetStateOptions } from '@/shared'
-import { computed, nextTick, onUnmounted, ref, shallowRef, toValue, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onUnmounted, ref, shallowRef, toValue, watch } from 'vue'
 import { createPartSurface, disclosureState, getActiveElement, getterRef, useArrowNavigation, useControllableState, useTypeahead } from '@/shared'
 import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
 import { resolveDirection } from '@/shared/useDirection'
 import { useIsUsingKeyboard } from '@/shared/useIsUsingKeyboard'
-import { FIRST_LAST_KEYS, focusFirst, isMouseEvent, isPointerInGraceArea, ITEM_SELECT, LAST_KEYS, SELECTION_KEYS } from './utils'
+import { createContentHideHook, FIRST_LAST_KEYS, focusFirst, hasFocusLeftContent, isMouseEvent, isPointerInGraceArea, ITEM_SELECT, LAST_KEYS, SELECTION_KEYS } from './utils'
 
 // =============================================================================
 // Headless composables for the Menu (overlay) family — issue #2723.
@@ -62,6 +62,8 @@ export interface UseMenuRootProps {
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** @defaultValue `true` */
   modal?: MaybeRefOrGetter<boolean | undefined>
+  /** When `false`, the content and its submenus stay mounted while closed. @defaultValue `true` */
+  unmountOnHide?: MaybeRefOrGetter<boolean | undefined>
   /** Component `emit`; receives `beforeUpdate:open` then `update:open`. */
   emit?: (event: any, ...args: any[]) => void
   /** Called before a change commits; `details.cancel()` vetoes it. */
@@ -112,7 +114,9 @@ export function useMenuRoot(props: UseMenuRootProps = {}): UseMenuRootReturn {
   })
   const dir = resolveDirection(props.dir)
   const modal = computed<boolean>(() => toValue(props.modal) ?? true)
+  const unmountOnHide = computed<boolean>(() => toValue(props.unmountOnHide) ?? true)
   const content = ref<HTMLElement>()
+  const contentHide = createContentHideHook()
   const isUsingKeyboardRef = useIsUsingKeyboard()
 
   function onOpenChange(value: boolean, reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event, options?: SetStateOptions): boolean {
@@ -130,12 +134,16 @@ export function useMenuRoot(props: UseMenuRootProps = {}): UseMenuRootReturn {
       content.value = element
     },
     notifyOpenComplete: value => props.onOpenComplete?.(value),
+    onContentHide: contentHide.on,
+    contentHidden: contentHide.trigger,
   }
   const menuRootContext: MenuRootContext = {
     onClose,
     dir: dir as Ref<Direction>,
     isUsingKeyboardRef,
     modal: modal as Ref<boolean>,
+    unmountOnHide: unmountOnHide as Ref<boolean>,
+    contentElements: new Set(),
   }
 
   return { open, onOpenChange, onClose, lastChangeDetails, isControlled, menuContext, menuRootContext }
@@ -377,6 +385,16 @@ export interface UseMenuContentOptions {
   loop?: MaybeRefOrGetter<boolean | undefined>
   /** `openAutoFocus` passthrough (SFC: `e => emits('openAutoFocus', e)`). */
   onOpenAutoFocus?: (event: Event) => void
+  /**
+   * Space pressed during a typeahead search is added to the search instead of
+   * selecting the focused item. @defaultValue `true`
+   */
+  spaceExtendsTypeahead?: MaybeRefOrGetter<boolean | undefined>
+  /**
+   * Whether a content kept mounted while closed (`unmountOnHide: false`) is shown.
+   * @defaultValue `true`
+   */
+  present?: MaybeRefOrGetter<boolean | undefined>
 }
 
 export type MenuContentState = { state: DisclosureState }
@@ -419,8 +437,50 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
   // A deep `ref` would unwrap `trigger` to the element, so `trigger.value` would always be `undefined`.
   const activeSubmenuContext = shallowRef<{ onOpenChange: MenuContext['onOpenChange'], trigger: Ref<HTMLElement | undefined> }>()
 
-  // The typeahead buffer itself, so items (and Space below) see a search in progress.
-  const { search: searchRef, handleTypeaheadSearch } = useTypeahead()
+  const spaceExtendsTypeahead = () => toValue(options.spaceExtendsTypeahead) ?? true
+  // The typeahead buffer, and the filter's text (`DropdownMenuFilter`), which is no
+  // typeahead search: it doesn't run out, and a letter typed on an item starts a search of its own.
+  const { search, handleTypeaheadSearch, resetTypeahead } = useTypeahead()
+  const filterSearch = ref('')
+  // Items skip Space while the filter has text or, with `spaceExtendsTypeahead`, a typeahead search is in progress.
+  const searchRef = computed<string>({
+    get: () => (spaceExtendsTypeahead() && search.value) || filterSearch.value,
+    set: (value) => {
+      filterSearch.value = value
+    },
+  })
+
+  // A content kept mounted while closed leaves the focus scope and layer stacks but
+  // doesn't unmount, so nothing returns focus. Let the menu know once it is hidden, with
+  // the element that had focus before it was shown, which an unmount would focus back.
+  let focusedBeforeShow: HTMLElement | null = null
+  watch(() => toValue(options.present) ?? true, (present, wasPresent) => {
+    if (present) {
+      if (!wasPresent)
+        focusedBeforeShow = getActiveElement() as HTMLElement | null
+    }
+    else if (wasPresent) {
+      // Opens afresh next time, as a remounted content would: from the first item, no search.
+      currentItemId.value = null
+      highlightedElement.value = undefined
+      filterSearch.value = ''
+      resetTypeahead()
+      const container = contentElement.value
+      menuContext.contentHidden({ container, focusedBeforeShow, focusLeft: hasFocusLeftContent(container, rootContext.contentElements) })
+      focusedBeforeShow = null
+    }
+  }, { immediate: true })
+  // Registered for `hasFocusLeftContent`: focus in a submenu has not left its parent menu.
+  watch(contentElement, (element, previous) => {
+    if (previous)
+      rootContext.contentElements?.delete(previous)
+    if (element)
+      rootContext.contentElements?.add(element)
+  }, { immediate: true })
+  onUnmounted(() => {
+    if (contentElement.value)
+      rootContext.contentElements?.delete(contentElement.value)
+  })
 
   /**
    * The enabled items in order, from the collection's cached order instead of
@@ -487,13 +547,19 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
     if (el)
       return el?.focus()
 
-    // Space selects the item when no search is in progress; otherwise it's part of the search.
+    // With `spaceExtendsTypeahead`, Space selects the item when no search is in progress;
+    // otherwise it's part of the search.
     // Only on this menu's own items (or the content): other controls in it, and a submenu's
     // key bubbling up, keep Space as is.
     const collectionItems = getItems() ?? []
-    if (event.key === ' ') {
+    if (!spaceExtendsTypeahead()) {
+      // Space never goes into the search
+      if (event.key === ' ' || event.code === 'Space')
+        return
+    }
+    else if (event.key === ' ' || event.code === 'Space') {
       const isOnItem = target === event.currentTarget || collectionItems.some(item => item.ref === target)
-      if (searchRef.value === '' || !isKeyDownInside || !isOnItem)
+      if (search.value === '' || !isKeyDownInside || !isOnItem)
         return
       // MenuItem skips Space during a search, so prevent the scroll here
       event.preventDefault()
@@ -522,6 +588,7 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
     // @ts-expect-error the provided currentTarget and target should be HTMLElement
     if (!event?.currentTarget?.contains?.(event.target)) {
       window.clearTimeout(timerRef.value)
+      search.value = ''
       searchRef.value = ''
     }
   }
@@ -563,6 +630,13 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
 
   watch(contentElement, (el) => {
     menuContext.onContentChange(el)
+  })
+
+  onBeforeUnmount(() => {
+    // Clear before a replacement registers its content, as the watcher stops on unmount.
+    // Another content may have registered since, so only clear our own registration.
+    if (contentElement.value && menuContext.content.value === contentElement.value)
+      menuContext.onContentChange(undefined)
   })
 
   onUnmounted(() => {

@@ -25,7 +25,7 @@ const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectHoverCardRootContext()
 rootContext.triggerElement = currentElement
-usePopperAnchor({ element: currentElement, reference: () => props.reference })
+usePopperAnchor({ element: currentElement, reference: () => props.reference, scope: 'hover-card' })
 
 // `data-popup-open`, the `data-grace-area-trigger` selector and the hover / leave /
 // touch / focus / blur listeners all come from the shared surface builder

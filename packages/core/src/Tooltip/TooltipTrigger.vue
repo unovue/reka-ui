@@ -38,7 +38,7 @@ defineExpose(expose)
 // still runs before the surface's `onClick`.
 const trigger = createTooltipTriggerSurface(rootContext)
 
-usePopperAnchor({ element: triggerElement, reference: () => props.reference })
+usePopperAnchor({ element: triggerElement, reference: () => props.reference, scope: 'tooltip' })
 
 watch(triggerElement, (el) => {
   rootContext.onTriggerChange(el)

@@ -20,8 +20,7 @@ import {
 } from '.'
 import DropdownMenu from './story/_DropdownMenu.vue'
 
-// TODO(v3-port): #3202 v3 menu content does not clear its root registration on unmount
-describe.skip('given a DropdownMenu root that stays mounted', () => {
+describe('given a DropdownMenu root that stays mounted', () => {
   it.each([true, false])('should preserve replaced submenu content and keyboard focus with modal=%s', async (modal) => {
     let menuContext!: NonNullable<ReturnType<typeof injectMenuContext>>
     const ContextProbe = defineComponent({
