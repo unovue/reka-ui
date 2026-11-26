@@ -30,6 +30,9 @@ const ON_RE = /^on[A-Z]/
 const WHITESPACE_RE = /\s+/
 const BOOLEAN_PROPS = new Set(['disabled', 'checked', 'selected', 'multiple', 'readonly', 'readOnly', 'required', 'indeterminate'])
 const OPTION_SUFFIX_RE = /(?:Once|Passive|Capture)$/
+// Vue renders `true` as an empty attribute only for these (`isSpecialBooleanAttr`), and as "true"
+// otherwise, e.g. `disabled="true"` on a `span`, where `disabled` is not a property.
+const SPECIAL_BOOLEAN_ATTRS = new Set(['itemscope', 'allowfullscreen', 'formnovalidate', 'ismap', 'nomodule', 'novalidate', 'readonly'])
 
 function safeTag(as: unknown) {
   return typeof as === 'string' && (!TAG_NAME.test(as) || BLOCKED_TAG.test(as)) ? 'div' : as
@@ -209,7 +212,7 @@ export function adopt(el: Element, getProps: () => Record<string, any>, { overri
       else if (!(BOOLEAN_PROPS.has(attr) && setLive(attr, value))) {
         if (attr === 'value')
           setLive(attr, value)
-        el.setAttribute(attr, value === true ? (attr.startsWith('aria-') ? 'true' : '') : String(value))
+        el.setAttribute(attr, value === true ? (SPECIAL_BOOLEAN_ATTRS.has(attr) ? '' : 'true') : String(value))
       }
     }
     applyClass(props.class)
