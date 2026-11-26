@@ -533,12 +533,6 @@ describe('given a Popover with content event listeners', () => {
   })
 })
 
-describe('given a Popover content wrapped in a Vue Transition', () => {
-  afterEach(() => {
-    vi.doUnmock('./PopoverContentNonModal.vue')
-  })
-})
-
 describe.each([true, false])('given an open Popover whose unmountOnHide changes with modal=%s', (modal) => {
   it('should keep the content mounted, with its state', async () => {
     const unmountOnHide = ref(true)
