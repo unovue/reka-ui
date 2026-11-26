@@ -4,7 +4,7 @@ import type { ComboboxInteractionType } from './useCombobox'
 import type { DismissableLayerDismissDetails, DismissableLayerEmits, DismissableLayerProps, FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 
-import { createContext, getActiveElement, getOwnerDocument, isHTMLElement, useFocusGuards, useForwardElement, useForwardProps, useHideOthers } from '@/shared'
+import { createRekaContext, getActiveElement, getOwnerDocument, isHTMLElement, useFocusGuards, useForwardElement, useForwardProps, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 
 export type ComboboxContentImplEmits = DismissableLayerEmits
@@ -59,7 +59,7 @@ export type ComboboxFocusTarget
     | ((interactionType: ComboboxInteractionType) => boolean | HTMLElement | null | undefined | void)
 
 export const [injectComboboxContentContext, provideComboboxContentContext]
-  = createContext<{
+  = createRekaContext<{
     position: Ref<'inline' | 'popper'>
   }>('ComboboxContent')
 </script>
