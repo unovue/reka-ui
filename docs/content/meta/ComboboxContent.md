@@ -60,7 +60,7 @@
   {
     'name': 'collisionPadding',
     'description': '<p>The distance in pixels from the boundary edges where collision\ndetection should occur. Accepts a number (same for all sides),\nor a partial padding object, for example: { top: 20, left: 20 }.</p>\n',
-    'type': 'number | Partial&lt;Record&lt;\'top\' | \'right\' | \'bottom\' | \'left\', number&gt;&gt;',
+    'type': 'number | Partial&lt;Record&lt;\'left\' | \'top\' | \'right\' | \'bottom\', number&gt;&gt;',
     'required': false
   },
   {
@@ -150,7 +150,7 @@
   {
     'name': 'side',
     'description': '<p>The preferred side of the trigger to render against when open.\nWill be reversed when collisions occur and avoidCollisions\nis enabled.</p>\n',
-    'type': '\'top\' | \'right\' | \'bottom\' | \'left\'',
+    'type': '\'left\' | \'top\' | \'right\' | \'bottom\'',
     'required': false
   },
   {
@@ -218,7 +218,7 @@
 | `avoidCollisions` | When `true`, overrides the side and align preferences to prevent collisions with boundary edges. | `boolean` | No | - |
 | `bodyLock` | When `true`, page scroll is locked while the content is open. | `boolean` | No | - |
 | `collisionBoundary` | The element used as the collision boundary. By default this is the viewport, though you can provide additional element(s) to be included in this check. | `Element \| (Element \| null)[] \| null` | No | - |
-| `collisionPadding` | The distance in pixels from the boundary edges where collision detection should occur. Accepts a number (same for all sides), or a partial padding object, for example: { top: 20, left: 20 }. | `number \| Partial<Record<"top" \| "right" \| "bottom" \| "left", number>>` | No | - |
+| `collisionPadding` | The distance in pixels from the boundary edges where collision detection should occur. Accepts a number (same for all sides), or a partial padding object, for example: { top: 20, left: 20 }. | `number \| Partial<Record<"left" \| "top" \| "right" \| "bottom", number>>` | No | - |
 | `dir` | The reading direction of the popper content when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disableOutsidePointerEvents` | When `true`, hover/focus/click interactions will be disabled on elements outside the `DismissableLayer`. Users will need to click twice on outside elements to interact with them: once to close the `DismissableLayer`, and again to trigger the element. Outside elements are covered by a transparent internal backdrop (`[data-reka-internal-backdrop]`) rendered right below the layer; `<body>` styles are never touched. | `boolean` | No | - |
 | `disableUpdateOnLayoutShift` | Whether to disable the update position for the content when the layout shifted. | `boolean` | No | - |
@@ -233,7 +233,7 @@
 | `positionStrategy` | The type of CSS position property to use. | `"fixed" \| "absolute"` | No | - |
 | `prioritizePosition` | Force content to be position within the viewport. Might overlap the reference element, which may not be desired. | `boolean` | No | - |
 | `reference` | The custom element or virtual element that will be set as the reference to position the floating element. If provided, it will replace the default anchor element. | `ReferenceElement` | No | - |
-| `side` | The preferred side of the trigger to render against when open. Will be reversed when collisions occur and avoidCollisions is enabled. | `"top" \| "right" \| "bottom" \| "left"` | No | - |
+| `side` | The preferred side of the trigger to render against when open. Will be reversed when collisions occur and avoidCollisions is enabled. | `"left" \| "top" \| "right" \| "bottom"` | No | - |
 | `sideFlip` | Flip to the opposite side when colliding with boundary. | `boolean` | No | - |
 | `sideOffset` | The distance in pixels from the trigger. | `number` | No | - |
 | `sticky` | The sticky behavior on the align axis. `partial` will keep the content in the boundary as long as the trigger is at least partially in the boundary whilst "always" will keep the content in the boundary regardless. | `"partial" \| "always"` | No | - |

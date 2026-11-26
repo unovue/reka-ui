@@ -50,7 +50,7 @@
   {
     'name': 'swipeDirection',
     'description': '<p>Direction to swipe to dismiss.</p>\n',
-    'type': '\'right\' | \'left\' | \'down\' | \'up\'',
+    'type': '\'left\' | \'right\' | \'down\' | \'up\'',
     'required': false,
     'default': '\'down\''
   }
@@ -111,7 +111,7 @@
 | `snapPoint` | v-model:snapPoint | `null \| string \| number` | No | - |
 | `snapPoints` | Preset snap positions (fractions 0-1, pixels >1, or '148px'/'30rem' strings) | `DrawerSnapPoint[]` | No | - |
 | `snapToSequentialPoints` | When true, snaps to the next sequential snap point (one step at a time). When false, snaps to the nearest snap point by distance. | `boolean` | No | `false` |
-| `swipeDirection` | Direction to swipe to dismiss. | `"right" \| "left" \| "down" \| "up"` | No | `"down"` |
+| `swipeDirection` | Direction to swipe to dismiss. | `"left" \| "right" \| "down" \| "up"` | No | `"down"` |
 
 **Events**
 

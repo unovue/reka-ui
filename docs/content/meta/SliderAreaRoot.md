@@ -136,7 +136,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the slider area value changes</p>\n',
-    'type': '[payload: number[][]]'
+    'type': '[payload: number[][] | undefined]'
   },
   {
     'name': 'valueCommit',
@@ -160,11 +160,11 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultValue` | The value of the slider area when initially rendered. Use when you do not need to control the state. | `number[][]` | No | `[[0, 0]] as number[][]` |
-| `dir` | The reading direction. If omitted, inherits globally from ConfigProvider or assumes LTR. | `"ltr" \| "rtl"` | No | - |
-| `disabled` | When true, prevents the user from interacting with the slider area. | `boolean` | No | `false` |
+| `dir` | The reading direction. If omitted, inherits globally from `ConfigProvider` or assumes LTR. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | When `true`, prevents the user from interacting with the slider area. | `boolean` | No | `false` |
 | `invertedX` | Whether the X axis is visually inverted. | `boolean` | No | `false` |
 | `invertedY` | Whether the Y axis is visually inverted. | `boolean` | No | `false` |
 | `maxX` | The maximum value for the X axis. | `number` | No | `100` |
@@ -173,18 +173,18 @@
 | `minXStepsBetweenThumbs` | The minimum permitted steps between multiple thumbs on the X axis. | `number` | No | `0` |
 | `minY` | The minimum value for the Y axis. | `number` | No | `0` |
 | `minYStepsBetweenThumbs` | The minimum permitted steps between multiple thumbs on the Y axis. | `number` | No | `0` |
-| `modelValue` | The controlled value of the slider area. Can be bind as v-model. | `number[][] \| null` | No | - |
+| `modelValue` | The controlled value of the slider area. Can be bind as `v-model`. | `number[][] \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `stepX` | The stepping interval for the X axis. | `number` | No | `1` |
 | `stepY` | The stepping interval for the Y axis. | `number` | No | `1` |
-| `thumbAlignment` | The alignment of the slider area thumb.  contain: thumbs will be contained within the bounds of the track. overflow: thumbs will not be bound by the track. No extra offset will be added. | `"overflow" \| "contain"` | No | `"overflow"` |
+| `thumbAlignment` | The alignment of the slider area thumb.  `contain`: thumbs will be contained within the bounds of the track. `overflow`: thumbs will not be bound by the track. No extra offset will be added. | `"overflow" \| "contain"` | No | `"overflow"` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the slider area value changes | `[payload: number[][]]` |
+| `update:modelValue` | Event handler called when the slider area value changes | `[payload: number[][] \| undefined]` |
 | `valueCommit` | Event handler called when the value changes at the end of an interaction. | `[payload: number[][]]` |
 
 **Slots**

@@ -115,7 +115,7 @@
   {
     'name': 'orientation',
     'description': '<p>The axis the slides are laid out and scroll along.</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false,
     'default': '\'horizontal\''
   },
@@ -230,27 +230,27 @@
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
 | `align` | Where a snap places its slides in the viewport. | `"start" \| "center" \| "end"` | No | `"start"` |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `autoHeight` | When true, the viewport takes the height of the current slides. Horizontal only. | `boolean` | No | - |
+| `autoHeight` | When `true`, the viewport takes the height of the current slides. Horizontal only. | `boolean` | No | - |
 | `autoplay` | Advance to the next snap on an interval. Pauses on hover, stops when keyboard focus enters the carousel. | `boolean \| CarouselAutoplayOptions` | No | `false` |
 | `autoScroll` | Scroll the track continuously. Pauses on hover, stops when keyboard focus enters the carousel. | `boolean \| CarouselAutoScrollOptions` | No | `false` |
-| `containScroll` | How the snaps at the ends of the track are handled. 'trimSnaps' merges the snaps that would leave empty space, 'keepSnaps' keeps one snap per group, false adds empty space so every snap can be aligned. Ignored with loop. | `false \| "trimSnaps" \| "keepSnaps"` | No | `"trimSnaps"` |
+| `containScroll` | How the snaps at the ends of the track are handled. `'trimSnaps'` merges the snaps that would leave empty space, `'keepSnaps'` keeps one snap per group, `false` adds empty space so every snap can be aligned. Ignored with `loop`. | `false \| "trimSnaps" \| "keepSnaps"` | No | `"trimSnaps"` |
 | `defaultPlaying` | The rotation state when initially rendered. Rotation stops on mount when the user prefers reduced motion. | `boolean` | No | `true` |
 | `defaultValue` | The index of the snap to show when initially rendered. Use when you do not need to control the index. | `number` | No | - |
-| `dir` | The reading direction of the carousel. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
-| `dragFree` | When true, the track scrolls freely with momentum instead of resting on a snap. | `boolean` | No | - |
-| `draggable` | When false, the track can't be dragged, swiped or scrolled by the user; the controls still navigate. | `boolean` | No | `true` |
-| `fade` | When true, slides are stacked and cross-fade instead of sliding. Set the transition on the items yourself. | `boolean` | No | - |
+| `dir` | The reading direction of the carousel. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `dragFree` | When `true`, the track scrolls freely with momentum instead of resting on a snap. | `boolean` | No | - |
+| `draggable` | When `false`, the track can't be dragged, swiped or scrolled by the user; the controls still navigate. | `boolean` | No | `true` |
+| `fade` | When `true`, slides are stacked and cross-fade instead of sliding. Set the `transition` on the items yourself. | `boolean` | No | - |
 | `inViewThreshold` | The fraction (0 to 1) of an item that has to be visible for it to count as in view. | `number` | No | `0` |
-| `itemCount` | The number of slides. Only needed on the server, to render snapCount, the indicators, the enabled Previous/Next and the slide labels before hydration: the slides register once mounted, and their count wins from then on. | `number` | No | - |
-| `loop` | When true, the last slide is followed by the first one, and vice versa. When the slides are too few to wrap, Next on the last snap scrolls back to the first instead. | `boolean` | No | - |
-| `modelValue` | The controlled index of the current snap. Can be bound as v-model. | `number` | No | - |
-| `orientation` | The axis the slides are laid out and scroll along. | `"vertical" \| "horizontal"` | No | `"horizontal"` |
-| `playing` | The controlled rotation state of autoplay or autoScroll. Can be bound as v-model:playing. | `boolean` | No | - |
-| `skipSnaps` | When true, a fast gesture can move past several snaps. When false, one gesture moves one snap. | `boolean` | No | - |
-| `slidesToScroll` | How many slides one navigation step moves. 'auto' moves as many as fit in the viewport. | `number \| "auto"` | No | `1` |
-| `wheel` | When true, a mouse wheel pages through the snaps, and in fade mode the wheel and trackpad do too. | `boolean` | No | - |
+| `itemCount` | The number of slides. Only needed on the server, to render `snapCount`, the indicators, the enabled Previous/Next and the slide labels before hydration: the slides register once mounted, and their count wins from then on. | `number` | No | - |
+| `loop` | When `true`, the last slide is followed by the first one, and vice versa. When the slides are too few to wrap, Next on the last snap scrolls back to the first instead. | `boolean` | No | - |
+| `modelValue` | The controlled index of the current snap. Can be bound as `v-model`. | `number` | No | - |
+| `orientation` | The axis the slides are laid out and scroll along. | `"horizontal" \| "vertical"` | No | `"horizontal"` |
+| `playing` | The controlled rotation state of `autoplay` or `autoScroll`. Can be bound as `v-model:playing`. | `boolean` | No | - |
+| `skipSnaps` | When `true`, a fast gesture can move past several snaps. When `false`, one gesture moves one snap. | `boolean` | No | - |
+| `slidesToScroll` | How many slides one navigation step moves. `'auto'` moves as many as fit in the viewport. | `number \| "auto"` | No | `1` |
+| `wheel` | When `true`, a mouse wheel pages through the snaps, and in `fade` mode the wheel and trackpad do too. | `boolean` | No | - |
 
 **Events**
 
@@ -270,8 +270,8 @@
 | `canScrollNext` | Whether there is a snap after the current one | `boolean` |
 | `scrollPrev` | Go to the previous snap | `(): boolean` |
 | `scrollNext` | Go to the next snap | `(): boolean` |
-| `scrollTo` | Go to the snap at index | `(index: number): boolean` |
-| `playing` | Whether autoplay or autoScroll is rotating | `boolean` |
+| `scrollTo` | Go to the snap at `index` | `(index: number): boolean` |
+| `playing` | Whether `autoplay` or `autoScroll` is rotating | `boolean` |
 | `paused` | Whether rotation is held for now: hover, a hidden page, the carousel out of view, a finger down | `boolean` |
 | `play` | Start rotation | `(): boolean` |
 | `stop` | Stop rotation | `(): boolean` |

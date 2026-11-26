@@ -45,7 +45,7 @@
   {
     'name': 'collisionPadding',
     'description': '<p>The distance in pixels from the boundary edges where collision\ndetection should occur. Accepts a number (same for all sides),\nor a partial padding object, for example: { top: 20, left: 20 }.</p>\n',
-    'type': 'number | Partial&lt;Record&lt;\'top\' | \'right\' | \'bottom\' | \'left\', number&gt;&gt;',
+    'type': 'number | Partial&lt;Record&lt;\'left\' | \'top\' | \'right\' | \'bottom\', number&gt;&gt;',
     'required': false,
     'default': '0'
   },
@@ -165,7 +165,7 @@
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `avoidCollisions` | When `true`, overrides the side and align preferences to prevent collisions with boundary edges. | `boolean` | No | `true` |
 | `collisionBoundary` | The element used as the collision boundary. By default this is the viewport, though you can provide additional element(s) to be included in this check. | `Element \| (Element \| null)[] \| null` | No | `[]` |
-| `collisionPadding` | The distance in pixels from the boundary edges where collision detection should occur. Accepts a number (same for all sides), or a partial padding object, for example: { top: 20, left: 20 }. | `number \| Partial<Record<"top" \| "right" \| "bottom" \| "left", number>>` | No | `0` |
+| `collisionPadding` | The distance in pixels from the boundary edges where collision detection should occur. Accepts a number (same for all sides), or a partial padding object, for example: { top: 20, left: 20 }. | `number \| Partial<Record<"left" \| "top" \| "right" \| "bottom", number>>` | No | `0` |
 | `disableUpdateOnLayoutShift` | Whether to disable the update position for the content when the layout shifted. | `boolean` | No | - |
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
 | `hideShiftedArrow` | When `true`, hides the arrow when it cannot be centered to the reference element. | `boolean` | No | - |

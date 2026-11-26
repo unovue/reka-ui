@@ -17,7 +17,7 @@
   {
     'name': 'options',
     'description': '<p>List of items</p>\n',
-    'type': 'T',
+    'type': 'any[]',
     'required': true
   },
   {
@@ -53,9 +53,9 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `estimateSize` | Estimated size (in px) of each item. A change of a numeric estimate measures the items again. A callback is not watched, as an inline callback is a new function on every render: when its results change, call virtualizer.measure() on the exposed instance. | `number \| ((index: number) => number)` | No | - |
+| `estimateSize` | Estimated size (in px) of each item. A change of a numeric estimate measures the items again. A callback is not watched, as an inline callback is a new function on every render: when its results change, call `virtualizer.measure()` on the exposed instance. | `number \| ((index: number) => number)` | No | - |
 | `horizontal` | Whether to virtualize items horizontally. | `boolean` | No | - |
-| `options` | List of items | `T` | Yes | - |
+| `options` | List of items | `any[]` | Yes | - |
 | `overscan` | Number of items rendered outside the visible area | `number` | No | - |
 
 **Slots**

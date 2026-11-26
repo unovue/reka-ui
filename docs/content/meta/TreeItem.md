@@ -51,32 +51,32 @@
 <SlotsTable :data="[
   {
     'name': 'isExpanded',
-    'description': '<p>Whether the item is currently expanded</p>\n',
+    'description': '',
     'type': 'boolean'
   },
   {
     'name': 'isSelected',
-    'description': '<p>Whether the item is currently selected</p>\n',
+    'description': '',
     'type': 'boolean'
   },
   {
     'name': 'isIndeterminate',
-    'description': '<p>Whether the item is partially selected. With <code>bubbleSelect</code>: some, but not all, of its descendants are selected. With <code>propagateSelect</code>: the item is selected but not all of its descendants are. <code>undefined</code> when neither applies.</p>\n',
+    'description': '',
     'type': 'boolean | undefined'
   },
   {
     'name': 'isDisabled',
-    'description': '<p>Whether the item is disabled, either by its own <code>disabled</code> prop or by the root</p>\n',
+    'description': '',
     'type': 'boolean'
   },
   {
     'name': 'handleToggle',
-    'description': '<p>Toggle the expanded state of the item</p>\n',
+    'description': '',
     'type': '(): void'
   },
   {
     'name': 'handleSelect',
-    'description': '<p>Select the item, following the root\'s <code>selectionBehavior</code></p>\n',
+    'description': '',
     'type': '(): void'
   }
 ]" />
@@ -105,11 +105,11 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `isExpanded` | Whether the item is currently expanded | `boolean` |
-| `isSelected` | Whether the item is currently selected | `boolean` |
-| `isIndeterminate` | Whether the item is partially selected. With bubbleSelect: some, but not all, of its descendants are selected. With propagateSelect: the item is selected but not all of its descendants are. undefined when neither applies. | `boolean \| undefined` |
-| `isDisabled` | Whether the item is disabled, either by its own disabled prop or by the root | `boolean` |
-| `handleToggle` | Toggle the expanded state of the item | `(): void` |
-| `handleSelect` | Select the item, following the root's selectionBehavior | `(): void` |
+| `isExpanded` |  | `boolean` |
+| `isSelected` |  | `boolean` |
+| `isIndeterminate` |  | `boolean \| undefined` |
+| `isDisabled` |  | `boolean` |
+| `handleToggle` |  | `(): void` |
+| `handleSelect` |  | `(): void` |
 
 </llm-only>

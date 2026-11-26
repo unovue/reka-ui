@@ -25,7 +25,7 @@
   {
     'name': 'swipeDirection',
     'description': '<p>Override the open swipe direction (defaults to opposite of Root\'s swipeDirection).</p>\n',
-    'type': '\'right\' | \'left\' | \'down\' | \'up\'',
+    'type': '\'left\' | \'right\' | \'down\' | \'up\'',
     'required': false
   }
 ]" />
@@ -40,6 +40,6 @@
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `disabled` | Disable swipe-to-open. | `boolean` | No | `false` |
-| `swipeDirection` | Override the open swipe direction (defaults to opposite of Root's swipeDirection). | `"right" \| "left" \| "down" \| "up"` | No | - |
+| `swipeDirection` | Override the open swipe direction (defaults to opposite of Root's swipeDirection). | `"left" \| "right" \| "down" \| "up"` | No | - |
 
 </llm-only>
