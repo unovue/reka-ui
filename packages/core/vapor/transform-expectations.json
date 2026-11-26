@@ -12,7 +12,9 @@
     },
     "Accordion/AccordionItem.vue": {
       "exposeElement": 1,
-      "sfcs": 1
+      "renderAs": 1,
+      "sfcs": 1,
+      "slotProps": 1
     },
     "Accordion/AccordionRoot.vue": {
       "exposeElement": 1,
@@ -22,7 +24,9 @@
     },
     "Accordion/AccordionTrigger.vue": {
       "exposeElement": 1,
-      "sfcs": 1
+      "renderAs": 1,
+      "sfcs": 1,
+      "slotProps": 1
     },
     "AlertDialog/AlertDialogAction.vue": {
       "exposeElement": 1,
@@ -1219,6 +1223,9 @@
       "sfcs": 1,
       "slotProps": 1
     },
+    "Splitter/useSplitterResizeHandle.ts": {
+      "getCurrentInstance": 1
+    },
     "Stepper/StepperDescription.vue": {
       "exposeElement": 1,
       "sfcs": 1,
@@ -1522,7 +1529,7 @@
     "Presence/Presence.ts": 1,
     "Primitive/Primitive.ts": 2,
     "Primitive/Slot.ts": 2,
-    "Primitive/renderAs.ts": 126,
+    "Primitive/renderAs.ts": 128,
     "Teleport/portalGate.ts": 19,
     "shared/useEmitAsProps.ts": 2,
     "shared/useForwardElement.ts": 5,
@@ -1534,12 +1541,12 @@
   },
   "totals": {
     "exposeElement": 291,
-    "getCurrentInstance": 25,
+    "getCurrentInstance": 26,
     "patches": 15,
     "presenceAttrs": 8,
-    "renderAs": 128,
+    "renderAs": 130,
     "sfcs": 291,
-    "slotProps": 151,
+    "slotProps": 153,
     "vShow": 5,
     "vueuse": 5
   },
