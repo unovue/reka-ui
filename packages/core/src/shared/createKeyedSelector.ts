@@ -1,5 +1,5 @@
 import type { EffectScope, ShallowRef } from 'vue'
-import { getCurrentScope, onScopeDispose, shallowRef, watch } from 'vue'
+import { getCurrentScope, onScopeDispose, shallowRef, toRaw, watch } from 'vue'
 
 /**
  * One boolean cell per held key. `holders` counts the readers that hold it, so
@@ -63,6 +63,9 @@ export class KeyedSelectorImpl<K> implements KeyedSelector<K> {
   activeRef: ShallowRef<boolean> = undefined!
   /** Watches the source on first use (see `createKeyedSelector`). */
   pending: (() => void) | undefined = undefined
+  /** `true` while `update` runs, and the source a call made meanwhile asked for. */
+  updating = false
+  queued: { next: Current<K> } | undefined = undefined
 
   constructor(readonly multiple: boolean, initial?: Current<K>) {
     if (arguments.length > 1)
@@ -147,7 +150,34 @@ export class KeyedSelectorImpl<K> implements KeyedSelector<K> {
       cell.ref.value = value
   }
 
+  /**
+   * Moves the cells and refs from the current source to `next`.
+   *
+   * A reader that runs synchronously on a flip may change the source again, which calls this
+   * again before the first call is done. That call only records its source: the running one
+   * applies it once its own flips are out, so cells and refs always end on the latest source,
+   * never on the one an interrupted call started with.
+   */
   update(next: K | ReadonlySet<K> | null | undefined): void {
+    this.queued = { next }
+    if (this.updating)
+      return
+    this.updating = true
+    try {
+      let queued
+      // eslint-disable-next-line no-cond-assign
+      while (queued = this.queued) {
+        this.queued = undefined
+        this.apply(queued.next)
+      }
+    }
+    finally {
+      this.updating = false
+      this.queued = undefined
+    }
+  }
+
+  apply(next: K | ReadonlySet<K> | null | undefined): void {
     const prev = this.current
     this.current = next
     if (this.multiple) {
@@ -164,7 +194,8 @@ export class KeyedSelectorImpl<K> implements KeyedSelector<K> {
     }
     else if (prev !== next) {
       this.flip(prev as K | null | undefined, false)
-      this.flip(next as K | null | undefined, true)
+      // The comparison a new cell starts with: `NaN` is never the current key.
+      this.flip(next as K | null | undefined, this.matches(next, next as K))
     }
     this.currentRef.value = next
     this.activeRef.value = this.isActive(next)
@@ -198,7 +229,8 @@ export function lazySelector<K, S extends Current<K>>(selector: KeyedSelectorImp
         return
       }
       selector.update(next)
-      onUpdate?.(next)
+      // The source the selector ended on: an update made during this one may have replaced `next`.
+      onUpdate?.(selector.current as S)
     }, { flush: 'sync', immediate: true })
     if (scope)
       scope.run(run)
@@ -210,13 +242,19 @@ export function lazySelector<K, S extends Current<K>>(selector: KeyedSelectorImp
 
 /**
  * A selector over a set of keys: `is(key)` is `source().has(key)`. The source
- * may return a new `Set` on every change; only the keys that entered or left
- * it flip.
+ * may return a new `Set` on every change or change one in place; only the keys
+ * that entered or left it flip.
  *
  * @internal
  */
 export function createKeyedSetSelector<K>(source: SetSelectorSource<K>): KeyedSelector<K> {
-  return lazySelector(new KeyedSelectorImpl<K>(true), source)
+  // A copy, so that a set changed in place still has its previous members to tell what entered or
+  // left. Reading `size` is what makes the watcher follow such a change; the members are copied
+  // from the raw set, as a reactive one would hand out proxies of its object keys.
+  return lazySelector(new KeyedSelectorImpl<K>(true), () => {
+    const keys = source()
+    return keys && keys.size >= 0 ? new Set(toRaw(keys)) : keys
+  })
 }
 
 /**
