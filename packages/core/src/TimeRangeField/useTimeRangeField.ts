@@ -8,7 +8,7 @@ import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, unref, watch } from 'vue'
 import { isBefore, isBeforeOrSame } from '@/date'
 import { assertTemporal } from '@/date/runtime'
-import { compareDateValues, isZonedDateTime, toPlainDateTime } from '@/date/temporal'
+import { compareDateValues, isSameDay, isZonedDateTime, toPlainDateTime } from '@/date/temporal'
 import { isSameRange } from '@/DateRangeField/useDateRangeField'
 import { useControllableState, useDateFormatter } from '@/shared'
 import {
@@ -85,6 +85,14 @@ export interface UseTimeRangeFieldProps {
    * @default false
    */
   allowNonContiguousRanges?: MaybeRefOrGetter<boolean | undefined>
+  /**
+   * Whether a range whose end is earlier than its start is allowed, for a daily
+   * window that wraps past midnight such as `22:00` to `06:00`. Only within one
+   * calendar day (always the case for `PlainTime` values); `minValue` and
+   * `maxValue` still bound each end separately.
+   * @default false
+   */
+  allowWrap?: MaybeRefOrGetter<boolean | undefined>
   parentElement?: Ref<HTMLElement | undefined>
   emit?: (event: any, ...args: any[]) => void
   onBeforeUpdate?: (value: TimeRange, details: ChangeEventDetails<TimeRangeFieldChangeReason>) => void
@@ -243,8 +251,13 @@ export function useTimeRangeField(props: UseTimeRangeFieldProps = {}): UseTimeRa
       return true
     if (!start || !end)
       return false
-    if (!isBeforeOrSame(start, end))
-      return true
+    if (!isBeforeOrSame(start, end)) {
+      // Only a time-of-day wrap within one calendar day is allowed. `PlainTime`
+      // values are placed on today, so they always qualify; date-carrying values
+      // on different days stay invalid. A wrapped range has no forward span to
+      // sample, so the times between the ends are not checked.
+      return !(toValue(props.allowWrap) && isSameDay(start, end))
+    }
     // Sampled last and only for a complete, ordered range with a matcher: see `isTimeUnavailable`.
     const matcher = isTimeUnavailable.value
     if (matcher === undefined || toValue(props.allowNonContiguousRanges))

@@ -326,6 +326,91 @@ describe('timeField', () => {
     expect(input).not.toHaveAttribute('data-invalid')
   })
 
+  it('does not display data-invalid when start is after end and allowWrap is set', async () => {
+    const overnight = { start: new Temporal.PlainTime(23, 0), end: new Temporal.PlainTime(7, 0) }
+    const { input } = setup({
+      timeRangeFieldProps: { modelValue: overnight, locale: 'en-GB', allowWrap: true },
+    })
+
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('still displays data-invalid for an out-of-range bound when allowWrap is set', async () => {
+    const overnight = { start: new Temporal.PlainTime(23, 0), end: new Temporal.PlainTime(7, 0) }
+    const { input } = setup({
+      timeRangeFieldProps: {
+        modelValue: overnight,
+        locale: 'en-GB',
+        allowWrap: true,
+        maxValue: new Temporal.PlainTime(22, 0),
+      },
+    })
+
+    // allowWrap only lifts the ordering rule, start is still after the max of 22:00
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+
+  it('allows a same-day date-carrying range to wrap when allowWrap is set', async () => {
+    const { input } = setup({
+      timeRangeFieldProps: {
+        modelValue: {
+          start: new Temporal.PlainDateTime(2024, 1, 5, 22, 0),
+          end: new Temporal.PlainDateTime(2024, 1, 5, 6, 0),
+        },
+        locale: 'en-GB',
+        allowWrap: true,
+      },
+    })
+
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('does not sample the times of a wrapped range when allowWrap is set', async () => {
+    const isTimeUnavailable = vi.fn(() => false)
+    const { input } = setup({
+      timeRangeFieldProps: {
+        modelValue: { start: new Temporal.PlainTime(23, 0), end: new Temporal.PlainTime(7, 0) },
+        locale: 'en-GB',
+        allowWrap: true,
+        isTimeUnavailable,
+      },
+    })
+
+    expect(input).not.toHaveAttribute('data-invalid')
+    // Only the two ends are asked about.
+    expect(isTimeUnavailable.mock.calls.length).toBeLessThanOrEqual(4)
+  })
+
+  it('still displays data-invalid for a backwards range across days when allowWrap is set', async () => {
+    const { input } = setup({
+      timeRangeFieldProps: {
+        modelValue: {
+          start: new Temporal.PlainDateTime(2024, 1, 5, 10, 0),
+          end: new Temporal.PlainDateTime(2024, 1, 1, 9, 0),
+        },
+        locale: 'en-GB',
+        allowWrap: true,
+      },
+    })
+
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+
+  it('still displays data-invalid for a backwards zoned range across days when allowWrap is set', async () => {
+    const { input } = setup({
+      timeRangeFieldProps: {
+        modelValue: {
+          start: new Temporal.PlainDateTime(2024, 1, 5, 10, 0).toZonedDateTime('America/New_York'),
+          end: new Temporal.PlainDateTime(2024, 1, 1, 9, 0).toZonedDateTime('America/New_York'),
+        },
+        locale: 'en-GB',
+        allowWrap: true,
+      },
+    })
+
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+
   it('focuses first segment on label click', async () => {
     const { user, label, start } = setup({
       timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },
