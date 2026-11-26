@@ -8,6 +8,7 @@ import { useDebounceFn, useEventListener, useResizeObserver } from '@vueuse/core
 import { computed, mergeProps, nextTick, ref, toValue, watch, watchEffect } from 'vue'
 import {
   createPartSurface,
+  defineReactiveIds,
   disclosureState,
   getActiveElement,
   getElementByIdFrom,
@@ -520,16 +521,16 @@ export function useNavigationMenuItem(options: UseNavigationMenuItemOptions): Us
   const { context, value } = options
   const triggerRef = ref<HTMLElement>()
   const focusProxyRef = ref<HTMLElement>()
-  const contentId = makeContentId(context.baseId, value)
-
   let restoreContentTabOrderRef: () => void = () => ({})
 
   const wasEscapeCloseRef = ref(false)
   // `NavigationMenuTrigger` replaces `triggerRef` on mount, so the handlers
   // below read it through the context object, never a captured ref.
-  const itemContext: NavigationMenuItemContext = {
+  // Reactive ids: the trigger and the content adopt a consumer `id`, which the other one references.
+  const itemContext = defineReactiveIds<NavigationMenuItemContext, 'triggerId' | 'contentId'>({
     value,
-    contentId,
+    contentId: makeContentId(context.baseId, value),
+    triggerId: makeTriggerId(context.baseId, value),
     triggerRef,
     focusProxyRef,
     wasEscapeCloseRef,
@@ -537,10 +538,10 @@ export function useNavigationMenuItem(options: UseNavigationMenuItemOptions): Us
     onFocusProxyEnter: handleContentEntry,
     onContentFocusOutside: handleContentExit,
     onRootContentClose: handleContentExit,
-  }
+  }, ['triggerId', 'contentId'])
 
   async function handleContentEntry(side = 'start') {
-    const el = getElementByIdFrom(itemContext.triggerRef.value, contentId)
+    const el = getElementByIdFrom(itemContext.triggerRef.value, itemContext.contentId)
     if (el) {
       restoreContentTabOrderRef()
       const candidates = getTabbableCandidates(el)
@@ -550,7 +551,7 @@ export function useNavigationMenuItem(options: UseNavigationMenuItemOptions): Us
   }
 
   function handleContentExit() {
-    const el = getElementByIdFrom(itemContext.triggerRef.value, contentId)
+    const el = getElementByIdFrom(itemContext.triggerRef.value, itemContext.contentId)
     if (el) {
       const candidates = getTabbableCandidates(el)
       if (candidates.length)
@@ -574,7 +575,7 @@ export function useNavigationMenuItem(options: UseNavigationMenuItemOptions): Us
       // a trigger wired with the composables alone is known by its id.
       const isTrigger = itemContext.triggerRef.value
         ? ev.target === itemContext.triggerRef.value
-        : (ev.target as HTMLElement).id === makeTriggerId(context.baseId, value)
+        : (ev.target as HTMLElement).id === itemContext.triggerId
       if (!isTrigger)
         return
       if (ev.repeat) {
@@ -778,12 +779,12 @@ export function useNavigationMenuTrigger(options: UseNavigationMenuTriggerOption
 
   const trigger = createPartSurface<NavigationMenuTriggerState>(
     () => ({
-      'id': makeTriggerId(menuContext.baseId, itemContext.value),
+      'id': itemContext.triggerId,
       'disabled': disabled.value,
       // Functional selector: the content keeps focus moves onto a trigger inside the menu.
       'data-navigation-menu-trigger': '',
       'aria-expanded': open.value,
-      'aria-controls': makeContentId(menuContext.baseId, itemContext.value),
+      'aria-controls': itemContext.contentId,
       'onPointerenter': handlePointerEnter,
       'onPointermove': handlePointerMove,
       'onPointerleave': handlePointerLeave,
@@ -1034,8 +1035,8 @@ export function useNavigationMenuContent(options: UseNavigationMenuContentOption
 
   const content = createPartSurface<NavigationMenuContentState>(
     () => ({
-      'id': makeContentId(menuContext.baseId, itemContext.value),
-      'aria-labelledby': makeTriggerId(menuContext.baseId, itemContext.value),
+      'id': itemContext.contentId,
+      'aria-labelledby': itemContext.triggerId,
       // Prevent interaction while a root content animates out
       'style': { pointerEvents: !open.value && menuContext.isRootMenu ? 'none' : undefined },
       'onKeydown': handleKeydown,

@@ -35,7 +35,9 @@ describe('given an open NavigationMenu rendered on the server', () => {
     }))
 
     expect(html).toMatch(/id="[^"]*-trigger-one"/)
-    expect(html).toMatch(/aria-controls="[^"]*-content-one"/)
+    // The trigger references the content once it exists on the client, not in the server HTML (#3242).
+    expect(html).toMatch(/id="[^"]*-content-one"/)
+    expect(html).not.toContain('aria-controls=')
     expect(html).toContain('aria-expanded="true"')
     // Positions are measured in the browser: no size or offset variables on the server.
     expect(html).not.toContain('--reka-navigation-menu-')

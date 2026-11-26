@@ -2,7 +2,7 @@
 import type { ComponentPublicInstance, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { COLLECTION_ITEM_ATTRS, useCollectionItem } from '@/Collection/Collection'
-import { disabledAttr, useForwardElement } from '@/shared'
+import { disabledAttr, useForwardElement, useRenderedContentId, useTriggerId } from '@/shared'
 
 export interface NavigationMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -44,12 +44,16 @@ const { open, trigger, onFocusProxyFocus } = useNavigationMenuTrigger({
 onMounted(() => {
   itemContext.triggerRef = triggerElement
 })
+// A consumer `id` (or an `id` on the asChild child) is the trigger's id, which the content's
+// `aria-labelledby` follows. `aria-controls` references the content only while it is rendered.
+useTriggerId(itemContext, triggerElement)
+const contentId = useRenderedContentId(itemContext)
 
 // Consumer listeners run BEFORE the trigger's own (v2 order). `useAttrs()` is
 // not reactive, so this is read during render.
 const attrs = useAttrs()
 function getTriggerAttrs() {
-  return mergeConsumerListenersFirst(attrs, trigger.attrs.value)
+  return { ...mergeConsumerListenersFirst(attrs, trigger.attrs.value), 'aria-controls': contentId.value }
 }
 
 function setFocusProxyRef(node: Element | ComponentPublicInstance | null) {
@@ -78,7 +82,7 @@ function setFocusProxyRef(node: Element | ComponentPublicInstance | null) {
     />
     <span
       v-if="menuContext.viewport.value"
-      :aria-owns="itemContext.contentId"
+      :aria-owns="contentId"
     />
   </template>
 </template>

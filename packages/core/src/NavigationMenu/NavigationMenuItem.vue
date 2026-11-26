@@ -16,6 +16,8 @@ export interface NavigationMenuItemProps extends PrimitiveProps {
 export type NavigationMenuItemContext = {
   value: string
   contentId: string
+  /** The id the trigger renders. Read by the content for `aria-labelledby`. */
+  triggerId: string
   triggerRef: Ref<HTMLElement | undefined>
   focusProxyRef: Ref<HTMLElement | undefined>
   wasEscapeCloseRef: Ref<boolean>
