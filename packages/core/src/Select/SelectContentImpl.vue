@@ -191,9 +191,11 @@ const { content: surface, contentContext, isPositioned, hasFocusedOut } = useSel
 
 provideSelectContentContext(contentContext)
 
-// `loop` drives keyboard navigation here and is not a positioning prop.
+// `loop`, `position`, `bodyLock` and `disableOutsidePointerEvents` are the
+// content's own props, not positioning props: `PopperContent` doesn't declare
+// them, so forwarding them would render them as DOM attributes.
 // Item-aligned, the content renders its own element (`as` / `asChild`).
-const positionProps = reactiveOmit(props, 'loop')
+const positionProps = reactiveOmit(props, 'loop', 'position', 'bodyLock', 'disableOutsidePointerEvents')
 const forwardedProps = useForwardProps(computed(() => props.position === 'popper' ? positionProps : {}))
 
 // The content was `<CollectionSlot>` around `<FocusScope as-child>` around
