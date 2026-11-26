@@ -306,6 +306,8 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
   }
 
   function handleMinMaxValue(type: 'min' | 'max', reason: Reason = 'imperative-action', event?: Event) {
+    if (disabled.value || readonly.value)
+      return
     const bound = type === 'min' ? min.value : max.value
     if (bound === undefined)
       return

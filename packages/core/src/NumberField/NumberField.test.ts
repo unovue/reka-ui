@@ -347,14 +347,12 @@ describe('numberField', () => {
     ['ArrowDown', kbd.ARROW_DOWN],
   ])('should not be changed by %s when readonly', expectReadonlyKeyIgnored)
 
-  // TODO(v3-port): #3385 Home/End ignored when readonly (NumberField source resolved to v3)
-  it.skip.each([
+  it.each([
     ['Home', kbd.HOME],
     ['End', kbd.END],
   ])('should not be changed by %s when readonly', expectReadonlyKeyIgnored)
 
-  // TODO(v3-port): #3385 Home/End ignored when disabled (NumberField source resolved to v3)
-  it.skip('should not be changed by Home or End when disabled', async () => {
+  it('should not be changed by Home or End when disabled', async () => {
     const { input } = setup({ defaultValue: 5, min: 0, max: 10, disabled: true })
 
     await fireEvent.keyDown(input, { key: kbd.HOME })
