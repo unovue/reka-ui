@@ -1067,9 +1067,9 @@ describe('given SelectTrigger with consumer event listeners', () => {
 })
 
 describe('given a Select root that stays mounted', () => {
-  // TODO(v3-port): #3202 release the closed content from the collection (Select source resolved to v3)
-  it.skip.each(['item-aligned', 'popper'] as const)('should release the closed content from the collection with position=%s', async (position) => {
-    let collection!: { collectionRef: { value: HTMLElement | undefined } }
+  it.each(['item-aligned', 'popper'] as const)('should release the closed content from the collection with position=%s', async (position) => {
+    // v3's collection context: `root` is the slot's element source, `observed` the element it watches.
+    let collection!: { root?: { value: Element | null | undefined }, observed: Element | null, ordered: { ref: HTMLElement }[] | null }
     const CollectionProbe = defineComponent({
       setup() {
         collection = inject('CollectionProvider')!
@@ -1087,14 +1087,14 @@ describe('given a Select root that stays mounted', () => {
     }), { attachTo: document.body })
 
     // Every open content element the collection has pointed at. None may come back.
-    const openContents: HTMLElement[] = []
+    const openContents: Element[] = []
 
     for (let cycle = 0; cycle < 2; cycle++) {
       open.value = true
       await vi.waitFor(() => expect(wrapper.find('[role="listbox"]').exists()).toBe(true))
       await flushPromises()
-      const openContent = collection.collectionRef.value!
-      expect(openContent.contains(wrapper.get('[role="listbox"]').element)).toBe(true)
+      const openContent = collection.root!.value!
+      expect(openContent).toBe(wrapper.get('[role="listbox"]').element)
       expect(openContents).not.toContain(openContent)
       expect(wrapper.findAll('[role="option"]')).toHaveLength(2)
       openContents.push(openContent)
@@ -1102,12 +1102,10 @@ describe('given a Select root that stays mounted', () => {
       open.value = false
       await vi.waitFor(() => expect(wrapper.find('[role="listbox"]').exists()).toBe(false))
       await flushPromises()
-      // While closed the collection is the detached fragment that the trigger's typeahead
-      // reads its items from, never the content that was just removed from the document.
-      const closedCollection = collection.collectionRef.value
-      expect(openContents).not.toContain(closedCollection)
-      expect(closedCollection?.isConnected).toBe(false)
-      expect(openContents.some(content => closedCollection?.contains(content) || content.contains(closedCollection!))).toBe(false)
+      // Closed, the collection holds on to none of the content that was just removed from the document.
+      expect(openContents).not.toContain(collection.root?.value)
+      expect(openContents).not.toContain(collection.observed)
+      expect(collection.ordered ?? []).toEqual([])
     }
 
     wrapper.unmount()
@@ -1253,8 +1251,7 @@ describe('given a multiple Select in a form', () => {
     expect(seen).toEqual([['banana']])
   })
 
-  // TODO(v3-port): #3345 multiple Select submits the empty `nullableValue` (Select source resolved to v3)
-  it.skip('keeps submitting the empty `nullableValue` while the value is nullish', async () => {
+  it('keeps submitting the empty `nullableValue` while the value is nullish', async () => {
     wrapper = mountFruitsInForm(ref(null))
     await nextTick()
 
