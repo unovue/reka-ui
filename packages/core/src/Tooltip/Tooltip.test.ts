@@ -749,3 +749,32 @@ describe('given a Tooltip trigger that unmounts while it is pressed', () => {
     removeSpy.mockRestore()
   })
 })
+
+describe('given a controlled tooltip whose trigger is pressed', () => {
+  function mountControlled(open: boolean) {
+    const onUpdateOpen = vi.fn()
+    const wrapper = mount(() => h(TooltipProvider, () => h(
+      TooltipRoot,
+      { 'open': open, 'onUpdate:open': onUpdateOpen },
+      () => h(TooltipTrigger, () => 'trigger'),
+    )), { attachTo: document.body })
+    return { wrapper, onUpdateOpen }
+  }
+
+  it('should close the tooltip when it is open', async () => {
+    const { wrapper, onUpdateOpen } = mountControlled(true)
+    await wrapper.get('button').trigger('pointerdown')
+
+    expect(onUpdateOpen).toHaveBeenCalledOnce()
+    expect(onUpdateOpen.mock.calls[0][0]).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('should not emit update:open when it is already closed', async () => {
+    const { wrapper, onUpdateOpen } = mountControlled(false)
+    await wrapper.get('button').trigger('pointerdown')
+
+    expect(onUpdateOpen).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+})
