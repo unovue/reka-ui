@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { cdp, userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
+import { hasCDP } from '@/test/browser'
 import { ContextMenuContent, ContextMenuItem, ContextMenuPortal, ContextMenuRoot, ContextMenuTrigger } from '.'
 import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from '../Dialog'
 
@@ -135,7 +136,8 @@ describe('contextMenu trigger pointer-events, in a real browser', () => {
 
 // https://github.com/unovue/reka-ui/issues/1844
 describe('nested contextMenu triggers, in a real browser', () => {
-  it('a long press on the inner trigger opens only the inner menu', async () => {
+  // A real long press needs touch input from CDP: see `hasCDP`.
+  it.skipIf(!hasCDP)('a long press on the inner trigger opens only the inner menu', async () => {
     const onOuterOpen = vi.fn()
     mount(defineComponent({
       setup: () => () => h(ContextMenuRoot, { 'onUpdate:open': onOuterOpen }, () => [
