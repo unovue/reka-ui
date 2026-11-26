@@ -2,7 +2,7 @@ import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 import { handleSubmit, sleep } from '@/test'
 import { CheckboxGroupRoot, CheckboxRoot } from '.'
 import Checkbox from './story/_Checkbox.vue'
@@ -463,6 +463,66 @@ describe('given a CheckboxGroup rendered asChild in a form', () => {
     await nextTick()
     const form = wrapper.find('form').element
     expect([...new FormData(form)]).toEqual([['toppings[0]', 'cheese'], ['toppings[1]', 'ham']])
+    wrapper.unmount()
+  })
+})
+describe('given a Checkbox mount', () => {
+  // Counts the re-renders of every component under the mounted wrapper.
+  function mountCounted(template: string) {
+    const updates: string[] = []
+    const wrapper = mount(defineComponent({
+      components: { CheckboxRoot, CheckboxGroupRoot },
+      template,
+    }), {
+      attachTo: document.body,
+      global: {
+        mixins: [{
+          beforeUpdate(this: any) {
+            updates.push(this.$options.name || this.$options.__name)
+          },
+        }],
+      },
+    })
+    return { wrapper, updates }
+  }
+
+  it('should render once when it has no name', async () => {
+    const { wrapper, updates } = mountCounted('<label><CheckboxRoot /> Label</label>')
+    await nextTick()
+    await nextTick()
+
+    expect(updates).toEqual([])
+    expect(wrapper.find('[role=checkbox]').exists()).toBe(true)
+    expect(wrapper.find('input').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('should render the hidden input only for a named checkbox inside a form', async () => {
+    const { wrapper } = mountCounted(`<div>
+      <form><CheckboxRoot name="inside" /></form>
+      <CheckboxRoot name="outside" />
+      <form><CheckboxGroupRoot><CheckboxRoot name="grouped" value="a" /></CheckboxGroupRoot></form>
+    </div>`)
+    await nextTick()
+    await nextTick()
+
+    expect(wrapper.findAll('input[type=checkbox]').map(input => input.attributes('name'))).toEqual(['inside'])
+    wrapper.unmount()
+  })
+
+  it('should render as a roving focus item only in a group with roving focus', async () => {
+    const { wrapper } = mountCounted(`<div>
+      <CheckboxGroupRoot><CheckboxRoot value="a" data-testid="roving" /></CheckboxGroupRoot>
+      <CheckboxGroupRoot :roving-focus="false"><CheckboxRoot value="a" data-testid="plain" /></CheckboxGroupRoot>
+      <CheckboxRoot data-testid="alone" />
+    </div>`)
+    await nextTick()
+    await nextTick()
+
+    expect(wrapper.find('[data-testid=roving]').attributes('data-reka-collection-item')).toBe('')
+    expect(wrapper.find('[data-testid=roving]').attributes('tabindex')).toBeDefined()
+    expect(wrapper.find('[data-testid=plain]').attributes('data-reka-collection-item')).toBeUndefined()
+    expect(wrapper.find('[data-testid=alone]').attributes('data-reka-collection-item')).toBeUndefined()
     wrapper.unmount()
   })
 })
