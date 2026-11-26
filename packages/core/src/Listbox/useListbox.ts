@@ -407,6 +407,14 @@ export interface UseListboxRootProps<T = AcceptableValue> {
   onLeave?: (event: Event) => void
 }
 
+export interface ListboxHighlightItemOptions {
+  /**
+   * Whether to move focus to the highlighted item.
+   * @defaultValue true
+   */
+  focus?: boolean
+}
+
 export interface UseListboxRootReturn<T = AcceptableValue> {
   modelValue: ComputedRef<T | T[] | undefined>
   /**
@@ -419,8 +427,11 @@ export interface UseListboxRootReturn<T = AcceptableValue> {
   /** Whether `value` is (part of) the current selection, matched with `by`. */
   isSelected: (value: T) => boolean
   highlightedElement: Ref<HTMLElement | null>
-  /** Highlight the item holding `value`. */
-  highlightItem: (value: T) => void
+  /**
+   * Highlight the item holding `value` and scroll it into view. By default it also moves focus
+   * to the item; pass `{ focus: false }` to keep focus where it is (e.g. on an input).
+   */
+  highlightItem: (value: T, options?: ListboxHighlightItemOptions) => void
   /** Highlight the first enabled item on the next tick. */
   highlightFirstItem: () => void
   /** Highlight the selected item (or the first one); `scroll: false` only sets the roving target. */
@@ -507,7 +518,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   const isComposing = ref(false)
   const virtualFocusHook = createEventHook<{ event?: Event, scroll: boolean }>()
   const virtualKeydownHook = createEventHook<ListboxVirtualKeydown>()
-  const virtualHighlightHook = createEventHook<T>()
+  const virtualHighlightHook = createEventHook<{ value: T, focus?: boolean }>()
 
   // `ListboxVirtualizer` still assigns `context.modelValue.value` directly for
   // its select-all and shift-range writes, so the context exposes a writable
@@ -585,17 +596,16 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     return intent === 'next' ? position === size : position === 1
   }
 
-  function highlightItem(value: T) {
+  function highlightItem(value: T, options: ListboxHighlightItemOptions = {}) {
+    // `undefined` keeps the default: focus the item unless focus belongs to a filter input.
+    const focus = options.focus === false ? false : undefined
     if (isVirtual.value) {
-      // @ts-expect-error known type issue https://github.com/vueuse/vueuse/issues/4610
-      virtualHighlightHook.trigger(value)
+      virtualHighlightHook.trigger({ value, focus })
     }
     else {
       const item = getItems().find(i => compare(i.value, value, props.by))
-      if (item) {
-        highlightedElement.value = item.ref
-        changeHighlight(item.ref)
-      }
+      if (item)
+        changeHighlight(item.ref, true, focus)
     }
   }
 

@@ -1294,14 +1294,12 @@ describe('given a Listbox driven by `highlightItem` from a sibling input', () =>
   })
 
   describe.each([['non-virtual', false], ['virtual', true]])('%s', (_, virtual) => {
-    // TODO(v3-port): #3300 `highlightItem(value, { focus: false })` (Listbox source resolved to v3)
-    it.skip('should highlight the item without moving focus with `{ focus: false }`', async () => {
+    it('should highlight the item without moving focus with `{ focus: false }`', async () => {
       const { wrapper, listbox, onHighlight } = mountListbox(virtual as boolean)
       await flush()
       const input = wrapper.find('[data-testid=search]').element as HTMLInputElement
       input.focus()
 
-      // @ts-expect-error TODO(v3-port): #3300 v3's `highlightItem` takes no options
       listbox.value!.highlightItem('Item 3', { focus: false })
       await flush()
 
@@ -1312,8 +1310,7 @@ describe('given a Listbox driven by `highlightItem` from a sibling input', () =>
       expect(document.activeElement).toBe(input)
     })
 
-    // TODO(v3-port): #3300 virtualized `highlightItem` (ListboxVirtualizer source resolved to v3)
-    it.skipIf(virtual)('should still move focus to the item by default', async () => {
+    it('should still move focus to the item by default', async () => {
       const { wrapper, listbox } = mountListbox(virtual as boolean)
       await flush()
       const input = wrapper.find('[data-testid=search]').element as HTMLInputElement
@@ -1332,7 +1329,6 @@ describe('given a Listbox driven by `highlightItem` from a sibling input', () =>
       await flush()
       const highlighted = listbox.value!.highlightedElement
 
-      // @ts-expect-error TODO(v3-port): #3300 v3's `highlightItem` takes no options
       listbox.value!.highlightItem('Item 3', { focus: false })
       await flush()
 
@@ -1341,12 +1337,10 @@ describe('given a Listbox driven by `highlightItem` from a sibling input', () =>
       expect(listbox.value!.highlightedElement).toBe(highlighted)
     })
 
-    // TODO(v3-port): #3300 virtualized `highlightItem` (ListboxVirtualizer source resolved to v3)
-    it.skipIf(virtual)('should highlight the requested item when the options are reordered before it renders', async () => {
+    it('should highlight the requested item when the options are reordered before it renders', async () => {
       const { wrapper, listbox, shown } = mountListbox(virtual as boolean)
       await flush()
 
-      // @ts-expect-error TODO(v3-port): #3300 v3's `highlightItem` takes no options
       listbox.value!.highlightItem('Item 1', { focus: false })
       shown.value = ['Item 0', 'Item 2', 'Item 1', ...options.slice(3)]
       await flush()

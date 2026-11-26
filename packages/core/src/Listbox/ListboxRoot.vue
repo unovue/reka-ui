@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { EventHook } from '@vueuse/core'
 import type { ComputedRef, Ref, ShallowRef } from 'vue'
-import type { ListboxChangeReason, ListboxFilterFunction, ListboxFilterItem, ListboxHighlightScroll, ListboxLabelRegistry, ListboxNavigationIntent, ListboxVirtualKeydown } from './useListbox'
+import type { ListboxChangeReason, ListboxFilterFunction, ListboxFilterItem, ListboxHighlightItemOptions, ListboxHighlightScroll, ListboxLabelRegistry, ListboxNavigationIntent, ListboxVirtualKeydown } from './useListbox'
 import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
@@ -31,7 +31,7 @@ export type ListboxRootContext<T> = {
   isVirtual: Ref<boolean>
   virtualFocusHook: EventHook<{ event?: Event, scroll: boolean }>
   virtualKeydownHook: EventHook<ListboxVirtualKeydown>
-  virtualHighlightHook: EventHook<any>
+  virtualHighlightHook: EventHook<{ value: any, focus?: boolean }>
   by?: string | ((a: T, b: T) => boolean)
   firstValue?: Ref<T | undefined>
   selectionBehavior?: Ref<'toggle' | 'replace'>
@@ -51,7 +51,7 @@ export type ListboxRootContext<T> = {
 
   /** The sticky label registry (#2824): by-aware, last write wins, never auto-removed. */
   labels: ListboxLabelRegistry<T>
-  highlightItem: (value: T) => void
+  highlightItem: (value: T, options?: ListboxHighlightItemOptions) => void
   highlightSelected: (event?: Event, scroll?: boolean) => Promise<void>
   /**
    * The resolved navigation intent of a keydown (`getNavigationIntent` override first, then the default mapping):
@@ -253,7 +253,7 @@ const { root, context, highlightedElement, highlightFirstItem, highlightSelected
 // The composable is typed over `AcceptableValue` (the props are); narrow once
 // here for the slot payload and the exposed `highlightItem`, as before.
 const modelValue = listbox.modelValue as ComputedRef<ListboxModelValue<T, M>>
-const highlightItem = listbox.highlightItem as (value: T) => void
+const highlightItem = listbox.highlightItem as (value: T, options?: ListboxHighlightItemOptions) => void
 
 defineExpose(mergeExpose(expose, {
   highlightedElement,
