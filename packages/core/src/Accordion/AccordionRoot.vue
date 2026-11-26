@@ -69,6 +69,7 @@ export const [injectAccordionRootContext, provideAccordionRootContext]
 <script setup lang="ts" generic="T extends (string | string[]), ExplicitType extends SingleOrMultipleType">
 import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
+import { useLazySlotProps } from '@/shared/lazySlotProps'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { useSingleOrMultipleValue } from '@/shared/useSingleOrMultipleValue'
 
@@ -107,6 +108,10 @@ const agentContext = provideAccordionRootContext({
   unmountOnHide,
 })
 useAgentRegistration('accordion', agentContext, props, parentElement)
+
+// Read when a consumer slot uses it, not where the slot is rendered: the slot is rendered by this
+// root's element, and a value read there re-renders it, and through it every item, on each change.
+const slotProps = useLazySlotProps({ modelValue: () => modelValue.value })
 </script>
 
 <template>
@@ -115,6 +120,6 @@ useAgentRegistration('accordion', agentContext, props, parentElement)
     :as-child="asChild"
     :as="as"
   >
-    <slot :model-value="modelValue" />
+    <slot v-bind="slotProps()" />
   </Primitive>
 </template>

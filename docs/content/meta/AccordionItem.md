@@ -35,6 +35,14 @@
   }
 ]" />
 
+<EmitsTable :data="[
+  {
+    'name': 'update:open',
+    'description': '<p>Event handler called when the open state of the collapsible changes.</p>\n',
+    'type': '[value: boolean]'
+  }
+]" />
+
 <SlotsTable :data="[
   {
     'name': 'open',
@@ -55,6 +63,12 @@
 | `disabled` | Whether or not an accordion item is disabled from user interaction. When true, prevents the user from interacting with the item. | `boolean` | No | - |
 | `unmountOnHide` | When true, the element will be unmounted on closed state. | `boolean` | No | - |
 | `value` | A string value for the accordion item. All items within an accordion should use a unique value. | `string` | Yes | - |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:open` | Event handler called when the open state of the collapsible changes. | `[value: boolean]` |
 
 **Slots**
 

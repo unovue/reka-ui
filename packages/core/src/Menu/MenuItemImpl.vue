@@ -13,8 +13,8 @@ export interface MenuItemImplProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
-import { useCollection } from '@/Collection'
+import { computed, nextTick, onBeforeUnmount, onMounted, onUpdated, ref, shallowRef } from 'vue'
+import { useCollectionItem } from '@/Collection'
 import {
   Primitive,
 } from '@/Primitive'
@@ -30,10 +30,28 @@ const props = defineProps<MenuItemImplProps>()
 
 const contentContext = injectMenuContentContext()
 const { forwardRef, currentElement } = useForwardExpose()
-const { CollectionItem } = useCollection()
+// Registered with the content's collection from here, so no wrapper components around the item.
+// The template renders the `data-reka-collection-item` attribute the collection orders by.
+useCollectionItem(currentElement, () => ({ textValue: props.textValue }))
 
 const isFocused = ref(false)
-const isHighlighted = computed(() => isFocused.value || (currentElement.value != null && contentContext.highlightedElement.value === currentElement.value))
+// Whether the content's highlight is on this item's element. The content sets it, see
+// `onItemElementChange`: an item that compared `highlightedElement` with its own element would
+// be notified of every highlight move in the menu.
+const isElementHighlighted = shallowRef(false)
+let trackedElement: HTMLElement | undefined
+function trackElement(element: HTMLElement | undefined) {
+  if (element === trackedElement)
+    return
+  contentContext.onItemElementChange(isElementHighlighted, element, trackedElement)
+  trackedElement = element
+}
+onMounted(() => trackElement(currentElement.value))
+// The item can render another element later (`asChild` with a `v-if` child).
+onUpdated(() => trackElement(currentElement.value))
+onBeforeUnmount(() => trackElement(undefined))
+
+const isHighlighted = computed(() => isFocused.value || isElementHighlighted.value)
 
 async function handlePointerMove(event: PointerEvent) {
   if (event.defaultPrevented || !isMouseEvent(event))
@@ -73,37 +91,36 @@ async function handlePointerLeave(event: PointerEvent) {
 </script>
 
 <template>
-  <CollectionItem :value="{ textValue }">
-    <Primitive
-      :ref="forwardRef"
-      role="menuitem"
-      tabindex="-1"
-      v-bind="$attrs"
-      :as="as"
-      :as-child="asChild"
-      :aria-disabled="disabled || undefined"
-      :data-disabled="disabled ? '' : undefined"
-      :data-highlighted="isHighlighted ? '' : undefined"
-      @pointermove="handlePointerMove"
-      @pointerleave="handlePointerLeave"
-      @focus="
-        async (event: FocusEvent) => {
-          const item = event.currentTarget as HTMLElement;
-          await nextTick();
-          if (event.defaultPrevented || disabled) return;
-          isFocused = true;
-          contentContext.highlightedElement.value = item
-        }
-      "
-      @blur="
-        async (event: FocusEvent) => {
-          await nextTick();
-          if (event.defaultPrevented) return;
-          isFocused = false;
-        }
-      "
-    >
-      <slot />
-    </Primitive>
-  </CollectionItem>
+  <Primitive
+    :ref="forwardRef"
+    data-reka-collection-item=""
+    role="menuitem"
+    tabindex="-1"
+    v-bind="$attrs"
+    :as="as"
+    :as-child="asChild"
+    :aria-disabled="disabled || undefined"
+    :data-disabled="disabled ? '' : undefined"
+    :data-highlighted="isHighlighted ? '' : undefined"
+    @pointermove="handlePointerMove"
+    @pointerleave="handlePointerLeave"
+    @focus="
+      async (event: FocusEvent) => {
+        const item = event.currentTarget as HTMLElement;
+        await nextTick();
+        if (event.defaultPrevented || disabled) return;
+        isFocused = true;
+        contentContext.highlightedElement.value = item
+      }
+    "
+    @blur="
+      async (event: FocusEvent) => {
+        await nextTick();
+        if (event.defaultPrevented) return;
+        isFocused = false;
+      }
+    "
+  >
+    <slot />
+  </Primitive>
 </template>
