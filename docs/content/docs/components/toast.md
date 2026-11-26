@@ -549,6 +549,8 @@ function copy(event: MouseEvent) {
 
 Override the default hotkey using the `event.code` value for each key from [keycode.info](https://keycode.info/).
 
+The hotkey is a key combination: every entry must be pressed at once. An entry is either a modifier flag (`altKey`, `ctrlKey`, `metaKey`, `shiftKey`) or the `event.code` of a key. Key names such as `'t'` or `'/'` (`event.key` values) don't match: use `'KeyT'` and `'Slash'`.
+
 ```vue line=4
 <template>
   <ToastProvider>
@@ -795,7 +797,7 @@ When providing an icon (or font icon), remember to label it correctly for screen
       keys: ['Esc'],
       description: `
         <span>
-          When focus is on a <Code>Toast</Code>, closes the toast
+          When focus is in a <Code>Toast</Code>, closes that toast only. The key stops there, so a dialog or popover around the toast stays open.
         </span> `
     },
   ]"
