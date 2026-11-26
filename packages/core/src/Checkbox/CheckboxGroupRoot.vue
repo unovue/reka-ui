@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { Component, Ref } from 'vue'
 import type { RovingFocusGroupProps } from '@/RovingFocus'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
@@ -43,6 +43,11 @@ interface CheckboxGroupItem {
 interface CheckboxGroupRootContext {
   modelValue: Ref<AcceptableValue[]>
   rovingFocus: Ref<boolean>
+  /**
+   * What a checkbox renders as while `rovingFocus` is on. Handed over by the group, so that a
+   * checkbox outside a group does not import the roving focus and collection code.
+   */
+  RovingFocusItem: Component
   disabled: Ref<boolean>
   max: Ref<number | null | undefined>
   allValues: Ref<AcceptableValue[] | undefined>
@@ -55,7 +60,7 @@ export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { RovingFocusGroup } from '@/RovingFocus'
+import { RovingFocusGroup, RovingFocusItem } from '@/RovingFocus'
 import { provideRovingFocusNoActiveItem } from '@/RovingFocus/RovingFocusGroup.vue'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
@@ -86,6 +91,7 @@ const rovingFocusProps = computed(() => {
 provideCheckboxGroupRootContext({
   modelValue,
   rovingFocus,
+  RovingFocusItem,
   disabled,
   max,
   allValues,
