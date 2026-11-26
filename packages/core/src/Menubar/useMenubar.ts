@@ -407,13 +407,17 @@ export function createMenubarContentSurface(
   return {
     ...surface,
     onCloseAutoFocus: (event) => {
-      const menubarOpen = Boolean(rootContext.modelValue.value)
-      if (!menubarOpen && !hasInteractedOutside)
-        menuContext.triggerElement.value?.focus()
+      // A consumer `closeAutoFocus` listener that prevented it keeps the focus where it is.
+      if (!event.defaultPrevented) {
+        const menubarOpen = Boolean(rootContext.modelValue.value)
+        if (!menubarOpen && !hasInteractedOutside)
+          menuContext.triggerElement.value?.focus()
+
+        // Always prevent auto focus because we either focus manually or want user agent focus
+        event.preventDefault()
+      }
 
       hasInteractedOutside = false
-      // Always prevent auto focus because we either focus manually or want user agent focus
-      event.preventDefault()
     },
     onFocusOutside: (event) => {
       const target = event.target as HTMLElement
