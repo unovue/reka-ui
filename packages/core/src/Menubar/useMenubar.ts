@@ -8,7 +8,7 @@ import type { Direction } from '@/shared/types'
 import { computed, nextTick, ref, toValue, watch } from 'vue'
 import { isTriggerPressInFlight, trackTriggerPress } from '@/DismissableLayer/utils'
 import { useMenuRoot } from '@/Menu/useMenu'
-import { createPartSurface, defineReactiveIds, getterRef, useControllableState } from '@/shared'
+import { createPartSurface, defineReactiveIds, getterRef, peekReactiveId, useControllableState } from '@/shared'
 import { isDisabledItem } from '@/shared/isDisabledItem'
 import { resolveDirection } from '@/shared/useDirection'
 import { wrapArray } from '@/shared/useTypeahead'
@@ -288,7 +288,8 @@ export function createMenubarTriggerSurface(
 
   return createPartSurface<MenubarTriggerState>(
     () => ({
-      'id': menuContext.triggerId,
+      // Untracked: the trigger writes its id itself (`useTriggerIdInRender`), before it renders.
+      'id': peekReactiveId(menuContext, 'triggerId'),
       'role': 'menuitem',
       'aria-haspopup': 'menu',
       'aria-expanded': open.value,

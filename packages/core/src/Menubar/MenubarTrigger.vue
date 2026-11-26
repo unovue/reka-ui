@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { disabledAttr, useForwardElement, useRenderedContentId, useTriggerId } from '@/shared'
+import { disabledAttr, useForwardElement, useRenderedContentId, useTriggerIdInRender } from '@/shared'
 
 export interface MenubarTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -46,7 +46,8 @@ const trigger = createMenubarTriggerSurface(rootContext, menuContext, {
 
 // A consumer `id` (or an `id` on the asChild child) is the trigger's id, which the content's
 // `aria-labelledby` follows; `aria-controls` references the content only while it is rendered.
-useTriggerId(menuContext, triggerElement)
+// Followed from the render below, which picks up a consumer `id` that changed.
+const triggerId = useTriggerIdInRender(menuContext, triggerElement)
 const contentId = useRenderedContentId(menuContext, injectMenuContext())
 
 onMounted(() => {
@@ -60,13 +61,25 @@ const roving = useRovingFocusItem({
   tabStopId: () => menuContext.value,
   focusable: () => !props.disabled,
 })!
+
+function renderAttrs(attrs: Record<string, unknown>) {
+  triggerId.follow(attrs)
+  const own = trigger.attrs.value
+  return mergeProps(
+    anchor.consumerAttrs(attrs),
+    roving.attrs(),
+    { type: props.as === 'button' ? 'button' : undefined },
+    own,
+    { 'disabled': disabledAttr(own.disabled as boolean | undefined, props.as, props.asChild), 'aria-controls': own['aria-controls'] ? contentId.value : undefined },
+  )
+}
 </script>
 
 <template>
   <component
     :is="renderAsControl(as, asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps(anchor.consumerAttrs($attrs), roving.attrs(), { type: as === 'button' ? 'button' : undefined }, trigger.attrs.value, { 'disabled': disabledAttr(trigger.attrs.value.disabled as boolean | undefined, as, asChild), 'aria-controls': trigger.attrs.value['aria-controls'] ? contentId : undefined })"
+    v-bind="renderAttrs($attrs)"
   >
     <slot />
   </component>
