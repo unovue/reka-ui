@@ -55,9 +55,6 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-// TODO(v3-port): #3369 these roots are outside the lists lane and do not call
-// `provideRovingFocusNoActiveItem` / pass `noActiveItem` yet.
-const PENDING_ROOTS = new Set<string>()
 
 describe.each(Object.keys(fixtures))('%s with no active item', (name) => {
   async function renderAndHydrate(disabled: string[] = []) {
@@ -79,13 +76,13 @@ describe.each(Object.keys(fixtures))('%s with no active item', (name) => {
     return { server, hydrated }
   }
 
-  it.skipIf(PENDING_ROOTS.has(name))('makes the first item the tab stop in the server HTML, then hands it to the group', async () => {
+  it('makes the first item the tab stop in the server HTML, then hands it to the group', async () => {
     const { server, hydrated } = await renderAndHydrate()
     expect(server).toEqual(['-1', '0', '-1', '-1'])
     expect(hydrated).toEqual(['0', '-1', '-1', '-1'])
   })
 
-  it.skipIf(PENDING_ROOTS.has(name))('skips an item that is not focusable', async () => {
+  it('skips an item that is not focusable', async () => {
     const { server, hydrated } = await renderAndHydrate(['a'])
     expect(server).toEqual(['-1', '-1', '0', '-1'])
     expect(hydrated).toEqual(['0', '-1', '-1', '-1'])
