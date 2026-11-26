@@ -142,8 +142,7 @@ describe('numberField committed text in a real browser', () => {
   describe('with percent formatting', () => {
     const percent = { formatOptions: { style: 'percent' } } as const
 
-    // TODO(v3-port): #3220
-    it.skip.each(['Enter', 'blur'] as const)('clears the value by default when a lone percent sign is committed with %s', async (how) => {
+    it.each(['Enter', 'blur'] as const)('clears the value by default when a lone percent sign is committed with %s', async (how) => {
       const { input, outside, model, emitted, rerender, type } = mountNumberField(percent, 0.5)
       expect(input.value).toBe('50%')
       await type('%')

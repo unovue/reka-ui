@@ -330,8 +330,8 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
   // The value typed text commits to: clamped unless `allowInvalid`, snapped when `stepSnapping`, `NaN` when it does not parse.
   function parseInputValue(val: string) {
     // The parser reads empty and numeral-free percent text (``, `%`, `-`) as zero, so both are decided before parsing:
-    // blank text never parses, and `keepValueOnUnparsableInput` treats text without any numeral as unparsable.
-    if (!val.trim().length || (keepValueOnUnparsableInput.value && !NUMERAL_REGEX.test(val)))
+    // text without any numeral is unparsable.
+    if (!NUMERAL_REGEX.test(val))
       return Number.NaN
     const parsedValue = numberParser.parse(val)
     if (isNaN(parsedValue))

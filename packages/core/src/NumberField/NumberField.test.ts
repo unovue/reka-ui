@@ -912,8 +912,7 @@ describe('numberField', () => {
       const keep = { ...percent, keepValueOnUnparsableInput: true }
       const blank = ways.flatMap(how => ['', ' '].map(text => [JSON.stringify(text), text, how] as const))
 
-      // TODO(v3-port): #3220 clear percent input that has no numeral (NumberField source resolved to v3)
-      it.skip.each(blank)('should clear the value by default when committing %s with %s', async (_label, text, how) => {
+      it.each(blank)('should clear the value by default when committing %s with %s', async (_label, text, how) => {
         const { input, model, emitted, commit } = setupModel(percent, 0.5)
         expect(input.value).toBe('50%')
         await commit(text, how)
@@ -951,8 +950,7 @@ describe('numberField', () => {
         expect(emitted).toEqual([value])
       })
 
-      // TODO(v3-port): #3220 clear percent input that has no numeral (NumberField source resolved to v3)
-      it.skip.each(ways.flatMap(how => ['%', ' %', '.', '-', '-%'].map(text => [text, how] as const)))('should clear the value by default when committing "%s" with %s', async (text, how) => {
+      it.each(ways.flatMap(how => ['%', ' %', '.', '-', '-%'].map(text => [text, how] as const)))('should clear the value by default when committing "%s" with %s', async (text, how) => {
         const { input, model, emitted, commit } = setupModel(percent, 0.5)
         await commit(text, how)
         expect(model.value).toBeUndefined()
