@@ -122,8 +122,7 @@ describe.each(Object.entries(families))('%s', (name, family) => {
     wrapper.unmount()
   })
 
-  // TODO(v3-port): #2866 v3's Tabs keeps a server-rendered reference that no longer resolves after hydration
-  ;(name === 'Tabs' ? it.skip : it)('keeps the references resolvable when server and client ids diverge', async () => {
+  it('keeps the references resolvable when server and client ids diverge', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
