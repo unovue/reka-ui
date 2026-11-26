@@ -475,8 +475,7 @@ describe('resize handle keyboard behavior without a group element', () => {
   })
 })
 
-// TODO(v3-port): #3388 separator aria-orientation / aria-disabled (Splitter source resolved to v3)
-describe.skip('resize handle separator semantics', () => {
+describe('resize handle separator semantics', () => {
   let wrapper: VueWrapper
 
   afterEach(() => {

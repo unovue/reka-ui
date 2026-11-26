@@ -165,6 +165,9 @@ export function useSplitterResizeHandle(context: PanelGroupContext, props: UseSp
         userSelect: 'none',
       },
       'role': 'separator',
+      // The separator runs across the direction the panels are laid out in.
+      'aria-orientation': direction.value === 'horizontal' ? 'vertical' : 'horizontal',
+      'aria-disabled': disabled.value ? true : undefined,
       // Functional selectors: the group and the hit-testing registry query handles through these.
       'data-resize-handle': '',
       'tabindex': toValue(props.tabindex) ?? 0,
