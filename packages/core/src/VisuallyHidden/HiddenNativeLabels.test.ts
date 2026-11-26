@@ -24,8 +24,7 @@ globalThis.ResizeObserver ??= class ResizeObserver {
 enableAutoUnmount(afterEach)
 
 describe('hidden native controls in labelled forms', () => {
-  // TODO(v3-port): #3217 lists lane: v3's BubbleSelect does not pass `:aria-label="name || undefined"` to VisuallyHidden
-  it.skip('names the hidden select when the visible trigger has a native label', async () => {
+  it('names the hidden select when the visible trigger has a native label', async () => {
     const wrapper = mount(() => h('form', [
       h('label', { for: 'topic-trigger' }, 'Topic'),
       h(SelectRoot, { name: 'topic' }, () => h(SelectTrigger, { id: 'topic-trigger' }, () => 'Choose a topic')),
@@ -51,8 +50,7 @@ describe('hidden native controls in labelled forms', () => {
     expect(wrapper.get('[role="checkbox"]').attributes('aria-label')).toBe('Accept terms')
   })
 
-  // TODO(v3-port): #3217 lists lane: v3's BubbleSelect does not pass `:aria-label="name || undefined"` to VisuallyHidden
-  it.skip('keeps the hidden select label in sync with its form field name', async () => {
+  it('keeps the hidden select label in sync with its form field name', async () => {
     const name = ref('topic')
     const wrapper = mount(() => h(SelectRoot, null, () => h(BubbleSelect, { name: name.value })))
     const select = wrapper.getComponent(BubbleSelect)
@@ -206,8 +204,7 @@ describe('hidden native controls in labelled forms', () => {
   })
 
   describe('with one of each family in a form', () => {
-    // TODO(v3-port): #3217 lists lane: v3's BubbleSelect does not pass `:aria-label="name || undefined"` to VisuallyHidden
-    it.skip('labels every twin and adds no axe violation', async () => {
+    it('labels every twin and adds no axe violation', async () => {
       const wrapper = mount(hiddenNativeFamilies(), { attachTo: document.body })
       await flushPromises()
       const form = wrapper.element as HTMLFormElement
