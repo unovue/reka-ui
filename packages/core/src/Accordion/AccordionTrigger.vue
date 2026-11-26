@@ -29,6 +29,12 @@ function changeItem() {
   rootContext.changeModelValue(itemContext.value.value)
 }
 
+// What `CollapsibleTrigger` did on a click comes first: the item reports the toggle it asks for.
+function handleClick() {
+  collapsibleContext.onOpenToggle()
+  changeItem()
+}
+
 // In the order `CollapsibleTrigger` rendered them, so the element's attributes keep their order.
 function triggerAttrs() {
   return {
@@ -52,7 +58,7 @@ function triggerAttrs() {
     :ref="itemContext.currentRef"
     :as="props.as ?? 'button'"
     :as-child="props.asChild"
-    @click="changeItem"
+    @click="handleClick"
   >
     <slot />
   </Primitive>
