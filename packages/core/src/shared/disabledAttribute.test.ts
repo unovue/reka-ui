@@ -155,7 +155,6 @@ function render(c: Case, disabled: boolean, as: As) {
   return { wrapper, el }
 }
 
-
 describe.each(cases)('$name', (c) => {
   it.each(['div', 'span', 'a'])('omits the disabled attribute when enabled and rendered as %s', (as) => {
     const { el } = render(c, false, as)

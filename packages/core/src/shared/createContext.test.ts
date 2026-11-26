@@ -136,8 +136,9 @@ describe('internal call sites', () => {
         let i = match.index + match[0].length
         if (text[i] === '<') {
           for (let depth = 1, j = i + 1; j < text.length; j++) {
-            if (text[j] === '<')
+            if (text[j] === '<') {
               depth++
+            }
             else if (text[j] === '>' && text[j - 1] !== '=' && --depth === 0) {
               i = j + 1
               break
@@ -151,9 +152,9 @@ describe('internal call sites', () => {
         if (args.includes('`'))
           continue
         const [, names, contextName] = args.match(/^\s*\[([^\]]*)\]\s*(?:,\s*'([^']*)')?/) ?? []
-        const strings = [...args.matchAll(/'([^']*)'/g)].map(m => m[1])
+        const strings = Array.from(args.matchAll(/'([^']*)'/g), m => m[1])
         const key = names !== undefined
-          ? contextName ?? [...names.matchAll(/'([^']*)'/g)].map(m => m[1]).join('/')
+          ? contextName ?? Array.from(names.matchAll(/'([^']*)'/g), m => m[1]).join('/')
           : strings[1] ?? `${strings[0]}Context`
         keys.set(key, [...keys.get(key) ?? [], file])
       }

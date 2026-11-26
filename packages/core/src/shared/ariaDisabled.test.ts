@@ -15,8 +15,8 @@ import { EditableEditTrigger, EditableRoot } from '@/Editable'
 import { MenubarMenu, MenubarRoot, MenubarTrigger } from '@/Menubar'
 import { NavigationMenuItem, NavigationMenuList, NavigationMenuRoot, NavigationMenuTrigger } from '@/NavigationMenu'
 import { NumberFieldDecrement, NumberFieldIncrement, NumberFieldRoot } from '@/NumberField'
-import { PopoverClose, PopoverRoot, PopoverTrigger } from '@/Popover'
 import { PaginationFirst, PaginationLast, PaginationList, PaginationListItem, PaginationNext, PaginationPrev, PaginationRoot } from '@/Pagination'
+import { PopoverClose, PopoverRoot, PopoverTrigger } from '@/Popover'
 import { Primitive } from '@/Primitive'
 import { RadioGroupItem, RadioGroupRoot } from '@/RadioGroup'
 import { SelectRoot, SelectTrigger } from '@/Select'
@@ -26,8 +26,8 @@ import { TabsList, TabsRoot, TabsTrigger } from '@/Tabs'
 import { TagGroupItem, TagGroupItemDelete, TagGroupRoot } from '@/TagGroup'
 import { Toggle } from '@/Toggle'
 import { ToggleGroupItem, ToggleGroupRoot } from '@/ToggleGroup'
-import { TooltipProvider, TooltipRoot, TooltipTrigger } from '@/Tooltip'
 import { ToolbarButton, ToolbarRoot, ToolbarToggleGroup, ToolbarToggleItem } from '@/Toolbar'
+import { TooltipProvider, TooltipRoot, TooltipTrigger } from '@/Tooltip'
 import { ariaDisabledAttr } from './disabledAttr'
 
 // The native `disabled` attribute only works on form controls. A part rendered as anything else must
@@ -214,7 +214,6 @@ describe('primitive', () => {
     expect(el.attributes('aria-disabled')).toBeUndefined()
   })
 })
-
 
 describe.each(cases)('$name', (c) => {
   it.each(['div', 'span', 'a'])('adds aria-disabled="true" when disabled and rendered as %s', (as) => {
