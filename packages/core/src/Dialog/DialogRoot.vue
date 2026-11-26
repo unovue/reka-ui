@@ -39,6 +39,13 @@ export interface DialogRootContext {
   contentId: string
   titleId: string
   descriptionId: string
+  /** How many dialogs nested in this one are open, at any depth. */
+  nestedOpenDialogCount: Ref<number>
+  /**
+   * Called by a dialog nested in this one with the number of open dialogs it
+   * stands for: itself while it is open, plus the open ones nested in it.
+   */
+  onNestedOpenChange: (id: symbol, count: number) => void
 }
 
 export const [injectDialogRootContext, provideDialogRootContext]
@@ -47,7 +54,7 @@ export const [injectDialogRootContext, provideDialogRootContext]
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { ref, toRefs } from 'vue'
+import { onBeforeUnmount, ref, toRefs, watch } from 'vue'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
 
 defineOptions({
@@ -81,6 +88,25 @@ const contentElement = ref<HTMLElement>()
 const overlayPresent = ref(false)
 const { modal, unmountOnHide } = toRefs(props)
 
+// Nested dialogs: each open dialog reports to the dialog it is nested in, which
+// adds up its nested dialogs and passes the total on, so a dialog knows how
+// many dialogs are open on top of it.
+const parentContext = injectDialogRootContext(null)
+const nestedOpenDialogCount = ref(0)
+let nestedOpenCounts: Map<symbol, number> | undefined
+
+if (parentContext) {
+  const nestedId = Symbol('nestedDialog')
+  watch(
+    [open, nestedOpenDialogCount],
+    // A closed dialog still passes on the dialogs open below it: one in its root slot,
+    // outside its content, can stay open after this one closes.
+    ([isOpen, nestedCount]) => parentContext.onNestedOpenChange(nestedId, nestedCount + (isOpen ? 1 : 0)),
+    { immediate: true },
+  )
+  onBeforeUnmount(() => parentContext.onNestedOpenChange(nestedId, 0))
+}
+
 const agentContext = provideDialogRootContext(defineReactiveIds({
   open,
   modal,
@@ -100,6 +126,18 @@ const agentContext = provideDialogRootContext(defineReactiveIds({
   triggerElement,
   contentElement,
   overlayPresent,
+  nestedOpenDialogCount,
+  onNestedOpenChange: (id, count) => {
+    nestedOpenCounts ??= new Map()
+    if (count > 0)
+      nestedOpenCounts.set(id, count)
+    else
+      nestedOpenCounts.delete(id)
+    let total = 0
+    for (const nestedCount of nestedOpenCounts.values())
+      total += nestedCount
+    nestedOpenDialogCount.value = total
+  },
 }, ['contentId']))
 useAgentRegistration('dialog', agentContext, props)
 </script>
