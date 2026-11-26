@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { Ref, ShallowRef } from 'vue'
+import type { TagsInputItemContext } from './TagsInputItem.vue'
 import type { TagsInputChangeReason } from './useTagsInput'
 import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
@@ -64,6 +65,8 @@ export interface TagsInputRootContext<T = AcceptableInputValue> {
   canAddValue?: (payload: string) => boolean
   /** Removes the tag at `index`; returns `false` when out of range, unchanged or cancelled. */
   onRemoveValue: (index: number, reason?: Reason, event?: Event) => boolean
+  /** Removes a rendered tag: at its `modelIndex` when that holds an equal value, else by its occurrence among equal tags. */
+  onRemoveItem?: (element: HTMLElement | null | undefined, value: T, modelIndex?: number, reason?: Reason, event?: Event) => boolean
   /** Removes every tag; returns `false` when already empty or cancelled. */
   onClear: (reason?: Reason, event?: Event) => boolean
   onInputKeydown: (event: KeyboardEvent) => void
@@ -111,7 +114,7 @@ function resolveFieldInput(element: HTMLElement | undefined) {
 
 <script setup lang="ts" generic="T extends AcceptableInputValue = string">
 import { mergeProps, nextTick, shallowRef, watch } from 'vue'
-import { useCollection, useCollectionSlot } from '@/Collection'
+import { getCollectionMeta, useCollection, useCollectionSlot } from '@/Collection'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
@@ -186,7 +189,12 @@ const { modelValue, root, context, isControlled } = useTagsInput<T>({
   max: () => props.max,
   id: () => field ? (props.id ?? field.context.fieldId.value) : props.id,
   focused,
-  getItems: () => getItems() as { ref: HTMLElement, value?: T }[],
+  // Disabled tags included: a duplicate's occurrence counts them (`onInputKeydown` skips them itself).
+  getItems: () => getItems(true).map(item => ({
+    ref: item.ref,
+    value: item.value as T,
+    modelIndex: getCollectionMeta<TagsInputItemContext>(item)?.modelIndex?.(),
+  })),
   emit: emits,
   // The Field hears its own commits by reason (`change`): user input, or, for
   // a programmatic one (`setModelValue` and the like), only the watcher below,

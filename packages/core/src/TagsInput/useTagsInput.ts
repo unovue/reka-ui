@@ -38,6 +38,8 @@ export type TagsInputClearState = { disabled: boolean }
 export interface TagsInputCollectionItem<T = AcceptableInputValue> {
   ref: HTMLElement
   value?: T
+  /** The tag's index in the model (`TagsInputItem`'s `modelIndex`), when given. */
+  modelIndex?: number
 }
 
 type Reason = TagsInputChangeReason | BaseChangeReason
@@ -69,7 +71,7 @@ export interface UseTagsInputProps<T extends AcceptableInputValue = string> {
   /** Whether focus is inside the root (the SFC hands `useFocusWithin` from `@/shared`); drives `data-focused`. */
   focused?: MaybeRefOrGetter<boolean | undefined>
   /**
-   * The rendered tags in DOM order (the SFC injects `useCollection({ isProvider: true }).getItems`)
+   * The rendered tags in DOM order, disabled ones included (the SFC injects `useCollection({ isProvider: true }).getItems`)
    * — the seam a composable cannot own itself. Without it, arrow-key / Backspace tag
    * navigation from the input is inert.
    */
@@ -87,6 +89,8 @@ export interface UseTagsInputProps<T extends AcceptableInputValue = string> {
 
 export interface TagsInputItemSurfaceOptions {
   disabled?: MaybeRefOrGetter<boolean | undefined>
+  /** The tag's index in the model; pass it when filtering or reordering duplicates. */
+  modelIndex?: MaybeRefOrGetter<number | undefined>
   /** The tag's element, used to tell whether it is the selected tag. */
   element?: MaybeRefOrGetter<HTMLElement | null | undefined>
   /** Id for the tag text; defaults to a unique id per call. */
@@ -231,6 +235,21 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
     return true
   }
 
+  /**
+   * Remove a rendered tag: at its `modelIndex` when that holds an equal value,
+   * else the equal model value at the same occurrence as the tag among the
+   * rendered equal tags (disabled ones included), so a duplicate removes itself.
+   */
+  function removeItem(element: HTMLElement | null | undefined, value: T, modelIndex?: number, reason: Reason = 'imperative-action', event?: Event): boolean {
+    const values = modelValue.value
+    if (modelIndex !== undefined && Number.isInteger(modelIndex) && modelIndex >= 0 && modelIndex < values.length && isEqual(values[modelIndex], value))
+      return removeTag(modelIndex, reason, event)
+    const occurrence = element ? getItems().filter(other => isEqual(other.value, value)).findIndex(other => other.ref === element) : -1
+    let match = 0
+    const target = Math.max(occurrence, 0)
+    return removeTag(values.findIndex(other => isEqual(other, value) && match++ === target), reason, event)
+  }
+
   function clear(reason: Reason = 'imperative-action', event?: Event) {
     return setState([], reason, event)
   }
@@ -253,9 +272,9 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
         if (selectedElement.value) {
           const index = collection.findIndex(i => i === selectedElement.value)
           const selectedItem = getItems().find(i => i.ref === selectedElement.value)
-          const modelIndex = selectedItem ? modelValue.value.findIndex(v => isEqual(v, selectedItem.value)) : -1
+          const reason = event.key === 'Delete' ? 'delete-key' : 'backspace-key'
           // A cancelled (or no-op) removal keeps the current tag selected.
-          if (removeTag(modelIndex, event.key === 'Delete' ? 'delete-key' : 'backspace-key', event))
+          if (selectedItem && removeItem(selectedItem.ref, selectedItem.value as T, selectedItem.modelIndex, reason, event))
             selectedElement.value = selectedElement.value === lastTag ? collection.at(index - 1) : collection.at(index + 1)
           event.preventDefault()
         }
@@ -323,6 +342,7 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
     onAddValues: (payloads, reason, event) => addTags(payloads, reason, event),
     canAddValue,
     onRemoveValue: removeTag,
+    onRemoveItem: removeItem,
     onClear: clear,
     onInputKeydown,
     selectedElement,
@@ -366,6 +386,8 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
         isSelected,
         disabled: itemDisabled,
         textId: options.textId ?? `reka-tags-input-item-text-${++count}`,
+        element: () => toValue(element),
+        modelIndex: () => toValue(options.modelIndex),
       })
       return {
         item: getTagsInputItemSurface(itemContext),
@@ -385,13 +407,22 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
  */
 export function createTagsInputItemContext<T extends AcceptableInputValue>(
   rootContext: Pick<TagsInputRootContext<T>, 'displayValue'>,
-  options: { value: Ref<T>, isSelected: Ref<boolean>, disabled: Ref<boolean>, textId?: string },
+  options: {
+    value: Ref<T>
+    isSelected: Ref<boolean>
+    disabled: Ref<boolean>
+    textId?: string
+    element?: () => HTMLElement | null | undefined
+    modelIndex?: () => number | undefined
+  },
 ): TagsInputItemContext {
   const textId = ref(options.textId ?? '')
   return {
     value: options.value as Ref<AcceptableInputValue>,
     isSelected: options.isSelected,
     disabled: options.disabled,
+    element: options.element,
+    modelIndex: options.modelIndex,
     get textId() {
       return textId.value
     },
@@ -424,7 +455,7 @@ export function getTagsInputItemTextSurface(itemContext: TagsInputItemContext): 
 
 /** @internal */
 export function getTagsInputItemDeleteSurface(
-  rootContext: Pick<TagsInputRootContext<any>, 'modelValue' | 'disabled' | 'onRemoveValue'>,
+  rootContext: Pick<TagsInputRootContext<any>, 'modelValue' | 'disabled' | 'onRemoveValue' | 'onRemoveItem'>,
   itemContext: TagsInputItemContext,
 ): PartSurface<TagsInputItemState> {
   const disabled = computed(() => !!(itemContext.disabled?.value || rootContext.disabled.value))
@@ -436,6 +467,10 @@ export function getTagsInputItemDeleteSurface(
       'onClick': (event: MouseEvent) => {
         if (disabled.value)
           return
+        if (rootContext.onRemoveItem) {
+          rootContext.onRemoveItem(itemContext.element?.(), itemContext.value.value, itemContext.modelIndex?.(), 'item-delete-press', event)
+          return
+        }
         const index = rootContext.modelValue.value.findIndex(i => isEqual(i, itemContext.value.value))
         rootContext.onRemoveValue(index, 'item-delete-press', event)
       },
