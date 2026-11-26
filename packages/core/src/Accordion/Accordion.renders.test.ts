@@ -37,19 +37,18 @@ function countComponents(items: number) {
 }
 
 describe('accordion component counts', () => {
-  // TODO(v3-port): #3411 v3's AccordionItem/AccordionTrigger still mount a CollapsibleRoot/CollapsibleTrigger
-  it.skip('mounts ten components per item', () => {
+  it('mounts six components per item', () => {
     const five = countComponents(5)
     const ten = countComponents(10)
-    expect((ten.length - five.length) / 5).toBe(10)
+    // Item, header, trigger, content, and the content's CollapsibleContent and Presence.
+    expect((ten.length - five.length) / 5).toBe(6)
     expect(ten).not.toContain('CollapsibleRoot')
     expect(ten).not.toContain('CollapsibleTrigger')
   })
 })
 
 describe('accordion render counts', () => {
-  // TODO(v3-port): #3411 v3's Accordion re-renders every item when one opens
-  it.skip('re-renders only the item that opened among 300 items', async () => {
+  it('re-renders only the item that opened among 300 items', async () => {
     let updates = 0
     const wrapper = mount(defineComponent({
       components: { AccordionRoot, AccordionItem, AccordionHeader, AccordionTrigger, AccordionContent },
@@ -86,7 +85,7 @@ describe('accordion render counts', () => {
 
     expect(triggers[150].attributes('aria-expanded')).toBe('true')
     expect(triggers[0].attributes('aria-expanded')).toBe('false')
-    // One item is ten components; before, all 300 items re-rendered.
+    // One item is six components; before, all 300 items re-rendered.
     expect(updates).toBeLessThanOrEqual(30)
     wrapper.unmount()
   }, 30_000)

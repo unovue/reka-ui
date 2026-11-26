@@ -11,7 +11,10 @@ export interface AccordionTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { CollapsibleTrigger } from '@/Collapsible'
+import { mergeProps } from 'vue'
+import { injectCollapsibleRootContext } from '@/Collapsible/CollapsibleRoot.vue'
+import { getCollapsibleTriggerSurface } from '@/Collapsible/useCollapsible'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { useForwardElement, usePartId } from '@/shared'
 import { injectAccordionItemContext } from './AccordionItem.vue'
 
@@ -26,18 +29,22 @@ const itemContext = injectAccordionItemContext()
 const triggerId = usePartId(() => props.id, itemContext, 'triggerId')
 
 const surface = getAccordionTriggerSurface(rootContext, itemContext)
+// Provided by `AccordionItem`. The trigger renders what a `CollapsibleTrigger` rendered around it, with
+// the same attributes in the same order, without that component in between.
+const collapsibleSurface = getCollapsibleTriggerSurface(injectCollapsibleRootContext())
 
 const { forwardRef, expose } = useForwardElement(itemContext.currentRef)
 defineExpose(expose)
 </script>
 
 <template>
-  <CollapsibleTrigger
+  <component
+    :is="renderAsControl(props.as ?? 'button', props.asChild)"
+    :id="triggerId"
     :ref="forwardRef"
-    :as="props.as"
-    :as-child="props.asChild"
-    v-bind="{ ...surface.attrs.value, id: triggerId }"
+    :type="(props.as ?? 'button') === 'button' ? 'button' : undefined"
+    v-bind="mergeProps(collapsibleSurface.attrs.value, surface.attrs.value)"
   >
     <slot />
-  </CollapsibleTrigger>
+  </component>
 </template>
