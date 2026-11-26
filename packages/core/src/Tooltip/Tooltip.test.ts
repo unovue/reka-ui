@@ -3,7 +3,7 @@ import type { ChangeEventDetails } from '@/shared'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, KeepAlive, nextTick, ref } from 'vue'
 import { injectPopperRootContext } from '@/Popper'
 import { TooltipContent, TooltipPortal, TooltipProvider, TooltipRoot, TooltipTrigger } from '.'
 import Tooltip from './stories/_Tooltip.vue'
@@ -705,5 +705,28 @@ describe('given a tooltip trigger inside a form', () => {
     const { trigger } = mountInForm({ as: 'span' })
 
     expect(trigger.attributes('type')).toBeUndefined()
+  })
+})
+
+describe('given a tooltip waiting to open in a KeepAlive page', () => {
+  it('does not open once the page is deactivated', async () => {
+    const onUpdateOpen = vi.fn()
+    const onPage = ref(true)
+    const Page = defineComponent({
+      name: 'Page',
+      setup: () => () => h(TooltipProvider, { delayDuration: 50 }, () => h(TooltipRoot, { 'onUpdate:open': onUpdateOpen }, () =>
+        h(TooltipTrigger, () => 'trigger'))),
+    })
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(KeepAlive, null, () => onPage.value ? h(Page) : h('p', 'other page')),
+    }), { attachTo: document.body })
+
+    await wrapper.find('button').trigger('pointermove', { pointerType: 'mouse' })
+    onPage.value = false
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    expect(onUpdateOpen).not.toHaveBeenCalled()
+    wrapper.unmount()
   })
 })

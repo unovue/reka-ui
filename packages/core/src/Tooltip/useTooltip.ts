@@ -1,7 +1,7 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { TooltipContext, TooltipOpenChangeReason } from './TooltipRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
-import { computed, ref, toValue, watch } from 'vue'
+import { computed, getCurrentInstance, onDeactivated, ref, toValue, watch } from 'vue'
 import { createPartSurface, disclosureState, useControllableState } from '@/shared'
 import { createTimeout } from '@/shared/timeout'
 
@@ -332,6 +332,9 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
     if (!setState(true, 'trigger-hover', event))
       wasOpenDelayedRef.value = false
   }, delayDuration)
+  // A pending open of a `KeepAlive` page that is left would fire on the page shown instead.
+  if (getCurrentInstance())
+    onDeactivated(() => timer.clear())
 
   function handleOpen(reason?: TooltipOpenChangeReason | BaseChangeReason, event?: Event): boolean {
     timer.clear()

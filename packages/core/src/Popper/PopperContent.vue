@@ -216,7 +216,7 @@ import {
   size,
   useFloating,
 } from '@floating-ui/vue'
-import { computed, ref, watchEffect, watchPostEffect } from 'vue'
+import { computed, onActivated, onDeactivated, ref, watchEffect, watchPostEffect } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { providePopperContentContext } from './PopperContentContext'
 import { injectPopperRootContext } from './PopperRootContext'
@@ -345,8 +345,15 @@ const computedMiddleware = computed(() => {
   ] as Middleware[]
 })
 
-// If provided custom reference, it will overwrite the default anchor element
-const reference = computed(() => props.reference ?? rootContext.anchor.value)
+// `KeepAlive` takes a deactivated page out of the document, anchor included.
+const isDeactivated = ref(false)
+onDeactivated(() => isDeactivated.value = true)
+onActivated(() => isDeactivated.value = false)
+
+// If provided custom reference, it will overwrite the default anchor element.
+// Content whose page is deactivated drops it, which stops tracking the
+// position but keeps the last one.
+const reference = computed(() => isDeactivated.value ? undefined : (props.reference ?? rootContext.anchor.value))
 
 const { floatingStyles, placement, isPositioned, middlewareData, update } = useFloating(
   reference,

@@ -1,7 +1,7 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { HoverCardOpenChangeReason, HoverCardRootContext } from './HoverCardRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
-import { computed, getCurrentScope, onScopeDispose, ref, toValue } from 'vue'
+import { computed, getCurrentInstance, getCurrentScope, onDeactivated, onScopeDispose, ref, toValue } from 'vue'
 import { createPartSurface, disclosureState, useControllableState } from '@/shared'
 import { excludeTouch } from './utils'
 
@@ -164,13 +164,14 @@ export interface UseHoverCardReturn {
  * `onDismiss(reason, event)` from whatever layer the consumer composes.
  *
  * SSR-safe: no `document`/`window` at call scope — the `window.setTimeout`
- * calls only run inside `onOpen` / `onClose`, i.e. from browser events. No
- * lifecycle hooks, so it is callable outside `setup()`; inside a component or
- * `effectScope` the pending timers are cleared when that scope is disposed,
+ * calls only run inside `onOpen` / `onClose`, i.e. from browser events. Its
+ * lifecycle hooks are guarded, so it is callable outside `setup()`; inside a component or
+ * `effectScope` the pending timers are cleared when that scope is disposed (and a
+ * pending open when a `KeepAlive` deactivates the component),
  * standalone they are cancelled by the next `onOpen` / `onClose` / `onDismiss`.
  *
  * @experimental Signatures may change in 3.x minors.
- * @lifecycle pure — the only scope hook is the guarded timer cleanup above.
+ * @lifecycle pure — the only hooks are the guarded timer cleanups above.
  */
 export function useHoverCard(props: UseHoverCardProps = {}): UseHoverCardReturn {
   // Every write to `open` — the delayed hover/focus timers, the touch toggle
@@ -236,6 +237,9 @@ export function useHoverCard(props: UseHoverCardProps = {}): UseHoverCardReturn 
       clearTimeout(closeTimer)
     })
   }
+  // A pending open of a `KeepAlive` page that is left would fire on the page shown instead.
+  if (getCurrentInstance())
+    onDeactivated(() => clearTimeout(openTimer))
 
   const context: HoverCardRootContext = {
     open,
