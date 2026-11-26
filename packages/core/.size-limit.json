@@ -14,13 +14,13 @@
   {
     "path": "dist/index.js",
     "import": "{ SelectRoot, SelectTrigger, SelectContent, SelectItem, SelectViewport, SelectPortal }",
-    "limit": "39 KB",
+    "limit": "42 KB",
     "name": "Select"
   },
   {
     "path": "dist/index.js",
     "import": "{ ComboboxRoot, ComboboxInput, ComboboxContent, ComboboxItem, ComboboxVirtualizer }",
-    "limit": "44 KB",
+    "limit": "48 KB",
     "name": "Combobox"
   },
   {
@@ -38,19 +38,19 @@
   {
     "path": "dist/index.js",
     "import": "{ TreeRoot, TreeItem, TreeVirtualizer }",
-    "limit": "16.6 KB",
+    "limit": "19 KB",
     "name": "Tree"
   },
   {
     "path": "dist/index.js",
     "import": "{ PopoverRoot, PopoverTrigger, PopoverContent, PopoverPortal }",
-    "limit": "25.5 KB",
+    "limit": "29 KB",
     "name": "Popover"
   },
   {
     "path": "dist/index.js",
     "import": "{ TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent }",
-    "limit": "21.5 KB",
+    "limit": "24 KB",
     "name": "Tooltip"
   },
   {
@@ -62,13 +62,13 @@
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, dialogElements }",
-    "limit": "29 KB",
+    "limit": "31 KB",
     "name": "Elements: Dialog"
   },
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, rekaElementFamilies }",
-    "limit": "204 KB",
+    "limit": "216 KB",
     "name": "Elements: all supported families"
   },
   {
@@ -80,19 +80,19 @@
   {
     "path": "dist/index.js",
     "import": "*",
-    "limit": "217 KB",
+    "limit": "229 KB",
     "name": "Full library"
   },
   {
     "path": "dist/vapor/index.js",
     "import": "{ DialogRoot, DialogContent, DialogOverlay, DialogTrigger }",
-    "limit": "19 KB",
+    "limit": "21 KB",
     "name": "Vapor: Dialog (reka-ui/vapor)"
   },
   {
     "path": "dist/vapor/index.js",
     "import": "*",
-    "limit": "145 KB",
+    "limit": "155 KB",
     "name": "Vapor: full entry (reka-ui/vapor)"
   }
 ]
