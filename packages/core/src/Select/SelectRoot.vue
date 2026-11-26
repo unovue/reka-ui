@@ -200,7 +200,7 @@ const resolvedName = () => field ? field.name(props.name) : props.name
 
 // Every item registers here: the open content's and the closed ones the
 // content renders while it needs their labels.
-const { reactiveItems } = useCollection<{ value: { value: AcceptableValue, textValue: string } }>({ isProvider: true })
+const { reactiveItems } = useCollection<{ value: { value: AcceptableValue, textValue: string, select?: (event: KeyboardEvent) => void } }>({ isProvider: true })
 const dir = useDirection(toRef(() => props.dir))
 
 const select = useSelectRoot<AcceptableValue>({
@@ -246,7 +246,7 @@ closedItems.liveItems = () => {
   return items
     .slice()
     .sort((a, b) => compareDocumentOrder(a.ref, b.ref))
-    .map(item => ({ value: item.value.value, textValue: item.value.textValue, disabled: isDisabledItem(item.ref) }))
+    .map(item => ({ value: item.value.value, textValue: item.value.textValue || item.ref.textContent?.trim() || '', disabled: isDisabledItem(item.ref), select: item.value.select, element: item.ref }))
 }
 
 // The hidden native `select` of a named Select in a form offers every option

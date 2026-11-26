@@ -84,6 +84,7 @@ const lean = contentContext.harvest
       disabled: () => props.disabled,
       textValue: () => props.textValue,
       element: () => currentElement.value,
+      onSelect: event => emits('select', event as SelectEvent<T>),
     })
   : undefined
 const full = lean
@@ -111,7 +112,7 @@ function getLeanAttrs(attrs: Record<string, unknown>) {
 
 if (!lean) {
   // Registered with the content's collection from setup; no wrapper component.
-  useCollectionItem(currentElement, () => ({ textValue: textValue.value, value: props.value }))
+  useCollectionItem(currentElement, () => ({ textValue: textValue.value, value: props.value, select: full!.typeaheadSelect }))
   onMounted(() => {
     if (!currentElement.value)
       return

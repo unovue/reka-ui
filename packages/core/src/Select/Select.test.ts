@@ -545,16 +545,14 @@ describe('given typing on a Select trigger', () => {
     expect(modelValue.value).toBe(options[1])
   })
 
-  // TODO(v3-port): #3061 typeahead on the closed trigger selects the match (Select source resolved to v3)
-  it.skip('should cycle through items with the same text', async () => {
+  it('should cycle through items with the same text', async () => {
     const options = [{ id: 1, name: 'Main St' }, { id: 2, name: 'Main St' }]
     const { modelValue, trigger } = await mountSelect(options, { initialValue: options[0], label: option => option.name, rootProps: { by: 'id' } })
     await type(trigger, 'm')
     expect(modelValue.value).toBe(options[1])
   })
 
-  // TODO(v3-port): #3061 typeahead on the closed trigger selects the match (Select source resolved to v3)
-  it.skip('should match an item\'s text content when it has no `SelectItemText`', async () => {
+  it('should match an item\'s text content when it has no `SelectItemText`', async () => {
     const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { withItemText: false })
     await type(trigger, 'b')
     expect(modelValue.value).toBe('Banana')
@@ -568,8 +566,7 @@ describe('given typing on a Select trigger', () => {
     expect(onUpdateOpen).not.toHaveBeenCalled()
   })
 
-  // TODO(v3-port): #3061 typeahead on the closed trigger selects the match (Select source resolved to v3)
-  it.skip('should emit the matched item\'s `select` once, with the key event', async () => {
+  it('should emit the matched item\'s `select` once, with the key event', async () => {
     const onSelect = vi.fn()
     const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { itemProps: option => ({ onSelect: (event: CustomEvent) => onSelect(option, event) }) })
     await type(trigger, 'b')
@@ -581,8 +578,7 @@ describe('given typing on a Select trigger', () => {
     expect(event.detail.originalEvent).toBeInstanceOf(KeyboardEvent)
   })
 
-  // TODO(v3-port): #3061 typeahead on the closed trigger selects the match (Select source resolved to v3)
-  it.skip('should not select an item whose `select` is prevented', async () => {
+  it('should not select an item whose `select` is prevented', async () => {
     const onUpdateOpen = vi.fn()
     const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], {
       initialValue: 'Apple',
@@ -607,8 +603,7 @@ describe('given typing on a Select trigger', () => {
     expect(modelValue.value).toBeUndefined()
   })
 
-  // TODO(v3-port): #3061 typeahead on the closed trigger selects the match (Select source resolved to v3)
-  it.skip('should focus the match without selecting it while open', async () => {
+  it('should focus the match without selecting it while open', async () => {
     const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { rootProps: { open: true } })
     await new Promise(resolve => setTimeout(resolve))
     expect(trigger.getAttribute('aria-expanded')).toBe('true')

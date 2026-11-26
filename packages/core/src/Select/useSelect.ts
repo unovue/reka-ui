@@ -532,11 +532,27 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
         })
       }
       else if (next) {
-        context.setModelValue(next.value, 'typeahead', event)
+        selectMatch(next, event)
       }
       return
     }
     matchTypeahead(event)
+  }
+
+  // A rendered item selects itself, so its `select` event can prevent it.
+  function selectMatch(item: SelectTypeaheadItem<T>, event: KeyboardEvent) {
+    if (item.select)
+      item.select(event)
+    else
+      context.setModelValue(item.value, 'typeahead', event)
+  }
+
+  // While open, typing on the trigger moves focus to the match without selecting it.
+  function focusTypeaheadMatch() {
+    const items = (context.closedItems?.liveItems?.() ?? []).filter(item => !item.disabled && item.element)
+    const active = getActiveElement()
+    const current = items.find(item => item.element === active)
+    getNextMatch(items, search.value, current, item => item.textValue)?.element?.focus()
   }
 
   // Items that need more than the render's flush (an async wrapper) register
@@ -565,10 +581,8 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
     const all = getTypeaheadItems()
     const items = all.filter(item => !item.disabled)
     const current = items.find(item => context.isSelected(item.value))
-    const match = (list: typeof all) => {
-      const nextMatch = getNextMatch(list.map(item => item.textValue), term, current?.textValue)
-      return list.find(item => item.textValue === nextMatch)
-    }
+    // Matched by identity, so items with the same text stay distinct.
+    const match = (list: typeof all) => getNextMatch(list, term, current, item => item.textValue)
     const next = match(items)
     const singleKey = Array.from(term).every(char => char === term[0])
     const prefix = (singleKey ? term[0] ?? '' : term).toLowerCase()
@@ -585,7 +599,7 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
       return true
     const { next } = findTypeaheadMatch()
     if (next)
-      context.setModelValue(next.value, 'typeahead', event)
+      selectMatch(next, event)
     return !!next
   }
 
@@ -703,8 +717,12 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
     // or `ArrowLeft` would be appended and swallow the next `Space`.
     if (!isModifierKey && event.key.length === 1 && !isDisabled.value) {
       handleTypeaheadSearch(event.key, [])
-      if (event.key !== ' ' || isTypingAhead)
-        typeaheadSelect(event)
+      if (event.key !== ' ' || isTypingAhead) {
+        if (context.open.value && !context.multiple.value)
+          focusTypeaheadMatch()
+        else
+          typeaheadSelect(event)
+      }
     }
     if (isTypingAhead && event.key === ' ')
       return
@@ -1219,6 +1237,8 @@ export interface UseSelectItemReturn<T = AcceptableValue> {
   textValue: Ref<string>
   /** The context the SFC provides via `provideSelectItemContext`. */
   itemContext: SelectItemContext<T>
+  /** Selects the item for the closed trigger's typeahead, through its cancellable `select` event. */
+  typeaheadSelect: (event: KeyboardEvent) => void
 }
 
 /**
@@ -1400,7 +1420,21 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
     },
   }
 
-  return { item, isSelected, isFocused, textValue, itemContext }
+  return { item, isSelected, isFocused, textValue, itemContext, typeaheadSelect: createTypeaheadSelect(context, getValue, () => disabled.value, options.onSelect) }
+}
+
+// A match typed on the closed trigger: nothing is open to close, so only the value changes.
+// It still goes through `select`, so a handler that prevents it keeps the item unselected.
+function createTypeaheadSelect<T>(context: SelectRootContext<T>, getValue: () => T, isDisabled: () => boolean, onSelect: ((event: SelectEvent<T>) => void) | undefined) {
+  return (originalEvent: KeyboardEvent) => {
+    if (isDisabled())
+      return
+    handleAndDispatchCustomEvent(SELECT_SELECT, (event: SelectEvent<T>) => {
+      onSelect?.(event)
+      if (!event.defaultPrevented)
+        context.setModelValue(getValue(), 'typeahead', originalEvent)
+    }, { originalEvent, value: getValue() })
+  }
 }
 
 /**
@@ -1417,13 +1451,16 @@ export function useSelectItemLabel<T extends AcceptableValue = AcceptableValue>(
   textValue: () => string | undefined
   /** The item element: places it in document order. */
   element: () => Element | undefined
+  /** Called with the cancellable `select` event of a typeahead match. */
+  onSelect?: (event: SelectEvent<T>) => void
 }): { isSelected: Ref<boolean>, textValue: { readonly value: string }, itemContext: SelectItemContext<T> } {
   const { context, value } = options
   // The item text element, read live: the typeahead sees the current text.
   let textElement: HTMLElement | undefined
   const textValue = {
     get value() {
-      return (options.textValue() || textElement?.textContent || '').trim()
+      // An item without a `SelectItemText` matches its own text.
+      return (options.textValue() || textElement?.textContent || options.element()?.textContent || '').trim()
     },
   }
   // The keyed selector cell, as on a full item: a selection change re-renders
@@ -1448,11 +1485,13 @@ export function useSelectItemLabel<T extends AcceptableValue = AcceptableValue>(
   // Registered with the closed items directly once mounted (sorted into
   // document order when read): no collection.
   let harvested: HarvestedItem<T> | undefined
+  const typeaheadSelect = createTypeaheadSelect(context, value, () => !!options.disabled() || context.disabled.value, options.onSelect)
   onMounted(() => {
     harvested = context.closedItems?.addHarvested(() => ({
       value: value(),
       textValue: textValue.value,
       disabled: !!options.disabled(),
+      select: typeaheadSelect,
     }), options.element)
   })
   onBeforeUnmount(() => harvested && context.closedItems?.removeHarvested(harvested))
