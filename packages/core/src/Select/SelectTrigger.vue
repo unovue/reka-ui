@@ -10,7 +10,7 @@ export interface SelectTriggerProps extends PopperAnchorProps {
 import { mergeProps, onBeforeUnmount, watchPostEffect } from 'vue'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { injectPopperRootContext } from '@/Popper/PopperRoot.vue'
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { getElementByIdFrom, useForwardElement } from '@/shared'
 import { bindFormReset, injectFormResetOwner } from '@/shared/formReset'
 import { injectSelectFieldContext, injectSelectRootContext } from './SelectRoot.vue'
@@ -94,7 +94,7 @@ const focusWithin = useFieldFocusWithin(field, triggerElement, {
 
 <template>
   <component
-    :is="renderAs(as, asChild)"
+    :is="renderAsControl(as, asChild)"
     v-bind="renderAttrs($attrs)"
     :ref="forwardRef"
   >
