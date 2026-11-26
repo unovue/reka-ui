@@ -7,13 +7,15 @@ export interface ColorAreaThumbProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { getChannelName } from '@/shared/color'
+import { translationKey, useTranslations } from '@/shared'
 import { injectColorAreaRootContext } from './ColorAreaRoot.vue'
 import { convertValueToPercentage } from './utils'
 
 const props = withDefaults(defineProps<ColorAreaThumbProps>(), {
   as: 'span',
 })
+
+const t = useTranslations()
 
 const rootContext = injectColorAreaRootContext()
 const { primitiveElement, currentElement } = usePrimitiveElement()
@@ -39,11 +41,11 @@ const yPercent = computed(() =>
 )
 
 const ariaLabel = computed(() => {
-  return `${getChannelName(rootContext.xChannel.value)}, ${getChannelName(rootContext.yChannel.value)}`
+  return `${t(translationKey('colorChannel', rootContext.xChannel.value))}, ${t(translationKey('colorChannel', rootContext.yChannel.value))}`
 })
 
 const ariaValueText = computed(() => {
-  return `${getChannelName(rootContext.xChannel.value)} ${Math.round(rootContext.xValue.value)}, ${getChannelName(rootContext.yChannel.value)} ${Math.round(rootContext.yValue.value)}`
+  return `${t(translationKey('colorChannel', rootContext.xChannel.value))} ${Math.round(rootContext.xValue.value)}, ${t(translationKey('colorChannel', rootContext.yChannel.value))} ${Math.round(rootContext.yValue.value)}`
 })
 </script>
 
@@ -53,7 +55,7 @@ const ariaValueText = computed(() => {
     role="slider"
     :tabindex="rootContext.disabled.value ? undefined : 0"
     :aria-label="ariaLabel"
-    aria-roledescription="Color thumb"
+    :aria-roledescription="t('colorAreaThumbRoleDescription')"
     :aria-valuemin="rootContext.xRange.value.min"
     :aria-valuemax="rootContext.xRange.value.max"
     :aria-valuenow="rootContext.xValue.value"

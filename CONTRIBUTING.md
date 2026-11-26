@@ -73,6 +73,7 @@ All commands run from the repo root.
 | Docs dev | `pnpm --filter reka-ui build && pnpm docs:install && pnpm docs:dev` |
 | Docs API regen | `pnpm docs:gen` (regenerates `docs/content/meta/*.md`) |
 | Bundle size | `pnpm --filter reka-ui size` |
+| Published package (exports, types, Node load) | `pnpm build && pnpm package:check` |
 
 > - `pnpm test` is **watch mode**. For a one-shot run (CI-style) use
 >   `pnpm --filter reka-ui exec vitest run`.
