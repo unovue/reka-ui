@@ -377,6 +377,11 @@ export interface UseMenuContentOptions {
   loop?: MaybeRefOrGetter<boolean | undefined>
   /** `openAutoFocus` passthrough (SFC: `e => emits('openAutoFocus', e)`). */
   onOpenAutoFocus?: (event: Event) => void
+  /**
+   * Space pressed during a typeahead search is added to the search instead of
+   * selecting the focused item. @defaultValue `true`
+   */
+  spaceExtendsTypeahead?: MaybeRefOrGetter<boolean | undefined>
 }
 
 export type MenuContentState = { state: DisclosureState }
@@ -419,8 +424,18 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
   // A deep `ref` would unwrap `trigger` to the element, so `trigger.value` would always be `undefined`.
   const activeSubmenuContext = shallowRef<{ onOpenChange: MenuContext['onOpenChange'], trigger: Ref<HTMLElement | undefined> }>()
 
-  // The typeahead buffer itself, so items (and Space below) see a search in progress.
-  const { search: searchRef, handleTypeaheadSearch } = useTypeahead()
+  const spaceExtendsTypeahead = () => toValue(options.spaceExtendsTypeahead) ?? true
+  // The typeahead buffer, and the filter's text (`DropdownMenuFilter`), which is no
+  // typeahead search: it doesn't run out, and a letter typed on an item starts a search of its own.
+  const { search, handleTypeaheadSearch } = useTypeahead()
+  const filterSearch = ref('')
+  // Items skip Space while the filter has text or, with `spaceExtendsTypeahead`, a typeahead search is in progress.
+  const searchRef = computed<string>({
+    get: () => (spaceExtendsTypeahead() && search.value) || filterSearch.value,
+    set: (value) => {
+      filterSearch.value = value
+    },
+  })
 
   /**
    * The enabled items in order, from the collection's cached order instead of
@@ -487,13 +502,19 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
     if (el)
       return el?.focus()
 
-    // Space selects the item when no search is in progress; otherwise it's part of the search.
+    // With `spaceExtendsTypeahead`, Space selects the item when no search is in progress;
+    // otherwise it's part of the search.
     // Only on this menu's own items (or the content): other controls in it, and a submenu's
     // key bubbling up, keep Space as is.
     const collectionItems = getItems() ?? []
-    if (event.key === ' ') {
+    if (!spaceExtendsTypeahead()) {
+      // Space never goes into the search
+      if (event.key === ' ' || event.code === 'Space')
+        return
+    }
+    else if (event.key === ' ' || event.code === 'Space') {
       const isOnItem = target === event.currentTarget || collectionItems.some(item => item.ref === target)
-      if (searchRef.value === '' || !isKeyDownInside || !isOnItem)
+      if (search.value === '' || !isKeyDownInside || !isOnItem)
         return
       // MenuItem skips Space during a search, so prevent the scroll here
       event.preventDefault()
@@ -522,6 +543,7 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
     // @ts-expect-error the provided currentTarget and target should be HTMLElement
     if (!event?.currentTarget?.contains?.(event.target)) {
       window.clearTimeout(timerRef.value)
+      search.value = ''
       searchRef.value = ''
     }
   }

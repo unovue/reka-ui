@@ -97,6 +97,13 @@ export interface MenuContentImplProps
    * @defaultValue false
    */
   loop?: boolean
+  /**
+   * When `true`, Space pressed while a typeahead search is in progress is added to the search
+   * instead of selecting the focused item, so that labels with several words, like "New Private Window",
+   * can be reached by typing. With no search in progress, Space still selects the focused item.
+   * @defaultValue true
+   */
+  spaceExtendsTypeahead?: boolean
 }
 
 export interface MenuRootContentTypeProps
@@ -132,6 +139,7 @@ defineOptions({
 
 const props = withDefaults(defineProps<MenuContentImplProps>(), {
   ...PopperContentPropsDefaultValue,
+  spaceExtendsTypeahead: true,
 })
 const emits = defineEmits<MenuContentImplPrivateEmits>()
 const menuContext = injectMenuContext()
@@ -161,6 +169,7 @@ const { content, contentContext, handleMountAutoFocus, currentItemId } = useMenu
   contentElement,
   getItems: () => roving.getItems(),
   loop,
+  spaceExtendsTypeahead: () => props.spaceExtendsTypeahead,
   onOpenAutoFocus: event => emits('openAutoFocus', event),
 })
 
