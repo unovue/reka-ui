@@ -463,3 +463,21 @@ describe('primitive attrs normalisation', () => {
     wrapper.unmount()
   })
 })
+
+describe('primitive asChild disabled', () => {
+  it('drops disabled="false" on a plain child that has no disabled property', () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(Primitive, { asChild: true, disabled: false }, () => h('div', { 'data-testid': 'child' })),
+    }))
+    const el = wrapper.get('[data-testid="child"]').element
+    expect(el.hasAttribute('disabled')).toBe(false)
+    expect(el.hasAttribute('aria-disabled')).toBe(false)
+  })
+
+  it('keeps disabled="false" on a custom element child', () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(Primitive, { asChild: true, disabled: false }, () => h('my-button', { 'data-testid': 'child' })),
+    }))
+    expect(wrapper.get('[data-testid="child"]').attributes('disabled')).toBe('false')
+  })
+})
