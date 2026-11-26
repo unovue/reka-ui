@@ -5,6 +5,7 @@ import { cdp, userEvent } from 'vitest/browser'
 import { h } from 'vue'
 import { CheckboxGroupRoot, CheckboxRoot } from '@/Checkbox'
 import { SelectContent, SelectItem, SelectItemText, SelectRoot, SelectTrigger, SelectValue } from '@/Select'
+import { hasCDP } from '@/test/browser'
 import { hiddenNativeFamilies, twinNames, twinsOf } from '@/test/hiddenNativeFamilies'
 
 /**
@@ -80,7 +81,8 @@ function removeLabels(form: HTMLFormElement) {
 const send = (method: string, params: Record<string, unknown> = {}) => (cdp() as any).send(method, params)
 
 /**
- * Read what Chromium exposes to assistive technology in the test frame.
+ * Read what Chromium exposes to assistive technology in the test frame, through CDP:
+ * see `hasCDP`.
  *
  * @returns The role, name and focus state of every node that is not ignored.
  */
@@ -115,7 +117,7 @@ describe('every family with a hidden native twin, in a real browser', () => {
     expect(new Set(twinsOf(form).map(twin => twin.getAttribute('tabindex')))).toEqual(new Set(['-1']))
   })
 
-  it('exposes the same accessibility tree at rest as without the labels', async () => {
+  it.skipIf(!hasCDP)('exposes the same accessibility tree at rest as without the labels', async () => {
     const form = await mountFamilies()
 
     const labelled = await accessibilityTree()
@@ -162,9 +164,12 @@ describe('every family with a hidden native twin, in a real browser', () => {
 
       expect(invalid).toEqual([twin])
       expect(focus).toBe('twin')
-      expect((await accessibilityTree()).filter(node => node.focused && node.role !== 'RootWebArea')).toEqual([
-        { role: 'checkbox', name: 'field-agree', focused: true },
-      ])
+      // The accessibility tree is read through CDP: see `hasCDP`.
+      if (hasCDP) {
+        expect((await accessibilityTree()).filter(node => node.focused && node.role !== 'RootWebArea')).toEqual([
+          { role: 'checkbox', name: 'field-agree', focused: true },
+        ])
+      }
     })
 
     it.each(['otp', 'birthday', 'alarm', 'agree'] as const)('reports the same message on the same element for %s as without the label', async (required) => {
