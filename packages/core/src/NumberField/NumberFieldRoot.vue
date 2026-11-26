@@ -8,7 +8,9 @@ import type { FormFieldProps } from '@/shared/types'
 import { createRekaContext, useFormControl, useForwardElement, useLocale } from '@/shared'
 
 export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
+  /** The value of the number field when initially rendered. Use when you do not need to control the state of the number field. */
   defaultValue?: number
+  /** The controlled value of the number field. Can be bound as `v-model`. */
   modelValue?: number | null
   /** The smallest value allowed for the input. */
   min?: number
