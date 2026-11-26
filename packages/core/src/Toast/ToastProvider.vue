@@ -4,7 +4,7 @@ import type { GlobalToastManager } from './createToastManager'
 import type { ToastStore } from './useToastStore'
 import type { SwipeDirection } from './utils'
 import { useCollection } from '@/Collection'
-import { createContext } from '@/shared'
+import { createContext, useTranslations } from '@/shared'
 
 export interface ToastProviderContext {
   label: Readonly<Ref<string>>
@@ -12,6 +12,8 @@ export interface ToastProviderContext {
   disableSwipe: Readonly<Ref<boolean>>
   swipeDirection: Readonly<Ref<SwipeDirection>>
   swipeThreshold: Readonly<Ref<number>>
+  disableHoverPause: Readonly<Ref<boolean>>
+  disableWindowBlurPause: Readonly<Ref<boolean>>
   toastCount: Ref<number>
   viewport: Ref<HTMLElement | undefined>
   onViewportChange: (viewport: HTMLElement) => void
@@ -50,7 +52,8 @@ export interface ToastProviderProps {
   /**
    * An author-localized label for each toast. Used to help screen reader users
    * associate the interruption with a toast.
-   * @defaultValue 'Notification'
+   * Defaults to the `toastLabel` message of `ConfigProvider`.
+   * @default 'Notification'
    */
   label?: string
   /**
@@ -73,6 +76,21 @@ export interface ToastProviderProps {
    * @defaultValue 50
    */
   swipeThreshold?: number
+  /**
+   * When `true`, toasts keep counting down while the pointer is over the viewport, so a toast
+   * can close while a pointer user is still reading it. Best kept to short status toasts
+   * without actions. Keyboard focus inside the viewport and a press or swipe on a toast
+   * always pause the toasts.
+   * @defaultValue false
+   */
+  disableHoverPause?: boolean
+  /**
+   * When `true`, toasts keep counting down while the window is not focused, so a toast can
+   * close before the user comes back to the page. Keyboard focus inside the viewport still
+   * pauses the toasts until the window is focused again.
+   * @defaultValue false
+   */
+  disableWindowBlurPause?: boolean
   /**
    * The maximum number of toasts shown at once. Older toasts beyond the limit get
    * `data-limited` and `inert` rather than being removed, so they can be hidden or animated.
@@ -98,12 +116,12 @@ defineOptions({
 })
 
 const props = withDefaults(defineProps<ToastProviderProps>(), {
-  label: 'Notification',
   duration: 5000,
   swipeDirection: 'right',
   swipeThreshold: 50,
 })
 useCollection({ isProvider: true })
+const t = useTranslations()
 
 if (props.label && typeof props.label === 'string' && !props.label.trim()) {
   const error = 'Invalid prop `label` supplied to `ToastProvider`. Expected non-empty `string`.'
@@ -113,11 +131,13 @@ if (props.label && typeof props.label === 'string' && !props.label.trim()) {
 // The provider is a thin bridge: shared settings, stacking and the
 // `createToastManager()` subscription live in the composable.
 const { context } = useToastProvider({
-  label: () => props.label,
+  label: () => props.label ?? t('toastLabel'),
   duration: () => props.duration,
   disableSwipe: () => props.disableSwipe,
   swipeDirection: () => props.swipeDirection,
   swipeThreshold: () => props.swipeThreshold,
+  disableHoverPause: () => props.disableHoverPause,
+  disableWindowBlurPause: () => props.disableWindowBlurPause,
   limit: () => props.limit,
   toastManager: () => props.toastManager,
 })

@@ -22,8 +22,7 @@ const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="$
 const exiting = (id: string) => get(id)?.getAnimations().some(a => a.playState === 'paused') ?? false
 
 describe('given a Popover inside a Dialog, during its exit, in a real browser', () => {
-  // TODO(v3-port): #3344 v3 keeps a closing popover's dismissal layer for its exit animation
-  it.skip.each([true, false])('hands Escape back to the dialog (unmountOnHide: %s)', async (unmountOnHide) => {
+  it.each([true, false])('hands Escape back to the dialog (unmountOnHide: %s)', async (unmountOnHide) => {
     const dialogOpen = ref(true)
     const childOpen = ref(false)
     const onChildOpen = (value: boolean) => childOpen.value = value
@@ -63,6 +62,8 @@ describe('given a Popover inside a Dialog, during its exit, in a real browser', 
     }), { attachTo: document.body })
     await expect.poll(() => get('child')?.contains(document.activeElement)).toBe(true)
     await expect.poll(() => get('dialog')?.closest('[aria-hidden="true"]')).not.toBeNull()
+    // Popper suppresses animations until the content is positioned; close only after that.
+    await expect.poll(() => get('child')?.parentElement?.style.transform).not.toContain('-200%')
 
     childOpen.value = false
     await expect.poll(() => exiting('child')).toBe(true)

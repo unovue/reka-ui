@@ -321,3 +321,36 @@ describe.each([
     expect(onOutsideClick).not.toHaveBeenCalled()
   })
 })
+
+describe('given a modal Dialog whose content is not positioned, in a real browser', () => {
+  it('should keep the content above its own backdrop, so presses inside reach it', async () => {
+    const open = ref<boolean>(true)
+    const onInsideClick = vi.fn()
+    mountFixture(() => h(DialogRoot, { 'open': open.value, 'onUpdate:open': (value: boolean) => { open.value = value } }, () =>
+      h(DialogPortal, () => h(DialogContent, { 'data-testid': 'dialog', 'aria-describedby': undefined }, () => [
+        h(DialogTitle, () => 'Dialog'),
+        h('button', { 'data-testid': 'inside', 'onClick': onInsideClick }, 'Inside'),
+      ]))))
+    await expect.poll(() => backdrops().length).toBe(1)
+
+    const point = center(get('inside')!)
+    expect(document.elementFromPoint(point.x, point.y)).toBe(get('inside'))
+    await userEvent.click(get('inside')!)
+    expect(onInsideClick).toHaveBeenCalledTimes(1)
+    expect(open.value).toBe(true)
+
+    // Closing restores the content's own position.
+    open.value = false
+    await expect.poll(() => backdrops().length).toBe(0)
+  })
+
+  it('should leave the content\'s inline position untouched once it closes', async () => {
+    const open = ref<boolean>(true)
+    mountFixture(() => h(DialogRoot, { 'open': open.value, 'onUpdate:open': (value: boolean) => { open.value = value }, 'unmountOnHide': false }, () =>
+      h(DialogPortal, () => h(DialogContent, { 'data-testid': 'dialog', 'aria-describedby': undefined }, () => h(DialogTitle, () => 'Dialog')))))
+    await expect.poll(() => backdrops().length).toBe(1)
+    open.value = false
+    await expect.poll(() => backdrops().length).toBe(0)
+    expect(get('dialog')?.style.position ?? '').toBe('')
+  })
+})

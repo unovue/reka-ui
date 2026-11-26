@@ -105,8 +105,8 @@ function other(kind: Other, extra: Record<string, unknown> = {}): VNode {
 }
 
 const exiting = () => get('kept-content')!.getAnimations().some(animation => animation.playState === 'paused')
-/** `pointer-events: auto` keeps a trigger clickable while a modal layer disables the rest of the page. */
-const CLICKABLE_UNDER_MODAL = { style: 'position: fixed; top: 10px; left: 200px; pointer-events: auto;' }
+/** Stacked above a modal layer's internal backdrop, so that a trigger stays clickable while the layer covers the page. */
+const CLICKABLE_UNDER_MODAL = { style: 'position: fixed; top: 10px; left: 200px; z-index: 1;' }
 
 /** Focus is in the other layer, stays there, and goes back to that layer's own trigger when it closes. */
 async function expectOtherLayerOwnsFocus() {
@@ -211,8 +211,9 @@ describe.each(CASES)('$name kept mounted with $keep', ({ kind, keep, modal }) =>
       await expectOtherLayerOwnsFocus()
     })
 
-    // An AlertDialog does not close on an outside click.
-    it.skipIf(kind === 'AlertDialog')('leaves focus in that layer when the click that opens it closes the kept one', async () => {
+    // An AlertDialog does not close on an outside click, and a modal Dialog only closes on a press
+    // on its own backdrop, not on an element stacked above it.
+    it.skipIf(kind === 'AlertDialog' || modal !== false)('leaves focus in that layer when the click that opens it closes the kept one', async () => {
       const { open } = mountLayers(otherKind, { otherTrigger: CLICKABLE_UNDER_MODAL })
       await settle()
 

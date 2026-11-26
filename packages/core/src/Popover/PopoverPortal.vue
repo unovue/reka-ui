@@ -18,7 +18,7 @@ const props = defineProps<PopoverPortalProps>()
 // A closed popup renders no portal until it first opens (or its content is
 // force-mounted); afterwards the portal stays.
 const rootContext = injectPopoverRootContext(null)
-const shouldRender = createPortalGate(rootContext, () => !!rootContext?.open.value, gatedParts)
+const shouldRender = createPortalGate(rootContext, () => !!rootContext && (rootContext.open.value || !rootContext.unmountOnHide.value), gatedParts)
 </script>
 
 <template>

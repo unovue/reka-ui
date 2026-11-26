@@ -1,6 +1,6 @@
 import type { MaybeRefOrGetter, Ref } from 'vue'
 import { onMounted, toValue } from 'vue'
-import { getElementByIdFrom } from '@/shared'
+import { containsComposed, getElementByIdFrom } from '@/shared'
 
 const DEFAULT_TITLE_NAME = 'DialogTitle'
 const DEFAULT_CONTENT_NAME = 'DialogContent'
@@ -54,8 +54,8 @@ const focusedBeforeOpen = new WeakMap<object, HTMLElement | null>()
 const recordedAtOpen = new WeakSet<object>()
 
 /**
- * Records the element focused as the dialog opens (not `<body>`, not inside
- * the content). `atTransition` comes from the root's state setter, before the
+ * Records the element focused as the dialog opens (not `<body>`; inside the
+ * content keeps the previous record). `atTransition` comes from the root's state setter, before the
  * open is emitted; the content's own record for that open is then skipped. @internal
  */
 export function recordFocusBeforeOpen(rootContext: object, active: Element | null, content?: HTMLElement, atTransition?: boolean) {
@@ -63,12 +63,22 @@ export function recordFocusBeforeOpen(rootContext: object, active: Element | nul
     return
   if (atTransition)
     recordedAtOpen.add(rootContext)
-  focusedBeforeOpen.set(rootContext, active && active !== active.ownerDocument.body && !content?.contains(active) ? active as HTMLElement : null)
+  // Reopened while still animating out: focus never left the content (or a
+  // shadow root inside it), so the element recorded for the previous open
+  // still stands.
+  if (active && content && containsComposed(content, active))
+    return
+  focusedBeforeOpen.set(rootContext, active && active !== active.ownerDocument.body ? active as HTMLElement : null)
 }
 
 /** The open cycle ended: a later parent-driven open records afresh. @internal */
 export function endFocusRecord(rootContext: object) {
   recordedAtOpen.delete(rootContext)
+}
+
+/** The element recorded as focused when the dialog opened, if any. @internal */
+export function getFocusedBeforeOpen(rootContext: object): HTMLElement | null | undefined {
+  return focusedBeforeOpen.get(rootContext)
 }
 
 /**

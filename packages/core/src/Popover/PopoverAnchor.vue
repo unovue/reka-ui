@@ -15,7 +15,7 @@ const props = defineProps<PopoverAnchorProps>()
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
-usePopperAnchor({ element: currentElement, reference: () => props.reference })
+usePopperAnchor({ element: currentElement, reference: () => props.reference, scope: 'popover' })
 const rootContext = injectPopoverRootContext()
 
 onBeforeMount(() => {

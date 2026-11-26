@@ -12,9 +12,7 @@
     },
     "Accordion/AccordionItem.vue": {
       "exposeElement": 1,
-      "renderAs": 1,
-      "sfcs": 1,
-      "slotProps": 1
+      "sfcs": 1
     },
     "Accordion/AccordionRoot.vue": {
       "exposeElement": 1,
@@ -24,9 +22,7 @@
     },
     "Accordion/AccordionTrigger.vue": {
       "exposeElement": 1,
-      "renderAs": 1,
-      "sfcs": 1,
-      "slotProps": 1
+      "sfcs": 1
     },
     "AlertDialog/AlertDialogAction.vue": {
       "exposeElement": 1,
@@ -298,7 +294,7 @@
     "Dialog/DialogContent.vue": {
       "exposeElement": 1,
       "sfcs": 1,
-      "vShow": 2
+      "vShowWhenKept": 1
     },
     "Dialog/DialogContentImpl.vue": {
       "exposeElement": 1,
@@ -471,6 +467,9 @@
       "sfcs": 1,
       "slotProps": 1
     },
+    "FocusScope/useFocusScope.ts": {
+      "getCurrentInstance": 1
+    },
     "HoverCard/HoverCardArrow.vue": {
       "exposeElement": 1,
       "sfcs": 1
@@ -498,6 +497,9 @@
       "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
+    },
+    "HoverCard/useHoverCard.ts": {
+      "getCurrentInstance": 1
     },
     "Label/Label.vue": {
       "exposeElement": 1,
@@ -575,7 +577,8 @@
     },
     "Menu/MenuContent.vue": {
       "exposeElement": 1,
-      "sfcs": 1
+      "sfcs": 1,
+      "vShowWhenKept": 1
     },
     "Menu/MenuContentImpl.vue": {
       "exposeElement": 1,
@@ -648,7 +651,8 @@
     "Menu/MenuSubContent.vue": {
       "exposeElement": 1,
       "presenceAttrs": 1,
-      "sfcs": 1
+      "sfcs": 1,
+      "vShowWhenKept": 1
     },
     "Menu/MenuSubTrigger.vue": {
       "exposeElement": 1,
@@ -889,7 +893,8 @@
     "Popover/PopoverContent.vue": {
       "exposeElement": 1,
       "presenceAttrs": 1,
-      "sfcs": 1
+      "sfcs": 1,
+      "vShowWhenKept": 1
     },
     "Popover/PopoverContentImpl.vue": {
       "exposeElement": 1,
@@ -1223,9 +1228,6 @@
       "sfcs": 1,
       "slotProps": 1
     },
-    "Splitter/useSplitterResizeHandle.ts": {
-      "getCurrentInstance": 1
-    },
     "Stepper/StepperDescription.vue": {
       "exposeElement": 1,
       "sfcs": 1,
@@ -1464,6 +1466,9 @@
       "sfcs": 1,
       "slotProps": 1
     },
+    "Tooltip/useTooltip.ts": {
+      "getCurrentInstance": 1
+    },
     "Tree/TreeItem.vue": {
       "exposeElement": 1,
       "renderAs": 1,
@@ -1529,7 +1534,7 @@
     "Presence/Presence.ts": 1,
     "Primitive/Primitive.ts": 2,
     "Primitive/Slot.ts": 2,
-    "Primitive/renderAs.ts": 128,
+    "Primitive/renderAs.ts": 126,
     "Teleport/portalGate.ts": 19,
     "shared/useEmitAsProps.ts": 2,
     "shared/useForwardElement.ts": 5,
@@ -1541,13 +1546,14 @@
   },
   "totals": {
     "exposeElement": 291,
-    "getCurrentInstance": 26,
+    "getCurrentInstance": 28,
     "patches": 15,
     "presenceAttrs": 8,
-    "renderAs": 130,
+    "renderAs": 128,
     "sfcs": 291,
-    "slotProps": 153,
-    "vShow": 5,
+    "slotProps": 151,
+    "vShow": 3,
+    "vShowWhenKept": 4,
     "vueuse": 5
   },
   "vueuse": {

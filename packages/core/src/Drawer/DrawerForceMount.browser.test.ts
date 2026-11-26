@@ -26,6 +26,9 @@ async function settle() {
   await afterFrames()
   await afterTimers()
 }
+// v3 blocks the page under a modal layer with an internal backdrop, not with `pointer-events: none` on
+// `<body>`: report it the way the v2 assertions read the body style.
+const pagePointerEvents = () => document.querySelector('[data-reka-internal-backdrop]') ? 'none' : ''
 const finishExit = () => get('content')!.getAnimations().forEach(animation => animation.finish())
 
 interface DrawerOptions {
@@ -106,8 +109,9 @@ describe.each(CASES)('given a force-mounted Drawer with modal $modal (overlay: $
     return { open, show, outsideClicks, content }
   }
 
-  // The page and its own body style before any drawer is there.
-  const blocksPage = modal === true || (overlay && modal !== false)
+  // Only a fully modal drawer covers the page with its internal backdrop; a `DrawerBackdrop`
+  // with `'trap-focus'` is the consumer's own element.
+  const blocksPage = modal === true
 
   async function mountClosed() {
     const page = mountPage()
@@ -126,7 +130,7 @@ describe.each(CASES)('given a force-mounted Drawer with modal $modal (overlay: $
 
   it('leaves the page clickable while closed', async () => {
     const { outsideClicks } = await mountClosed()
-    expect(document.body.style.pointerEvents).toBe('')
+    expect(pagePointerEvents()).toBe('')
     await userEvent.click(get('outside')!)
     expect(outsideClicks.value).toBe(1)
   })
@@ -141,7 +145,7 @@ describe.each(CASES)('given a force-mounted Drawer with modal $modal (overlay: $
     open.value = true
     show.value = true
     await expect.poll(() => isFocusWithin('content')).toBe(true)
-    expect(document.body.style.pointerEvents).toBe(blocksPage ? 'none' : '')
+    expect(pagePointerEvents()).toBe(blocksPage ? 'none' : '')
   })
 
   it.each([false, true])('behaves like a drawer that unmounts while open, and lets go once closed (exit animation: %s)', async (exit) => {
@@ -149,13 +153,13 @@ describe.each(CASES)('given a force-mounted Drawer with modal $modal (overlay: $
     show.value = true
     await expect.poll(() => get('content')).not.toBeNull()
     await settle()
-    expect(document.body.style.pointerEvents).toBe('')
+    expect(pagePointerEvents()).toBe('')
 
     await userEvent.click(get('drawer-trigger')!)
     await expect.poll(() => get('content')!.getAttribute('data-state')).toBe('open')
     await settle()
     expect(isFocusWithin('content')).toBe(true)
-    expect(document.body.style.pointerEvents).toBe(blocksPage ? 'none' : '')
+    expect(pagePointerEvents()).toBe(blocksPage ? 'none' : '')
     if (modal !== false) {
       // Focus is trapped.
       await userEvent.keyboard('{Tab}{Tab}{Tab}')
@@ -168,15 +172,16 @@ describe.each(CASES)('given a force-mounted Drawer with modal $modal (overlay: $
     if (exit) {
       await settle()
       expect(get('content')!.getAnimations()).toHaveLength(1)
-      // Still on screen: still the top layer until it has finished leaving.
-      expect(document.body.style.pointerEvents).toBe(modal === true ? 'none' : '')
+      // v3's internal backdrop goes inert on close, so it stops blocking the page as it starts
+      // closing, not once it has finished leaving.
+      expect(pagePointerEvents()).toBe('')
       finishExit()
     }
     await settle()
 
     expect(get('content')).not.toBeNull()
     expect(focused()).toBe('drawer-trigger')
-    expect(document.body.style.pointerEvents).toBe('')
+    expect(pagePointerEvents()).toBe('')
   })
 
   it.each([false, true])('leaves focus alone when the closed content is removed later (opened before: %s)', async (openedBefore) => {
@@ -214,7 +219,7 @@ describe.each(CASES)('given a force-mounted Drawer with modal $modal (overlay: $
     await settle()
 
     for (let round = 0; round < 2; round++) {
-      expect(document.body.style.pointerEvents).toBe('')
+      expect(pagePointerEvents()).toBe('')
       await userEvent.click(get('popover-trigger')!)
       await expect.poll(() => get('popover-content')).not.toBeNull()
       await settle()

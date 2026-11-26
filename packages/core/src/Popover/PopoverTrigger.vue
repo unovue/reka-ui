@@ -96,6 +96,7 @@ const attrs = computed(() => detached.enabled.value
 const anchor = usePopperAnchor({
   consumerAttrs: true,
   element: triggerElement,
+  scope: 'popover',
   enabled: () => !detached.enabled.value && !rootContext?.hasCustomAnchor.value,
 })
 

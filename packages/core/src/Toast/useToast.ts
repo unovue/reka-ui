@@ -4,10 +4,10 @@ import type { ToastProviderContext, ToastStackEntry, ToastStackState } from './T
 import type { ToastStore } from './useToastStore'
 import type { SwipeDirection, SwipeEvent } from './utils'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
-import { onKeyStroke, useEventListener, useRafFn } from '@vueuse/core'
+import { useEventListener, useRafFn } from '@vueuse/core'
 import { isClient } from '@vueuse/shared'
 import { computed, getCurrentScope, onMounted, onScopeDispose, ref, shallowReactive, shallowRef, toValue, watch, watchEffect } from 'vue'
-import { focusFirst, getTabbableCandidates } from '@/FocusScope/utils'
+import { focusFirst, getTabbableCandidates, getTabStopsAfter } from '@/FocusScope/utils'
 import { createPartSurface, disclosureState, getActiveElement, useControllableState } from '@/shared'
 import { TOAST_MANAGER_SUBSCRIBE } from './createToastManager'
 import { useToastStore } from './useToastStore'
@@ -87,6 +87,10 @@ export interface UseToastProviderProps {
   swipeDirection?: MaybeRefOrGetter<SwipeDirection | undefined>
   /** Distance (px) a swipe must pass to close. @defaultValue `50` */
   swipeThreshold?: MaybeRefOrGetter<number | undefined>
+  /** Keeps toasts counting down while the pointer is over the viewport. @defaultValue `false` */
+  disableHoverPause?: MaybeRefOrGetter<boolean | undefined>
+  /** Keeps toasts counting down while the window is not focused. @defaultValue `false` */
+  disableWindowBlurPause?: MaybeRefOrGetter<boolean | undefined>
   /** Maximum number of toasts shown at once; older ones get `data-limited` and `inert`. */
   limit?: MaybeRefOrGetter<number | undefined>
   /** A manager from `createToastManager()`; its toasts are added to this provider's list. */
@@ -116,6 +120,8 @@ export function useToastProvider(props: UseToastProviderProps = {}): UseToastPro
   const disableSwipe = computed(() => toValue(props.disableSwipe) ?? false)
   const swipeDirection = computed<SwipeDirection>(() => toValue(props.swipeDirection) ?? 'right')
   const swipeThreshold = computed(() => toValue(props.swipeThreshold) ?? 50)
+  const disableHoverPause = computed(() => toValue(props.disableHoverPause) ?? false)
+  const disableWindowBlurPause = computed(() => toValue(props.disableWindowBlurPause) ?? false)
 
   const viewport = ref<HTMLElement>()
   const toastCount = ref(0)
@@ -173,6 +179,8 @@ export function useToastProvider(props: UseToastProviderProps = {}): UseToastPro
     disableSwipe,
     swipeDirection,
     swipeThreshold,
+    disableHoverPause,
+    disableWindowBlurPause,
     toastCount,
     viewport,
     onViewportChange(el) {
@@ -725,25 +733,48 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
   // changed `as`), but keeps the last one while an `asChild` slot renders nothing, so
   // toasts always have an element to teleport into.
   const viewportElement = shallowRef<HTMLElement>()
+  // Collapse only once closing toasts have finished animating, so the stack does not
+  // shift under the pointer while a toast is dismissed.
+  const pendingPointerLeave = ref(false)
   watch(currentElement, (element) => {
-    if (element)
+    if (element) {
       viewportElement.value = element
-    // An emptied `asChild` slot takes any hover or focus inside it along; keep a window-blur pause.
-    else if (viewportElement.value && document.hasFocus())
-      releasePause(viewportElement.value)
+    }
+    // An emptied `asChild` slot takes any hover or focus inside it along, as a replaced
+    // element does. A window-blur pause is kept.
+    else if (viewportElement.value) {
+      // A removed focused element sends no `focusout`.
+      providerContext.focused.value = false
+      pendingPointerLeave.value = true
+      if (!isPausedByWindowBlur())
+        releasePause(viewportElement.value)
+    }
   }, { immediate: true, flush: 'post' })
 
-  onKeyStroke(hotkey, () => {
-    viewportElement.value?.focus()
+  // The hotkey is a key combination: every entry must be pressed, a modifier (`altKey`,
+  // `ctrlKey`, …) or the `code` of the key itself.
+  useEventListener('keydown', (event: KeyboardEvent) => {
+    const isHotkeyPressed = hotkey.length !== 0
+      && hotkey.every(key => event[key as keyof KeyboardEvent] || event.code === key)
+    if (isHotkeyPressed)
+      viewportElement.value?.focus()
   })
 
   onMounted(() => {
     providerContext.onViewportChange(currentElement.value!)
   })
 
-  // Collapse only once closing toasts have finished animating, so the stack does not
-  // shift under the pointer while a toast is dismissed.
-  const pendingPointerLeave = ref(false)
+  const windowBlurred = ref(false)
+  // A press on a toast, tracked only while the hover pause is off: it then has to hold the
+  // pause itself, so a toast is not closed in the middle of a press or a swipe.
+  let isPressed = false
+
+  function pause(viewport: HTMLElement | undefined) {
+    if (!providerContext.isClosePausedRef.value) {
+      viewport?.dispatchEvent(new CustomEvent(VIEWPORT_PAUSE))
+      providerContext.isClosePausedRef.value = true
+    }
+  }
 
   function releasePause(viewport: HTMLElement | undefined) {
     if (providerContext.isClosePausedRef.value) {
@@ -752,9 +783,47 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
     }
   }
 
+  // Whether a pause that has lost its other reasons still holds because the window is
+  // blurred. Asked of the document, not of `windowBlurred`: a window that never had focus
+  // has not sent a `blur` either.
+  function isPausedByWindowBlur() {
+    return !providerContext.disableWindowBlurPause.value && !document.hasFocus()
+  }
+
   // Releases a window-blur pause, including one left over after the last toast closed,
   // which would otherwise keep later toasts from ever starting their timers.
-  useEventListener('focus', () => releasePause(viewportElement.value))
+  //
+  // The window gets its focus back before the element that had it, and the `focus` of that
+  // element can come in a later task. The active element is already back, so read the focus
+  // pause from it: releasing first would run the timers until the element `focus` pauses again.
+  useEventListener('focus', () => {
+    windowBlurred.value = false
+    const viewport = viewportElement.value
+    if (hasToasts.value && viewport)
+      providerContext.focused.value = viewport.contains(getActiveElement())
+    if (!shouldPause())
+      releasePause(viewport)
+  })
+
+  // Focus inside the viewport and a press on a toast always pause. Hover and window blur
+  // pause unless turned off.
+  function shouldPause() {
+    const { focused, hovering, disableHoverPause, disableWindowBlurPause } = providerContext
+    return focused.value
+      || isPressed
+      || (!disableHoverPause.value && hovering.value && !pendingPointerLeave.value)
+      || (!disableWindowBlurPause.value && windowBlurred.value)
+  }
+
+  // Applies an option that changes in the middle of an interaction.
+  watch([providerContext.disableHoverPause, providerContext.disableWindowBlurPause], () => {
+    if (!hasToasts.value)
+      return
+    if (shouldPause())
+      pause(viewportElement.value)
+    else
+      releasePause(viewportElement.value)
+  })
 
   // Toasts teleport into and listen on `providerContext.viewport`, so keep it on the
   // current element when the element is replaced after mount.
@@ -771,7 +840,7 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
     // The pause listeners on the old element are gone, and focus or hover inside it went
     // with it, so release its pause while the toasts still listen there. A window-blur
     // pause is kept: the window `focus` listener on the new element releases it.
-    if (document.hasFocus())
+    if (!isPausedByWindowBlur())
       releasePause(previous)
     providerContext.focused.value = element.contains(getActiveElement())
     // The old element took its `pointerleave` with it. Collapse as a leave would, and a
@@ -810,19 +879,42 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
   watchEffect((cleanupFn) => {
     const viewport = viewportElement.value
     if (hasToasts.value && viewport) {
-      const handlePause = () => {
-        if (!providerContext.isClosePausedRef.value) {
-          const pauseEvent = new CustomEvent(VIEWPORT_PAUSE)
-          viewport.dispatchEvent(pauseEvent)
-          providerContext.isClosePausedRef.value = true
-        }
+      const handlePause = () => pause(viewport)
+
+      const handlePointerMovePause = () => {
+        if (!providerContext.disableHoverPause.value)
+          pause(viewport)
+      }
+
+      const handleWindowBlur = () => {
+        windowBlurred.value = true
+        if (!providerContext.disableWindowBlurPause.value)
+          pause(viewport)
       }
 
       const handleResume = () => releasePause(viewport)
 
+      const handlePointerDown = () => {
+        if (providerContext.disableHoverPause.value) {
+          isPressed = true
+          pause(viewport)
+        }
+      }
+
+      const handlePointerUp = () => {
+        if (isPressed) {
+          isPressed = false
+          if (!shouldPause())
+            handleResume()
+        }
+      }
+
       const handleFocusOutResume = (event: FocusEvent) => {
         const isFocusMovingOutside = !viewport.contains(event.relatedTarget as HTMLElement)
-        if (isFocusMovingOutside) {
+        // The window losing focus leaves the active element where it is. Without the blur
+        // pause, the focus pause has to hold until the window is back.
+        const isWindowBlur = providerContext.disableWindowBlurPause.value && viewport.contains(getActiveElement())
+        if (isFocusMovingOutside && !isWindowBlur) {
           providerContext.focused.value = false
           handleResume()
         }
@@ -831,7 +923,7 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
       const handlePointerLeaveResume = () => {
         pendingPointerLeave.value = true
         const isFocusInside = viewport.contains(getActiveElement())
-        if (!isFocusInside)
+        if (!isFocusInside && !isPressed)
           handleResume()
       }
 
@@ -865,8 +957,7 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
 
           const tabbingDirection = isTabbingBackwards ? 'backwards' : 'forwards'
           const sortedCandidates = getSortedTabbableCandidates({ tabbingDirection })
-          const index = sortedCandidates.findIndex(candidate => candidate === focusedElement)
-          if (focusFirst(sortedCandidates.slice(index + 1))) {
+          if (focusFirst(getTabStopsAfter(sortedCandidates, focusedElement))) {
             event.preventDefault()
           }
           else {
@@ -883,25 +974,32 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
       viewport.addEventListener('focusin', handlePause)
       viewport.addEventListener('focusin', handleFocusInExpand)
       viewport.addEventListener('focusout', handleFocusOutResume)
-      viewport.addEventListener('pointermove', handlePause)
+      viewport.addEventListener('pointermove', handlePointerMovePause)
       viewport.addEventListener('pointermove', handlePointerMoveExpand)
       viewport.addEventListener('pointerleave', handlePointerLeaveResume)
       viewport.addEventListener('keydown', handleKeyDown)
-      window.addEventListener('blur', handlePause)
+      viewport.addEventListener('pointerdown', handlePointerDown)
+      window.addEventListener('pointerup', handlePointerUp)
+      window.addEventListener('pointercancel', handlePointerUp)
+      window.addEventListener('blur', handleWindowBlur)
 
       cleanupFn(() => {
         viewport.removeEventListener('focusin', handlePause)
         viewport.removeEventListener('focusin', handleFocusInExpand)
         viewport.removeEventListener('focusout', handleFocusOutResume)
-        viewport.removeEventListener('pointermove', handlePause)
+        viewport.removeEventListener('pointermove', handlePointerMovePause)
         viewport.removeEventListener('pointermove', handlePointerMoveExpand)
         viewport.removeEventListener('pointerleave', handlePointerLeaveResume)
         viewport.removeEventListener('keydown', handleKeyDown)
-        window.removeEventListener('blur', handlePause)
+        viewport.removeEventListener('pointerdown', handlePointerDown)
+        window.removeEventListener('pointerup', handlePointerUp)
+        window.removeEventListener('pointercancel', handlePointerUp)
+        window.removeEventListener('blur', handleWindowBlur)
+        isPressed = false
         // The listeners that would release a hover or focus pause are gone (the last toast
         // closed, or the viewport was replaced), so release it here. A window-blur pause
         // is kept until the window `focus` listener above releases it.
-        if (document.hasFocus())
+        if (!isPausedByWindowBlur())
           releasePause(viewport)
       })
     }

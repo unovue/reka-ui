@@ -270,6 +270,7 @@ const bindFormReset = formResetBinder(onFormReset)
     :as="as"
     :as-child="asChild"
     data-dismissable-layer
+    data-editable-root
     @vue:mounted="bindFormReset"
     @pointerdown.capture="pointerDownOutside.onPointerDownCapture"
   >

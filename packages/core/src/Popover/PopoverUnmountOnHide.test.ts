@@ -166,8 +166,7 @@ describe.each([
   [false, true],
 ])('given Popovers with modal=%s and unmountOnHide=%s', describePopovers)
 
-// TODO(v3-port): #2066 v3 PopoverRoot has no `unmountOnHide` prop
-describe.skip.each([
+describe.each([
   [true, false],
   [false, false],
 ])('given Popovers with modal=%s and unmountOnHide=%s', describePopovers)

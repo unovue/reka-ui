@@ -248,7 +248,7 @@ provideFormResetDefault(props.defaultValue)
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="popover">
     <slot />
   </PopperRoot>
 </template>

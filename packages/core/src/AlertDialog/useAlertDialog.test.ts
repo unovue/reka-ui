@@ -102,6 +102,21 @@ describe('useAlertDialogContent', () => {
     expect(document.activeElement).toBe(button)
     button.remove()
   })
+
+  it('keeps the registered cancel element when another cancel button unmounts (#3202)', () => {
+    const c = useAlertDialogContent()
+    const cancel = document.createElement('button')
+    document.body.appendChild(cancel)
+    c.contentContext.onCancelElementChange(cancel)
+    // Another cancel button unmounts while the registered one is still rendered.
+    c.contentContext.onCancelElementChange(undefined)
+    expect(c.cancelElement.value).toBe(cancel)
+
+    // The content closes: the registered one has left the document too.
+    cancel.remove()
+    c.contentContext.onCancelElementChange(undefined)
+    expect(c.cancelElement.value).toBeUndefined()
+  })
 })
 
 describe('useAlertDialog — through AlertDialogRoot', () => {

@@ -7,6 +7,60 @@ export const EVENT_OPTIONS = { bubbles: false, cancelable: true }
 type FocusableTarget = HTMLElement | { focus: () => void }
 
 /**
+ * A scope's place among the mounted scopes, by the component tree. A nested scope is usually
+ * teleported (a submenu, a Select inside a Dialog), so the DOM alone cannot tell it from an
+ * unrelated one.
+ */
+export interface FocusScopeNode {
+  /** The scope this one is nested in, if any. */
+  parent?: FocusScopeNode
+  /**
+   * Set while the scope's unmount auto-focus is being handled: whether focus had left the
+   * scope before any of its handlers ran.
+   */
+  focusLeftAtUnmount?: boolean
+}
+
+export const focusScopeNodes = new WeakMap<Element, FocusScopeNode>()
+
+/**
+ * Whether focus has moved on from a scope that is closing, given by its container (the
+ * target of its unmount auto-focus event; read it while the event is dispatched). Focus is
+ * then on an element that is neither in that scope nor in a scope nested in it: something
+ * else took it while the scope was closing, typically another layer opened by the same
+ * interaction, and returning focus to the trigger would take it back from there.
+ *
+ * Focus that was merely dropped (on `body`, as when the focused element is removed) has not
+ * moved on. While a scope around this one is unmounting with it, focus is wherever that
+ * scope's own handler has just put it, so the answer is the one that scope got beforehand.
+ */
+export function hasFocusLeftScope(container: EventTarget | null): boolean {
+  // Not an `instanceof` check, which an element of another realm (an iframe) would fail
+  const ownerDocument = (container as Element | null)?.ownerDocument
+  if (!ownerDocument)
+    return false
+  const scope = focusScopeNodes.get(container as Element)
+  for (let parent = scope?.parent; parent; parent = parent.parent) {
+    if (parent.focusLeftAtUnmount !== undefined)
+      return parent.focusLeftAtUnmount
+  }
+
+  const activeElement = getActiveElement(container as Element)
+  if (!activeElement || activeElement === ownerDocument.body || activeElement === ownerDocument.documentElement)
+    return false
+
+  for (let node: Element | null = activeElement; node; node = node.parentElement ?? ((node.getRootNode() as ShadowRoot).host as Element | undefined) ?? null) {
+    if (node === container)
+      return false
+    for (let nested = focusScopeNodes.get(node); nested; nested = nested.parent) {
+      if (nested === scope)
+        return false
+    }
+  }
+  return true
+}
+
+/**
  * Attempts focusing the first element in a list of candidates.
  * Stops when focus has actually moved.
  */
@@ -22,10 +76,9 @@ export function focusFirst(candidates: HTMLElement[], { select = false } = {}) {
 /**
  * Returns the first and last tabbable elements inside a container.
  */
-export function getTabbableEdges(container: HTMLElement) {
-  const candidates = getTabbableCandidates(container)
+export function getTabbableEdges(container: HTMLElement, candidates = getTabbableCandidates(container)) {
   const first = findVisible(candidates, container)
-  const last = findVisible(candidates.reverse(), container)
+  const last = findVisible([...candidates].reverse(), container)
   return [first, last] as const
 }
 
@@ -44,7 +97,7 @@ export function getTabbableCandidates(container: HTMLElement) {
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, {
     acceptNode: (node: any) => {
       const isHiddenInput = node.tagName === 'INPUT' && node.type === 'hidden'
-      if (node.disabled || node.hidden || isHiddenInput)
+      if (isDisabled(node) || node.hidden || isHiddenInput)
         return NodeFilter.FILTER_SKIP
       // `.tabIndex` is not the same as the `tabindex` attribute. It works on the
       // runtime's understanding of tabbability, so this automatically accounts
@@ -55,7 +108,7 @@ export function getTabbableCandidates(container: HTMLElement) {
     },
   })
   while (walker.nextNode()) nodes.push(walker.currentNode as HTMLElement)
-  return nodes.sort((a, b) => {
+  return keepRadioTabStops(nodes, container).sort((a, b) => {
     if (a.tabIndex === b.tabIndex)
       return 0
     if (a.tabIndex === 0)
@@ -63,6 +116,71 @@ export function getTabbableCandidates(container: HTMLElement) {
     if (b.tabIndex === 0)
       return -1
     return a.tabIndex - b.tabIndex
+  })
+}
+
+/**
+ * Whether a control is disabled, by its own `disabled` or by a `<fieldset disabled>` around it.
+ * The `disabled` property does not report the latter, and such a control keeps `tabIndex` 0.
+ */
+export function isDisabled(node: any): boolean {
+  return !!node.disabled || node.matches(':disabled')
+}
+
+function isRadioInput(node: Element | null): node is HTMLInputElement {
+  return node?.tagName === 'INPUT' && (node as HTMLInputElement).type === 'radio'
+}
+
+/** Whether `a` and `b` are radios of the same named group: same `name`, form owner and root. */
+function isSameRadioGroup(a: Element | null, b: Element | null) {
+  return isRadioInput(a) && isRadioInput(b) && a.name !== '' && a.name === b.name
+    && a.form === b.form && a.getRootNode() === b.getRootNode()
+}
+
+/**
+ * A native radio group is a single tab stop: its checked radio, or any of its radios when
+ * none is checked. The other radios still report `tabIndex` 0, so drop them from `candidates`.
+ * Only a checked radio that is itself a visible candidate counts, so a group whose checked
+ * radio can't be tabbed to (or sits outside the container) keeps its other radios.
+ * The focused radio is kept even when it is not its group's tab stop (it can be focused
+ * from script), so that Tab is worked out from where focus actually is.
+ */
+export function keepRadioTabStops(candidates: HTMLElement[], container: HTMLElement) {
+  const checkedRadios = candidates.filter((candidate): candidate is HTMLInputElement =>
+    isRadioInput(candidate) && candidate.checked && candidate.name !== '' && !isHidden(candidate, { upTo: container }),
+  )
+  if (!checkedRadios.length)
+    return candidates
+  const focusedElement = getActiveElement()
+  return candidates.filter(candidate =>
+    !isRadioInput(candidate) || candidate === focusedElement || checkedRadios.includes(candidate)
+    || !checkedRadios.some(checked => isSameRadioGroup(checked, candidate)),
+  )
+}
+
+/**
+ * Returns the tab stops that follow `element` in `candidates`, which are given in tabbing order.
+ * A native radio group is entered at its checked radio or, with nothing checked, at its first
+ * radio in tabbing order that can be seen. Its other radios are not tab stops, so Tab from a
+ * radio never lands on an unchecked radio of the same group. A radio that is not a candidate
+ * itself (e.g. `tabindex="-1"`) is placed at the radio of its group that is.
+ */
+export function getTabStopsAfter(candidates: HTMLElement[], element: Element | null) {
+  let index = candidates.indexOf(element as HTMLElement)
+  if (index === -1)
+    index = candidates.findIndex(candidate => isSameRadioGroup(candidate, element))
+  // Starting with the focused radio leaves out the unchecked radios of its group on both sides of it.
+  const groups: Element[] = isRadioInput(element) ? [element] : []
+  return candidates.filter((candidate, i) => {
+    if (!isRadioInput(candidate) || candidate.name === '')
+      return i > index
+    // A hidden radio can't take focus, so it must not stand in for the radios of its group that can.
+    if (isHidden(candidate, {}))
+      return false
+    if (!candidate.checked && groups.some(radio => isSameRadioGroup(radio, candidate)))
+      return false
+    groups.push(candidate)
+    return i > index
   })
 }
 

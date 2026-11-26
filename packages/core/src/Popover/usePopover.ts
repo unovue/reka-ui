@@ -114,6 +114,11 @@ export interface UsePopoverProps<Payload = unknown> {
    */
   modal?: MaybeRefOrGetter<boolean | undefined>
   /**
+   * When `false`, the content is hidden with CSS instead of unmounted on close.
+   * @defaultValue `true`
+   */
+  unmountOnHide?: MaybeRefOrGetter<boolean | undefined>
+  /**
    * Base id the trigger/content ids derive from (`<baseId>-trigger`,
    * `<baseId>-content`). Defaults to `reka-popover-<n>` from a per-call counter,
    * which is NOT stable across server and client: SSR consumers must pass a
@@ -187,6 +192,7 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
     onUpdate: props.onUpdate,
   })
   const modal = computed<boolean>(() => toValue(props.modal) ?? false)
+  const unmountOnHide = computed<boolean>(() => toValue(props.unmountOnHide) ?? true)
   const hasCustomAnchor = ref(false)
 
   // Writable: a `PopoverTrigger` / `PopoverContent` `id` replaces the generated
@@ -238,6 +244,7 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
     set contentId(value) { contentId.value = value },
     open,
     modal: modal as Ref<boolean>,
+    unmountOnHide: unmountOnHide as Ref<boolean>,
     onOpenChange,
     onOpenToggle,
     hasCustomAnchor,

@@ -10,6 +10,7 @@ import { blockPositioningWrapper, mountInternalBackdrop } from './internalBackdr
 import {
   branches,
   highestDisabledIndex,
+  highestDisabledIndexAt,
   indexOfLayer,
   registerStackLayer,
 } from './layerStack'
@@ -92,7 +93,10 @@ export function useDismissableLayer(options: UseDismissableLayerOptions) {
       containsComposed(branch, event.target as Node),
     )
 
-    if (!present() || !isPointerEventsEnabled.value || isPointerDownOnBranch)
+    // Eligibility as of the start of this press: a handler on the target may
+    // already have opened another layer that disables outside pointer events.
+    const isEnabledAtPress = index.value >= highestDisabledIndexAt(event.detail.originalEvent)
+    if (!present() || !isEnabledAtPress || isPointerDownOnBranch)
       return
     options.onPointerDownOutside?.(event)
     options.onInteractOutside?.(event)
@@ -101,7 +105,9 @@ export function useDismissableLayer(options: UseDismissableLayerOptions) {
       options.onDismiss?.({ reason: 'outside-press', event })
   }, element, () => present())
 
-  useFocusOutside((event) => {
+  // A focus move during a touch press outside is handled after that press's deferred
+  // `pointerDownOutside`, the order a mouse press produces (see `runAfterTouchPress`).
+  useFocusOutside(event => pointerDownOutside.runAfterTouchPress(() => {
     const isFocusInBranch = [...branches].some(branch =>
       containsComposed(branch, event.target as Node),
     )
@@ -112,7 +118,7 @@ export function useDismissableLayer(options: UseDismissableLayerOptions) {
     options.onInteractOutside?.(event)
     if (!event.defaultPrevented)
       options.onDismiss?.({ reason: 'focus-outside', event })
-  }, element, () => present())
+  }), element, () => present())
 
   // Internal backdrop (#2822, replaces the body `pointer-events: none` lock of
   // #2674/#2867). `watch` with explicit sources (not `watchEffect`) so it re-runs
