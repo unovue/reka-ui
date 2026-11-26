@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { PaginationChangeReason } from './usePagination'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { createContext, useForwardElement } from '@/shared'
+import { createRekaContext, useForwardElement } from '@/shared'
 
 export type PaginationRootContext = {
   /** Read-only: call `onPageChange` to change the page. */
@@ -45,7 +45,7 @@ export type PaginationRootEmits = {
 }
 
 export const [injectPaginationRootContext, providePaginationRootContext]
-  = createContext<PaginationRootContext>('PaginationRoot')
+  = createRekaContext<PaginationRootContext>('PaginationRoot')
 </script>
 
 <script setup lang="ts">

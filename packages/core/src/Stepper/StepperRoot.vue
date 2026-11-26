@@ -5,7 +5,7 @@ import type { StepperChangeReason } from './useStepper'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { Primitive } from '@/Primitive'
-import { createContext, mergeExpose, useDirection, useForwardElement } from '@/shared'
+import { createRekaContext, mergeExpose, useDirection, useForwardElement } from '@/shared'
 import { useStepper } from './useStepper'
 
 export interface StepperRootContext {
@@ -53,7 +53,7 @@ export type StepperRootEmits = {
 }
 
 export const [injectStepperRootContext, provideStepperRootContext]
-  = createContext<StepperRootContext>('StepperRoot')
+  = createRekaContext<StepperRootContext>('StepperRoot')
 </script>
 
 <script setup lang="ts">

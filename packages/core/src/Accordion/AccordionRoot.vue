@@ -4,7 +4,7 @@ import type { AccordionChangeReason, UseAccordionReturn } from './useAccordion'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, DataOrientation, Direction, SingleOrMultipleProps, SingleOrMultipleType } from '@/shared/types'
-import { createContext, useDirection, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useForwardElement } from '@/shared'
 
 export interface AccordionRootProps<T = string | string[]>
   extends PrimitiveProps, SingleOrMultipleProps<T> {
@@ -67,7 +67,7 @@ export type AccordionRootContext<P extends AccordionRootProps> = {
 }
 
 export const [injectAccordionRootContext, provideAccordionRootContext]
-  = createContext<AccordionRootContext<AccordionRootProps>>('AccordionRoot')
+  = createRekaContext<AccordionRootContext<AccordionRootProps>>('AccordionRoot')
 </script>
 
 <script setup lang="ts" generic="T extends (string | string[]), ExplicitType extends SingleOrMultipleType">

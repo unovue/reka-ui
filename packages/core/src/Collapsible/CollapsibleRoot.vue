@@ -4,7 +4,7 @@ import type { CollapsibleChangeReason } from './useCollapsible'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import { computed, toRef } from 'vue'
-import { createContext, mergeExpose, setGeneratedIds, useForwardElement, useId } from '@/shared'
+import { createRekaContext, mergeExpose, setGeneratedIds, useForwardElement, useId } from '@/shared'
 
 export interface CollapsibleRootProps extends PrimitiveProps {
   /** The open state of the collapsible when it is initially rendered. <br> Use when you do not need to control its open state. */
@@ -38,7 +38,7 @@ export interface CollapsibleRootContext {
 }
 
 export const [injectCollapsibleRootContext, provideCollapsibleRootContext]
-  = createContext<CollapsibleRootContext>('CollapsibleRoot')
+  = createRekaContext<CollapsibleRootContext>('CollapsibleRoot')
 </script>
 
 <script setup lang="ts">

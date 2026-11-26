@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { CollapsibleRootProps } from '../Collapsible'
 import type { DisclosureState } from '@/shared'
-import { createContext, mergeExpose, setGeneratedIds, useForwardElement, useId } from '@/shared'
+import { createRekaContext, mergeExpose, setGeneratedIds, useForwardElement, useId } from '@/shared'
 import { injectAccordionRootContext } from './AccordionRoot.vue'
 
 export interface AccordionItemProps
@@ -37,7 +37,7 @@ interface AccordionItemContext {
 }
 
 export const [injectAccordionItemContext, provideAccordionItemContext]
-  = createContext<AccordionItemContext>('AccordionItem')
+  = createRekaContext<AccordionItemContext>('AccordionItem')
 </script>
 
 <script setup lang="ts">

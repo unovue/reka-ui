@@ -5,7 +5,7 @@ import type { TabsChangeReason, TabsTriggerEntry } from './useTabs'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
-import { createContext, useDirection, useForwardElement, useId } from '@/shared'
+import { createRekaContext, useDirection, useForwardElement, useId } from '@/shared'
 
 export interface TabsRootContext {
   modelValue: ComputedRef<StringOrNumber | null | undefined>
@@ -74,7 +74,7 @@ export type TabsRootEmits<T extends StringOrNumber = StringOrNumber> = {
 }
 
 export const [injectTabsRootContext, provideTabsRootContext]
-  = createContext<TabsRootContext>('TabsRoot')
+  = createRekaContext<TabsRootContext>('TabsRoot')
 </script>
 
 <script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">

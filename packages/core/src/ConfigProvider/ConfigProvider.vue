@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { Translate, Translations } from '@/shared/translations'
 import type { Direction, ScrollBodyOption } from '@/shared/types'
-import { createContext } from '@/shared'
+import { createRekaContext } from '@/shared'
 import { createTranslate } from '@/shared/translations'
 
 interface ConfigProviderContextValue {
@@ -16,7 +16,7 @@ interface ConfigProviderContextValue {
 }
 
 export const [injectConfigProviderContext, provideConfigProviderContext]
-  = createContext<ConfigProviderContextValue>('ConfigProvider')
+  = createRekaContext<ConfigProviderContextValue>('ConfigProvider')
 
 export interface ConfigProviderProps {
   /**

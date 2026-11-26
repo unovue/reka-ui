@@ -3,11 +3,11 @@ import type { Ref } from 'vue'
 
 import type { PrimitiveProps } from '@/Primitive'
 import { Primitive } from '@/Primitive'
-import { createContext, useForwardElement, useId } from '@/shared'
+import { createRekaContext, useForwardElement, useId } from '@/shared'
 import { injectStepperRootContext } from './StepperRoot.vue'
 import { getStepperItemContext, getStepperItemSurface } from './useStepper'
 
-export const [injectStepperItemContext, provideStepperItemContext] = createContext<StepperItemContext>('StepperItem')
+export const [injectStepperItemContext, provideStepperItemContext] = createRekaContext<StepperItemContext>('StepperItem')
 
 /**
  * Stepper is one of the multi-value `data-state` machines grandfathered by

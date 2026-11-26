@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { ProgressState } from './useProgress'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardElement } from '@/shared'
+import { createRekaContext, useForwardElement } from '@/shared'
 
 export type ProgressRootEmits = {
   /** Event handler called when an invalid `modelValue` is corrected to `null`. */
@@ -35,7 +35,7 @@ export interface ProgressRootContext {
 }
 
 export const [injectProgressRootContext, provideProgressRootContext]
-  = createContext<ProgressRootContext>('ProgressRoot')
+  = createRekaContext<ProgressRootContext>('ProgressRoot')
 
 export type { ProgressState }
 </script>

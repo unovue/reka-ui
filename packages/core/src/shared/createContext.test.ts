@@ -116,11 +116,61 @@ describe('createContext (public)', () => {
 })
 
 describe('internal call sites', () => {
-  // TODO(v3-port): #2763 v3's components still call the public createContext; the switch to createRekaContext lived in v2 src
-  it.skip('use createRekaContext, never the public createContext', () => {
+  // TODO(v3-port): #2763 families whose call sites are not switched yet. Remove a family once its
+  // contexts use createRekaContext; the test then guards it.
+  const PENDING = new Set([
+    'AlertDialog',
+    'Autocomplete',
+    'Calendar',
+    'Checkbox',
+    'ColorArea',
+    'ColorField',
+    'ColorSlider',
+    'ColorSwatchPicker',
+    'Combobox',
+    'ContextMenu',
+    'DateField',
+    'DatePicker',
+    'DateRangeField',
+    'DateRangePicker',
+    'Dialog',
+    'Drawer',
+    'DropdownMenu',
+    'Editable',
+    'Field',
+    'Form',
+    'HoverCard',
+    'Listbox',
+    'Menu',
+    'Menubar',
+    'NavigationMenu',
+    'NumberField',
+    'PinInput',
+    'Popover',
+    'Popper',
+    'RadioGroup',
+    'RangeCalendar',
+    'Rating',
+    'RovingFocus',
+    'Select',
+    'Slider',
+    'Switch',
+    'TagGroup',
+    'TagsInput',
+    'TimeField',
+    'TimeRangeField',
+    'Toast',
+    'ToggleGroup',
+    'Toolbar',
+    'Tooltip',
+    'Tree',
+  ])
+
+  it('use createRekaContext, never the public createContext', () => {
     const srcDir = join(__dirname, '..')
     const offenders = readdirSync(srcDir, { recursive: true, encoding: 'utf8' })
       .filter(file => /\.(?:ts|vue)$/.test(file) && !/\.(?:test|story)\./.test(file) && !file.includes('createContext.ts'))
+      .filter(file => !PENDING.has(file.split(/[\\/]/)[0]))
       .filter(file => /\bcreateContext\s*[<(]/.test(readFileSync(join(srcDir, file), 'utf8')))
       .map(file => relative(srcDir, join(srcDir, file)))
     expect(offenders).toEqual([])
