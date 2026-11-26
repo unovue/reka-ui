@@ -8,7 +8,7 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import { computed, nextTick, ref, toValue, watch } from 'vue'
 import { useMenuRoot } from '@/Menu/useMenu'
 import { containsComposed, createPartSurface } from '@/shared'
-import { isTouchOrPen } from './utils'
+import { claimedLongPressEvents, isTouchOrPen } from './utils'
 
 // =============================================================================
 // Headless composable for the ContextMenu family — issue #2723.
@@ -133,6 +133,10 @@ export function createContextMenuTriggerSurface(
       if (isTouchOrPen(event) && !event.defaultPrevented) {
         // clear the long press here in case there's multiple touch points
         clearLongPress()
+        // Nested triggers all get the same press: only the innermost enabled one starts a long press.
+        if (claimedLongPressEvents.has(event))
+          return
+        claimedLongPressEvents.add(event)
         longPressTimer = window.setTimeout(handleOpen, context.pressOpenDelay.value, event)
       }
     }
