@@ -214,7 +214,7 @@ function references(referrer: HTMLElement, attribute: string) {
 }
 
 // TODO(v3-port): #3377 only v3's Dialog, AlertDialog and Drawer follow a consumer id on the referenced part
-const FOLLOWS_CONSUMER_ID_IN_V3 = new Set(['DialogTitle', 'DialogDescription', 'AlertDialogTitle', 'AlertDialogDescription', 'DrawerTitle', 'DrawerDescription'])
+const FOLLOWS_CONSUMER_ID_IN_V3 = new Set(['DialogTitle', 'DialogDescription', 'AlertDialogTitle', 'AlertDialogDescription', 'DrawerTitle', 'DrawerDescription', 'FieldLabel'])
 
 describe.each(Object.entries(cases))('%s', (name, { generatedId, attribute, render, multipleParts = true }) => {
   const itFollows = FOLLOWS_CONSUMER_ID_IN_V3.has(name) ? it : it.skip
@@ -348,8 +348,7 @@ describe('server render and hydration with consumer ids', () => {
     return container
   }
 
-  // TODO(v3-port): #3377 v3's FieldLabel/SelectLabel/SelectItemText do not follow a consumer id
-  it.skip('references a consumer id on FieldLabel', async () => {
+  it('references a consumer id on FieldLabel', async () => {
     const container = await hydrate(() => h(FieldRoot, null, () => [
       h(FieldLabel, { id: 'my-label' }, () => 'Label'),
       h(FieldControl, { 'data-testid': 'control' }),

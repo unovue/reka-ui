@@ -211,7 +211,8 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
     const rgb = convertToRgb(color.value)
     const hexInt = (Math.round(rgb.r) << 16) | (Math.round(rgb.g) << 8) | Math.round(rgb.b)
     const clamped = Math.min(Math.max(hexInt + Math.trunc(delta), MIN_HEX_INT), MAX_HEX_INT)
-    applyChange(parseColor(`#${clamped.toString(16).padStart(6, '0')}`), event)
+    // Hex stepping moves the RGB channels only; keep the current alpha.
+    applyChange({ ...parseColor(`#${clamped.toString(16).padStart(6, '0')}`), alpha: color.value.alpha }, event)
   }
 
   function stepChannel(delta: number, event?: Event) {

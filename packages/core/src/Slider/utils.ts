@@ -1,7 +1,7 @@
 import type { ComputedRef } from 'vue'
 import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { Translate } from '@/shared/translations'
-import { clamp, createContext } from '@/shared'
+import { clamp, createRekaContext } from '@/shared'
 import { defaultTranslate } from '@/shared/translations'
 
 export function getNextSortedValues(prevValues: number[] = [], nextValue: number, atIndex: number) {
@@ -100,13 +100,11 @@ export function linearScale(input: readonly [number, number], output: readonly [
   }
 }
 
-export function getDecimalCount(value: number) {
-  return (String(value).split('.')[1] || '').length
-}
-
 export function roundValue(value: number, decimalCount: number) {
   const rounder = 10 ** decimalCount
-  return Math.round(value * rounder) / rounder
+  // A step as small as `Number.MIN_VALUE` needs more digits than a double can scale by.
+  const scaled = value * rounder
+  return Number.isFinite(scaled) ? Math.round(scaled) / rounder : value
 }
 
 export type Direction = 'ltr' | 'rtl'
@@ -177,7 +175,7 @@ export function getSliderThumbTransform(orientation: 'horizontal' | 'vertical', 
 }
 
 export const [injectSliderOrientationContext, provideSliderOrientationContext]
-  = createContext<SliderOrientation>('SliderRoot')
+  = createRekaContext<SliderOrientation>('SliderRoot', 'SliderOrientationContext')
 
 /**
  * A slider's participation in an ancestor `FieldRoot` (`null` outside one).
@@ -187,4 +185,4 @@ export const [injectSliderOrientationContext, provideSliderOrientationContext]
  * @internal
  */
 export const [injectSliderFieldContext, provideSliderFieldContext]
-  = createContext<FieldControlBinding | null>('SliderRoot', 'SliderFieldContext')
+  = createRekaContext<FieldControlBinding | null>('SliderRoot', 'SliderFieldContext')

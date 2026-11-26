@@ -20,8 +20,7 @@ function mountPin(defaultValue: (number | undefined)[], otp = false) {
   return { wrapper, form, indices, inputs: () => wrapper.findAll<HTMLInputElement>('input:not([aria-hidden])') }
 }
 
-// TODO(v3-port): #3309 navigate, paste and submit by mounted slot order (usePinInput resolved to v3, still index-based)
-it.skip('submits the visible digits and restores a retained digit when its slot returns', async () => {
+it('submits the visible digits and restores a retained digit when its slot returns', async () => {
   const { indices, form, inputs, wrapper } = mountPin([0, 5, 3, 6])
   indices.value = [0, 1, 3]
   await nextTick()
@@ -36,8 +35,7 @@ it.skip('submits the visible digits and restores a retained digit when its slot 
   expect(new FormData(form).get('pin')).toBe('0537')
 })
 
-// TODO(v3-port): #3309 navigate, paste and submit by mounted slot order (usePinInput resolved to v3, still index-based)
-it.skip('writes full and partial pastes to the model indices of visible slots', async () => {
+it('writes full and partial pastes to the model indices of visible slots', async () => {
   const { form, indices, inputs, wrapper } = mountPin([0, 1, 8, 3])
   indices.value = [0, 2, 3]
   await nextTick()
@@ -51,14 +49,13 @@ it.skip('writes full and partial pastes to the model indices of visible slots', 
   }
 
   await paste(1, '456')
-  expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([[4, 1, 5, 6]])
+  expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toEqual([4, 1, 5, 6])
   await paste(1, '07')
-  expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([[4, 1, 0, 7]])
+  expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toEqual([4, 1, 0, 7])
   expect(wrapper.emitted('complete')?.at(-1)).toEqual([[4, 0, 7]])
 })
 
-// TODO(v3-port): #3309 navigate, paste and submit by mounted slot order (usePinInput resolved to v3, still index-based)
-it.skip('moves focus and clears the previous visible digit across a gap', async () => {
+it('moves focus and clears the previous visible digit across a gap', async () => {
   const { indices, inputs, wrapper } = mountPin([9, undefined, undefined, undefined], true)
   indices.value = [1, 2, 3]
   await nextTick()
@@ -69,11 +66,10 @@ it.skip('moves focus and clears the previous visible digit across a gap', async 
   expect(document.activeElement).toBe(second.element)
   await userEvent.keyboard('{Backspace}')
   expect(document.activeElement).toBe(first.element)
-  expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([[9, undefined, undefined, undefined]])
+  expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toEqual([9, undefined, undefined, undefined])
 })
 
-// TODO(v3-port): #3309 navigate, paste and submit by mounted slot order (usePinInput resolved to v3, still index-based)
-it.skip('announces ordinals in mounted order when a middle slot is removed', async () => {
+it('announces ordinals in mounted order when a middle slot is removed', async () => {
   const { indices, inputs } = mountPin([])
   indices.value = [0, 1, 3]
   await nextTick()

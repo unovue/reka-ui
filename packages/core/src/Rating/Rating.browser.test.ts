@@ -25,7 +25,8 @@ it('submits the cleared rating and unchecks its radio', async ({ onTestFinished 
   expect(new FormData(form).get('rating')).toBe('2')
 
   await userEvent.click(radio.element)
-  expect(wrapper.emitted('update:modelValue')).toEqual([[2], [0]])
+  // v3 emits the change details as a second argument.
+  expect(wrapper.emitted('update:modelValue')?.map(([value]) => value)).toEqual([2, 0])
   expect(radio.attributes('aria-checked')).toBe('false')
   expect(new FormData(form).get('rating')).toBe('0')
 })

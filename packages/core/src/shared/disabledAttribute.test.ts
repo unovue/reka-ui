@@ -157,9 +157,10 @@ function render(c: Case, disabled: boolean, as: As) {
 }
 
 // TODO(v3-port): #3327 v3's parts still render disabled="false" on an enabled non-button element (Carousel, from v2, only as an element)
-const itOmits = (c: Case) => c.name === 'CarouselAutoplayToggle' ? it : it.skip
-// TODO(v3-port): #3327 v3's SwitchRoot does not pass `disabled: false` on to a component, custom element or `asChild` child
-const itPassesFalse = (c: Case) => c.name === 'SwitchRoot' ? it.skip : it
+// Ported: the fields lane's parts.
+const OMITS = ['CarouselAutoplayToggle', 'CheckboxRoot', 'ColorFieldInput', 'EditableCancelTrigger', 'EditableEditTrigger', 'EditableInput', 'EditableSubmitTrigger', 'PinInputInput', 'SwitchRoot']
+const itOmits = (c: Case) => OMITS.includes(c.name) ? it : it.skip
+const itPassesFalse = (_c: Case) => it
 
 describe.each(cases)('$name', (c) => {
   itOmits(c).each(['div', 'span', 'a'])('omits the disabled attribute when enabled and rendered as %s', (as) => {

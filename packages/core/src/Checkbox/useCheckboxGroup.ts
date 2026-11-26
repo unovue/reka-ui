@@ -1,8 +1,8 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
-import type { CheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
+import type { CheckboxGroupItem, CheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue } from '@/shared/types'
-import { computed, toValue } from 'vue'
+import { computed, shallowReactive, toValue } from 'vue'
 import { useControllableState } from '@/shared'
 import { toggleArrayValue } from './utils'
 
@@ -29,6 +29,11 @@ export interface UseCheckboxGroupProps<T extends AcceptableValue = AcceptableVal
    * unchecked checkboxes are blocked (`aria-disabled`) but stay focusable.
    */
   max?: MaybeRefOrGetter<number | null | undefined>
+  /**
+   * Every value a parent checkbox (`useCheckbox({ parent: true })`) controls: it is checked
+   * when all of them are in the model, unchecked when none are, and indeterminate otherwise.
+   */
+  allValues?: MaybeRefOrGetter<T[] | undefined>
   /** Component `emit`; receives `beforeUpdate:modelValue` then `update:modelValue`. */
   emit?: (event: any, ...args: any[]) => void
   /** Called before a change commits; `details.cancel()` vetoes it. */
@@ -76,6 +81,7 @@ export function useCheckboxGroup<T extends AcceptableValue = AcceptableValue>(pr
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const rovingFocus = computed(() => toValue(props.rovingFocus) ?? true)
   const max = computed(() => toValue(props.max))
+  const allValues = computed(() => toValue(props.allValues))
 
   function changeModelValue(value: T[], reason: CheckboxGroupChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
     return setState(value, reason, event)
@@ -90,6 +96,8 @@ export function useCheckboxGroup<T extends AcceptableValue = AcceptableValue>(pr
     rovingFocus: rovingFocus as Ref<boolean>,
     disabled: disabled as Ref<boolean>,
     max,
+    allValues: allValues as Ref<AcceptableValue[] | undefined>,
+    items: shallowReactive(new Set<CheckboxGroupItem>()),
     changeModelValue: changeModelValue as CheckboxGroupRootContext['changeModelValue'],
   }
 

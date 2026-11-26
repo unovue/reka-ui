@@ -3,9 +3,9 @@ import type { Ref, ShallowRef } from 'vue'
 import type { EditableChangeReason } from './useEditable'
 import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
-import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, Translate } from '@/shared'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { createContext, mergeExpose, useDirection, useFormControl, useForwardElement } from '@/shared'
+import { createRekaContext, mergeExpose, useDirection, useFormControl, useForwardElement } from '@/shared'
 
 export type ActivationMode = 'focus' | 'dblclick' | 'none'
 export type SubmitMode = 'blur' | 'enter' | 'none' | 'both'
@@ -33,6 +33,8 @@ export type EditableRootContext = {
   isEmpty: Ref<boolean>
   readonly: Ref<boolean>
   autoResize: Ref<boolean>
+  /** The nearest `ConfigProvider`'s translate function, for the built-in labels. */
+  t: Translate
 }
 
 export interface EditableRootProps extends PrimitiveProps, FormFieldProps {
@@ -76,7 +78,7 @@ export type EditableRootEmits = {
 }
 
 export const [injectEditableRootContext, provideEditableRootContext]
-  = createContext<EditableRootContext>('EditableRoot')
+  = createRekaContext<EditableRootContext>('EditableRoot')
 
 /** @internal The root's Field binding, for the parts. Only provided inside a `FieldRoot`. */
 export interface EditableFieldControl {
@@ -87,7 +89,7 @@ export interface EditableFieldControl {
 
 /** @internal */
 export const [injectEditableFieldControl, provideEditableFieldControl]
-  = createContext<EditableFieldControl | null>('EditableRoot', 'EditableFieldControl')
+  = createRekaContext<EditableFieldControl | null>('EditableRoot', 'EditableFieldControl')
 </script>
 
 <script setup lang="ts">

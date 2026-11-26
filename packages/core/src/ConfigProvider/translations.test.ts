@@ -793,8 +793,8 @@ const translated: Record<string, { translations: Partial<Translations>, checks: 
   },
 }
 
-// TODO(v3-port): #3418 only Carousel and SliderArea call useTranslations in v3; the other parts keep hard-coded labels
-const TRANSLATED_IN_V3 = new Set(['Carousel', 'CarouselTabs', 'SliderArea'])
+// TODO(v3-port): #3418 the other parts keep hard-coded labels in v3
+const TRANSLATED_IN_V3 = new Set(['Carousel', 'CarouselTabs', 'ColorSlider', 'ColorSwatch', 'Editable', 'NumberField', 'PinInput', 'Slider', 'SliderArea'])
 // TODO(v3-port): #3418 the Month/Year pickers are deleted in v3
 const DELETED_IN_V3 = new Set(['MonthPicker', 'MonthRangePicker', 'YearPicker', 'YearRangePicker'])
 // TODO(v3-port): #3418 #3388 v3's ColorArea and PaginationRoot have no built-in roledescription / aria-label

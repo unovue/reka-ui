@@ -122,7 +122,9 @@ describe('usePinInput — model', () => {
   it('root surface carries dir and complete/disabled state as data-*', () => {
     const p = scoped(() => usePinInput({ disabled: true, dir: 'rtl' }))
     expect(p.root.props.value).toEqual({ dir: 'rtl' })
-    expect(p.root.attrs.value).toMatchObject({ 'dir': 'rtl', 'data-disabled': '', 'data-complete': '' })
+    expect(p.root.attrs.value).toMatchObject({ 'dir': 'rtl', 'data-disabled': '' })
+    // No input is mounted, so there is nothing to complete.
+    expect(p.root.attrs.value).not.toHaveProperty('data-complete')
   })
 })
 
@@ -149,7 +151,7 @@ describe('usePinInput — standalone render', () => {
     const inputs = [...container.querySelectorAll('input')]
     await nextTick()
     expect(inputs[0].getAttribute('aria-label')).toBe('pin input 1 of 3')
-    expect(inputs[0].getAttribute('autocomplete')).toBe('false')
+    expect(inputs[0].getAttribute('autocomplete')).toBe('off')
     expect(await axe(container)).toHaveNoViolations()
 
     inputs[0].focus()
