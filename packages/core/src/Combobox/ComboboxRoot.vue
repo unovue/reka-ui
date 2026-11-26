@@ -47,6 +47,8 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
    * content rather than an input inside it, so no virtual keyboard opens.
    */
   interactionType: Ref<ComboboxInteractionType>
+  /** Whether opening the combobox moves focus to the input. Set by `ComboboxInput`'s `focusOnOpen`. */
+  focusInputOnOpen: Ref<boolean>
   parentElement: Ref<HTMLElement | undefined>
   resetSearchTermOnSelect: Ref<boolean>
   /** Called with the close reason when the popup closes and the input text should be reset. */

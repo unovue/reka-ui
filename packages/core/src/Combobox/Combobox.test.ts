@@ -312,6 +312,126 @@ describe('given a persistent Combobox with its input inside content', () => {
   })
 })
 
+describe('given a Combobox with its input inside content and focusOnOpen', () => {
+  let wrapper: VueWrapper | undefined
+
+  function mountCombobox(props: { unmountOnHide: boolean, focusOnOpen?: boolean }) {
+    document.body.innerHTML = ''
+    wrapper = mount(defineComponent({
+      components: { ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport },
+      setup: () => ({ props }),
+      template: `<ComboboxRoot :unmount-on-hide="props.unmountOnHide">
+  <ComboboxTrigger data-testid="trigger">Open</ComboboxTrigger>
+  <ComboboxPortal>
+    <ComboboxContent>
+      <ComboboxInput v-if="props.focusOnOpen === undefined" data-testid="input" aria-label="Fruit" />
+      <ComboboxInput v-else data-testid="input" aria-label="Fruit" :focus-on-open="props.focusOnOpen" />
+      <ComboboxViewport>
+        <ComboboxItem value="Apple">Apple</ComboboxItem>
+        <ComboboxItem value="Banana">Banana</ComboboxItem>
+      </ComboboxViewport>
+    </ComboboxContent>
+  </ComboboxPortal>
+</ComboboxRoot>`,
+    }), { attachTo: document.body })
+    return wrapper
+  }
+
+  const trigger = () => document.querySelector<HTMLElement>('[data-testid="trigger"]')!
+  const input = () => document.querySelector<HTMLElement>('[data-testid="input"]')
+
+  async function openFromTrigger() {
+    trigger().focus()
+    trigger().click()
+    await flushPromises()
+    await sleep(10)
+  }
+
+  afterEach(() => {
+    wrapper?.unmount()
+    wrapper = undefined
+  })
+
+  it.each([true, false])('focuses the input on open by default (unmountOnHide: %s)', async (unmountOnHide) => {
+    mountCombobox({ unmountOnHide })
+    await openFromTrigger()
+    expect(document.activeElement).toBe(input())
+  })
+
+  it.each([true, false])('keeps focus on the trigger when focusOnOpen is false (unmountOnHide: %s)', async (unmountOnHide) => {
+    mountCombobox({ unmountOnHide, focusOnOpen: false })
+    await openFromTrigger()
+    expect(trigger().getAttribute('aria-expanded')).toBe('true')
+    expect(document.activeElement).toBe(trigger())
+
+    // The arrow keys move focus from the trigger to the input.
+    trigger().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    await flushPromises()
+    expect(document.activeElement).toBe(input())
+  })
+
+  it('leaves the trigger arrow keys alone by default', async () => {
+    mountCombobox({ unmountOnHide: true })
+    await openFromTrigger()
+    trigger().focus()
+    const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true })
+    trigger().dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+    expect(document.activeElement).toBe(trigger())
+  })
+
+  it('renders the docs example with a tabbable trigger that opens without focusing the input', async () => {
+    document.body.innerHTML = ''
+    // Same template as the "Keep focus on open" example in docs/content/docs/components/combobox.md.
+    wrapper = mount(defineComponent({
+      components: { ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport },
+      template: `<ComboboxRoot>
+    <ComboboxTrigger tabindex="0">
+      Select a fruit
+    </ComboboxTrigger>
+    <ComboboxPortal>
+      <ComboboxContent>
+        <ComboboxInput :focus-on-open="false" placeholder="Search..." />
+        <ComboboxViewport>
+          <ComboboxItem value="Apple">
+            Apple
+          </ComboboxItem>
+          <ComboboxItem value="Banana">
+            Banana
+          </ComboboxItem>
+        </ComboboxViewport>
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>`,
+    }), { attachTo: document.body })
+
+    const exampleTrigger = document.querySelector<HTMLElement>('button[aria-haspopup="listbox"]')!
+    expect(exampleTrigger.getAttribute('tabindex')).toBe('0')
+    expect(exampleTrigger.tabIndex).toBe(0)
+
+    exampleTrigger.focus()
+    exampleTrigger.click()
+    await flushPromises()
+    await sleep(10)
+    expect(exampleTrigger.getAttribute('aria-expanded')).toBe('true')
+    expect(document.querySelectorAll('[role="option"]')).toHaveLength(2)
+    expect(document.activeElement).toBe(exampleTrigger)
+
+    exampleTrigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    await flushPromises()
+    expect(document.activeElement).toBe(document.querySelector('input[placeholder="Search..."]'))
+  })
+
+  it('has no accessibility violations when open with focusOnOpen false', async () => {
+    mountCombobox({ unmountOnHide: true, focusOnOpen: false })
+    await openFromTrigger()
+    expect(await axe(document.body, {
+      // An input inside the listbox is flagged whether or not focusOnOpen is set.
+      rules: { 'aria-required-children': { enabled: false } },
+    })).toHaveNoViolations()
+  })
+})
+
 describe('given two persistent Comboboxes', () => {
   const TwoPersistentComboboxes = defineComponent({
     components: { PersistentCombobox },

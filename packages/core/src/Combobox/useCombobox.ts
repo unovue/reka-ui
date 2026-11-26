@@ -180,10 +180,20 @@ export function getComboboxTriggerSurface(
         // An input inside the content is focused by the content on open.
         const input = context.inputElement.value
         openAtPress = context.open.value
-        if (isDisabled.value || pointerType === 'touch' || !input?.isConnected || isComboboxInputInsideContent(context))
+        if (isDisabled.value || pointerType === 'touch' || !input?.isConnected || isComboboxInputInsideContent(context) || !context.focusInputOnOpen.value)
           return
         input.focus()
         event.preventDefault()
+      },
+      // With `focusOnOpen: false` opening leaves focus here, so the arrow keys move it to the input.
+      'onKeydown': (event: KeyboardEvent) => {
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp')
+          return
+        const input = context.inputElement.value
+        if (!context.open.value || context.focusInputOnOpen.value || !input)
+          return
+        event.preventDefault()
+        input.focus()
       },
       'onClick': (event: MouseEvent) => {
         // The pointer type of the press: not every engine gives the click one. A
@@ -721,6 +731,7 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     triggerElement,
     onTriggerElementChange: el => triggerElement.value = el,
     interactionType,
+    focusInputOnOpen: ref(true),
     parentElement: computed(() => toValue(props.element) ?? undefined),
     resetSearchTermOnSelect: bool(props.resetSearchTermOnSelect, true),
     onResetSearchTerm: resetSearchTerm.on,

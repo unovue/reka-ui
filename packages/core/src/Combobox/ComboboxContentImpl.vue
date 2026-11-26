@@ -182,6 +182,12 @@ function focusOnOpen() {
   const content = currentElement.value as HTMLElement | undefined
   const input = rootContext.inputElement.value
   isInputInside = contains(input)
+  // `ComboboxInput`'s `focusOnOpen: false` leaves focus where it is (read after the
+  // tick: the input may get its new value in this same update).
+  if (props.initialFocus === undefined && !rootContext.focusInputOnOpen.value) {
+    rootContext.interactionType.value = ''
+    return
+  }
   const { value, interactionType } = resolveFocusTarget(props.initialFocus, isInputInside)
   if (!content || !value || contains(getActiveElement(content)))
     return
