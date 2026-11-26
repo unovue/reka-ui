@@ -39,6 +39,8 @@ interface PopoverContentImplPrivateProps extends PopoverContentImplProps {
   trapFocus?: FocusScopeProps['trapped']
   /** Element left interactive through the modal internal backdrop (the trigger). */
   backdropCutout?: HTMLElement | null
+  /** Internal: whether a kept-mounted content is currently shown. */
+  present?: boolean
 }
 </script>
 
@@ -56,10 +58,10 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = defineProps<PopoverContentImplPrivateProps>()
+const props = withDefaults(defineProps<PopoverContentImplPrivateProps>(), { present: true })
 const emits = defineEmits<PopoverContentImplEmits>()
 
-const forwarded = useForwardProps(reactiveOmit(props, 'trapFocus', 'disableOutsidePointerEvents', 'backdropCutout'))
+const forwarded = useForwardProps(reactiveOmit(props, 'trapFocus', 'disableOutsidePointerEvents', 'backdropCutout', 'present'))
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
@@ -85,12 +87,14 @@ const focusScopeWrapper = computed(() => splitWrapperAttrs(mergeProps({
   asChild: true,
   loop: true,
   trapped: props.trapFocus,
+  present: props.present,
   onMountAutoFocus: (event: Event) => emits('openAutoFocus', event),
   onUnmountAutoFocus: (event: Event) => emits('closeAutoFocus', event),
 }, instance.proxy!.$attrs), FOCUS_SCOPE_WRAPPER))
 const scope = useFocusScope(focusScopeOptions(currentElement, () => focusScopeWrapper.value))
 const layerWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeProps(scope.attrs(), focusScopeWrapper.value.rest), {
   asChild: true,
+  present: props.present,
   disableOutsidePointerEvents: props.disableOutsidePointerEvents,
   backdropCutout: props.backdropCutout,
   onPointerDownOutside: (event: PointerDownOutsideEvent) => emits('pointerDownOutside', event),

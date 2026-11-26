@@ -93,8 +93,8 @@ function other(kind: Other, extra: Record<string, unknown> = {}): VNode {
 }
 
 const exiting = () => get('kept-content')!.getAnimations().some(animation => animation.playState === 'paused')
-/** `pointer-events: auto` keeps a trigger clickable while a modal layer disables the rest of the page. */
-const CLICKABLE_UNDER_MODAL = { style: 'position: fixed; top: 10px; left: 200px; pointer-events: auto;' }
+/** Stacked above a modal layer's internal backdrop, so that a trigger stays clickable while the layer covers the page. */
+const CLICKABLE_UNDER_MODAL = { style: 'position: fixed; top: 10px; left: 200px; z-index: 1;' }
 
 /** Focus is in the other layer, stays there, and goes back to that layer's own trigger when it closes. */
 async function expectOtherLayerOwnsFocus() {

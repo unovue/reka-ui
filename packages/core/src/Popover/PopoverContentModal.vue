@@ -1,27 +1,41 @@
 <script setup lang="ts">
 import type { PopoverContentImplEmits, PopoverContentImplProps } from './PopoverContentImpl.vue'
 import { computed, ref, watch } from 'vue'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { containsComposed, useForwardElement, useForwardPropsEmits, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import PopoverContentImpl from './PopoverContentImpl.vue'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 
-const props = defineProps<PopoverContentImplProps>()
+const props = withDefaults(defineProps<PopoverContentImplProps & { present?: boolean }>(), { present: true })
 const emits = defineEmits<PopoverContentImplEmits>()
 const rootContext = injectPopoverRootContext()
 const isRightClickOutsideRef = ref(false)
 
 // Base UI `PopoverPositioner`: a `modal` popover locks page scroll.
-// Only while open: a `forceMount`ed content that is closed keeps no lock,
-// backdrop or `aria-hidden` siblings.
-const scrollLocked = useBodyScrollLock(rootContext.open.value)
-watch(rootContext.open, open => scrollLocked.value = open)
+// Only while open and shown: a content kept mounted while closed (`forceMount`,
+// `unmountOnHide: false`) keeps no lock, backdrop or `aria-hidden` siblings.
+const isActive = computed(() => props.present && rootContext.open.value)
+const scrollLocked = useBodyScrollLock(isActive.value)
+watch(isActive, active => scrollLocked.value = active)
 
 const forwarded = useForwardPropsEmits(props, emits)
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
-useHideOthers(computed(() => rootContext.open.value ? currentElement.value : undefined))
+useHideOthers(computed(() => isActive.value ? currentElement.value : undefined))
+
+// A content kept mounted while closed never unmounts its focus scope, so
+// `closeAutoFocus` does not fire on close. Return focus to the trigger once the
+// content is no longer present instead, unless something else took focus
+// meanwhile, e.g. a layer opened while this one was animating out.
+watch(() => props.present, (isPresent, wasPresent) => {
+  if (!isPresent && wasPresent) {
+    if (!isRightClickOutsideRef.value && !hasFocusLeftScope(currentElement.value ?? null))
+      rootContext.triggerElement.value?.focus()
+    isRightClickOutsideRef.value = false
+  }
+})
 </script>
 
 <template>
@@ -33,7 +47,9 @@ useHideOthers(computed(() => rootContext.open.value ? currentElement.value : und
     :backdrop-cutout="rootContext.triggerElement.value"
     @close-auto-focus.prevent="
       (event) => {
-        if (!isRightClickOutsideRef) rootContext.triggerElement.value?.focus();
+        // Hidden kept-mounted content returned focus when it hid; its final unmount leaves focus alone.
+        // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there.
+        if (!isRightClickOutsideRef && present && !hasFocusLeftScope(event.target)) rootContext.triggerElement.value?.focus();
       }
     "
     @pointer-down-outside="

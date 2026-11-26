@@ -166,14 +166,14 @@ describe.each([
   [false, true],
 ])('given Popovers with modal=%s and unmountOnHide=%s', describePopovers)
 
-// TODO(v3-port): #2066 v3 PopoverRoot has no `unmountOnHide` prop
-describe.skip.each([
+describe.each([
   [true, false],
   [false, false],
 ])('given Popovers with modal=%s and unmountOnHide=%s', describePopovers)
 
 describe.each([false, true])('given never-opened Popovers with unmountOnHide=%s', (unmountOnHide) => {
-  it('should not track the position of hidden content', async () => {
+  // TODO(v3-port): #2066 needs v2's internal `present` prop on `PopperContent` (floating lane), which drops the reference while hidden
+  it.skipIf(!unmountOnHide)('should not track the position of hidden content', async () => {
     document.body.innerHTML = ''
     const addEventListener = vi.spyOn(window, 'addEventListener')
     const wrapper = mount(Popovers, { attachTo: document.body, props: { unmountOnHide } })
