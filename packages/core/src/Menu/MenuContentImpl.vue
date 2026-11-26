@@ -218,6 +218,7 @@ const layer = useDismissableLayer(dismissableLayerOptions(contentElement, () => 
     :as-child="asChild"
     :side="side"
     :side-offset="sideOffset"
+    :fallback-axis-side-direction="fallbackAxisSideDirection"
     :align="align"
     :align-offset="alignOffset"
     :avoid-collisions="avoidCollisions"
