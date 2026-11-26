@@ -1,6 +1,6 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref, ShallowRef } from 'vue'
 import type { SetStateOptions } from './useControllableState'
-import { computed, markRaw, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, shallowReactive, shallowRef, toValue, watch } from 'vue'
+import { computed, markRaw, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, shallowReactive, shallowRef, toRaw, toValue, watch } from 'vue'
 import { containsComposed } from './getRootNode'
 import { getterRef } from './partSurface'
 
@@ -588,6 +588,66 @@ export function setPopupRootStore(context: object, store: PopupRootStore<any>): 
 /** The store linked to a family Root context, if any. */
 export function getPopupRootStore(context: object | null | undefined): PopupRootStore<any> | undefined {
   return context ? rootStores.get(context) : undefined
+}
+
+const OWN_TRIGGER_ID = Symbol('ownTriggerId')
+const CONTENT_ID = Symbol('contentId')
+
+interface PopupRootIdSlots {
+  [OWN_TRIGGER_ID]: Ref<string>
+  [CONTENT_ID]: Ref<string>
+}
+
+// The id accessors of a Root context, shared by every Root. An accessor in the context's
+// object literal (or a per-Root closure as accessor) puts the whole context on slow
+// dictionary properties. `toRaw`: the context may be read through a reactive proxy.
+const triggerIdProperty: PropertyDescriptor = {
+  enumerable: true,
+  configurable: true,
+  // With a `handle`, the content's `aria-labelledby` follows the active
+  // trigger while it is mounted, and is dropped (`''`) while no mounted
+  // trigger owns the popup, so it never points at a missing id.
+  get(this: object) {
+    const context = toRaw(this) as PopupRootIdSlots
+    const store = rootStores.get(context)
+    if (!store?.handle.value)
+      return context[OWN_TRIGGER_ID].value
+    return store.activeTriggerElement.value ? store.activeTriggerId.value! : ''
+  },
+  // The id a trigger without a handle renders.
+  set(this: object, value: string) {
+    (toRaw(this) as PopupRootIdSlots)[OWN_TRIGGER_ID].value = value
+  },
+}
+const contentIdProperty: PropertyDescriptor = {
+  enumerable: true,
+  configurable: true,
+  get(this: object) {
+    return (toRaw(this) as PopupRootIdSlots)[CONTENT_ID].value
+  },
+  set(this: object, value: string) {
+    (toRaw(this) as PopupRootIdSlots)[CONTENT_ID].value = value
+  },
+}
+
+/**
+ * Links `store` to a Root `context` (`setPopupRootStore`) and adds the context's
+ * `triggerId` and `contentId`: the own trigger's id, or with a `handle` the active
+ * trigger's, and the content's, read from and written to the given refs. The context
+ * must not have either property yet.
+ */
+export function definePopupRootIds<T extends { triggerId: string, contentId: string }>(
+  context: Omit<T, 'triggerId' | 'contentId'>,
+  store: PopupRootStore<any>,
+  ownTriggerId: Ref<string>,
+  contentId: Ref<string>,
+): T {
+  rootStores.set(context, store)
+  ;(context as unknown as PopupRootIdSlots)[OWN_TRIGGER_ID] = ownTriggerId
+  ;(context as unknown as PopupRootIdSlots)[CONTENT_ID] = contentId
+  Object.defineProperty(context, 'triggerId', triggerIdProperty)
+  Object.defineProperty(context, 'contentId', contentIdProperty)
+  return context as T
 }
 
 export interface UsePopupHandleTriggerOptions<Payload> {

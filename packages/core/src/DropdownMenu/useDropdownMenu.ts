@@ -11,7 +11,7 @@ import { isTriggerPressInFlight, trackTriggerPress } from '@/DismissableLayer/ut
 import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { useMenuRoot } from '@/Menu/useMenu'
 import { containsComposed, createPartSurface } from '@/shared'
-import { createPopupRootStore, getPopupRootStore, setPopupRootStore } from '@/shared/popupHandle'
+import { createPopupRootStore, definePopupRootIds, getPopupRootStore } from '@/shared/popupHandle'
 
 // =============================================================================
 // Headless composable for the DropdownMenu family — issue #2723.
@@ -253,7 +253,7 @@ export function useDropdownMenu<Payload = unknown>(props: UseDropdownMenuProps<P
     open,
     setState: onOpenChange,
     baseId,
-    contentId: () => contentId.value,
+    contentId,
     triggerId: props.triggerId,
     defaultTriggerId: props.defaultTriggerId,
   })
@@ -267,32 +267,19 @@ export function useDropdownMenu<Payload = unknown>(props: UseDropdownMenuProps<P
     },
   })
 
-  const context: DropdownMenuRootContext = {
+  // The ids are added after the literal, which keeps the context on fast properties.
+  const context = definePopupRootIds<DropdownMenuRootContext>({
     open,
-    onOpenChange: (value, reason = 'trigger-press', event) => {
+    onOpenChange: (value: boolean, reason: MenuOpenChangeReason | BaseChangeReason = 'trigger-press', event?: Event) => {
       onOpenChange(value, reason, event)
     },
-    onOpenToggle: (reason = 'trigger-press', event) => {
+    onOpenToggle: (reason: MenuOpenChangeReason | BaseChangeReason = 'trigger-press', event?: Event) => {
       onOpenToggle(reason, event)
     },
-    // With a `handle`, the content's `aria-labelledby` follows the active
-    // trigger while it is mounted, and is dropped (`''`) while no mounted
-    // trigger owns the menu, so it never points at a missing id.
-    get triggerId() {
-      if (!handleStore.handle.value)
-        return ownTriggerId.value
-      return handleStore.activeTriggerElement.value ? handleStore.activeTriggerId.value! : ''
-    },
-    // The id a trigger without a handle renders.
-    set triggerId(value) { ownTriggerId.value = value },
     triggerElement,
-    get contentId() { return contentId.value },
-    set contentId(value) { contentId.value = value },
     modal: menuRootContext.modal,
     dir: menuRootContext.dir,
-  }
-
-  setPopupRootStore(context, handleStore)
+  }, handleStore, ownTriggerId, contentId)
 
   // The part surfaces are for standalone consumers (the part SFCs build their
   // own from the context), so each is built on first read.
