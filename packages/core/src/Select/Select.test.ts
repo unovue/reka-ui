@@ -730,19 +730,6 @@ describe('given a Select value that no longer matches a mounted option', () => {
     expect(trigger().textContent).not.toContain('Apple')
   })
 
-  // TODO(v3-port): #3180 trigger label follows the mounted options (Select source resolved to v3)
-  it.skip('shows the placeholder when the selected option is removed', async () => {
-    const { options, trigger } = mountControlled({ value: 'Apple', options: ['Apple', 'Banana'] })
-    await nextTick()
-    expect(trigger().textContent).toContain('Apple')
-
-    options.value = ['Banana']
-    await nextTick()
-
-    expect(trigger().textContent).toContain(placeholder)
-    expect(trigger().textContent).not.toContain('Apple')
-  })
-
   it('keeps the selected option and the menu mounted when forceMount is set', async () => {
     const { trigger } = mountControlled({ value: 'Apple', options: ['Apple', 'Cherry'], forceMount: true })
     await nextTick()
