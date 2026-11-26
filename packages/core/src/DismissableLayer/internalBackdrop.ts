@@ -169,16 +169,32 @@ function liftStaticAnchor(anchor: Element, view: Window): (() => void) | undefin
 }
 
 /**
+ * The layer's own visible backdrop (a `DialogOverlay`) the internal backdrop goes
+ * right below, so that the backdrop never paints over it and takes its hover and
+ * cursor styles: an element that comes before `anchor` and is not around it (an
+ * overlay that wraps the content is the anchor already).
+ */
+function resolveBackdropBefore(anchor: Element, before: Element | null | undefined): Element | undefined {
+  if (!before?.parentNode || before === anchor || before.contains(anchor))
+    return undefined
+  return before.compareDocumentPosition(anchor) & Node.DOCUMENT_POSITION_FOLLOWING ? before : undefined
+}
+
+/**
  * Mounts the internal backdrop right below `layer` (see
  * `BackdropPlacement`) and returns the unmount. `cutout` stays interactive
  * through a hole in the backdrop (e.g. a Combobox input or a ContextMenu
- * trigger area).
+ * trigger area). With `before` (the layer's `DialogOverlay`), the backdrop goes
+ * right below that element instead, with its `z-index`.
  */
-export function mountInternalBackdrop(layer: HTMLElement, cutout?: Element | null): () => void {
+export function mountInternalBackdrop(layer: HTMLElement, cutout?: Element | null, before?: Element | null): () => void {
   const view = layer.ownerDocument.defaultView
   if (!view)
     return () => {}
-  const { anchor, inBody } = resolveBackdropPlacement(layer, view)
+  const placement = resolveBackdropPlacement(layer, view)
+  const { inBody } = placement
+  const below = inBody ? undefined : resolveBackdropBefore(placement.anchor, before)
+  const anchor = below ?? placement.anchor
   const parent = anchor.parentNode
   if (!parent)
     return () => {}
@@ -194,7 +210,7 @@ export function mountInternalBackdrop(layer: HTMLElement, cutout?: Element | nul
     right: '0',
     bottom: '0',
     left: '0',
-    zIndex: resolveBackdropZIndex(anchor, layer, view),
+    zIndex: below ? getZIndex(view.getComputedStyle(below)) : resolveBackdropZIndex(anchor, layer, view),
     userSelect: 'none',
     webkitUserSelect: 'none',
   })
@@ -202,6 +218,7 @@ export function mountInternalBackdrop(layer: HTMLElement, cutout?: Element | nul
 
   // In `<body>` the anchor is reached through a hole in the backdrop instead.
   const restoreAnchor = inBody ? undefined : liftStaticAnchor(anchor, view)
+  const restoreLayerAnchor = below ? liftStaticAnchor(placement.anchor, view) : undefined
   if (inBody)
     layer.ownerDocument.body.append(backdrop)
   else
@@ -211,6 +228,7 @@ export function mountInternalBackdrop(layer: HTMLElement, cutout?: Element | nul
   return () => {
     stopTrackingCutout?.()
     restoreAnchor?.()
+    restoreLayerAnchor?.()
     if (backdrops.get(layer) === backdrop)
       backdrops.delete(layer)
     backdrop.remove()

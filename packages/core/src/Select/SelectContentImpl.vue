@@ -115,6 +115,7 @@ import { reactiveOmit } from '@vueuse/core'
 import { computed, getCurrentInstance, mergeProps, watch } from 'vue'
 import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer } from '@/DismissableLayer/useDismissableLayer'
 import { FOCUS_SCOPE_WRAPPER, focusScopeOptions, useFocusScope } from '@/FocusScope/useFocusScope'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { PopperContent } from '@/Popper'
 import { renderAs } from '@/Primitive/renderAs'
 import { createWrapperEmit, splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
@@ -216,6 +217,14 @@ const forwardedProps = useForwardProps(computed(() => props.position === 'popper
 // tracks.) The attrs are bound once: the content also bound them on the
 // positioning part, so a consumer listener on the content ran twice.
 const instance = getCurrentInstance()!
+// The trigger focus returns to. A layer around the Select that closes with it (a
+// selection that closes a Popover) unmounts the trigger, which lets go of it, before
+// the content: focus must still move there, off the outer layer's own trigger.
+let returnFocusTo: HTMLElement | undefined
+watch(() => rootContext.triggerElement.value, (trigger) => {
+  if (trigger)
+    returnFocusTo = trigger
+}, { immediate: true })
 const focusScopeWrapper = computed(() => splitWrapperAttrs(mergeProps(instance.proxy!.$attrs, {
   asChild: true,
   present: present.value,
@@ -224,9 +233,10 @@ const focusScopeWrapper = computed(() => splitWrapperAttrs(mergeProps(instance.p
     emits('closeAutoFocus', event)
     if (event.defaultPrevented)
       return
-    // Tab already moved focus past the trigger (Base UI): leave it there.
-    if (!hasFocusedOut())
-      rootContext.triggerElement.value?.focus({ preventScroll: true })
+    // Tab already moved focus past the trigger (Base UI): leave it there. So does
+    // focus that something else took meanwhile, e.g. a layer opened by the same click.
+    if (!hasFocusedOut() && !hasFocusLeftScope(event.target))
+      (rootContext.triggerElement.value ?? returnFocusTo)?.focus({ preventScroll: true })
     event.preventDefault()
   },
 }), FOCUS_SCOPE_WRAPPER))

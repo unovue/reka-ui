@@ -1,6 +1,6 @@
 import type { MenuContentHideEvent } from './MenuRoot.vue'
 import { getCurrentScope, onScopeDispose } from 'vue'
-import { containsComposed, getActiveElement } from '@/shared'
+import { getActiveElement } from '@/shared'
 
 export type CheckedState = boolean | 'indeterminate'
 export type Direction = 'ltr' | 'rtl'
@@ -115,28 +115,4 @@ export function createContentHideHook() {
       handlers.forEach(handler => handler(event))
     },
   }
-}
-
-/**
- * Whether focus moved on, out of `container`, to another element (another layer
- * opened), so a kept-mounted content that hides must not take it back. Focus on
- * the body (the hidden content had it), inside the container or inside one of
- * `related` (the contents of the same menu's submenus, which may be portalled) has not.
- */
-export function hasFocusLeftContent(container: HTMLElement | undefined, related?: Iterable<HTMLElement>): boolean {
-  const ownerDocument = container?.ownerDocument
-  if (!ownerDocument)
-    return false
-  let activeElement = ownerDocument.activeElement
-  while (activeElement?.shadowRoot?.activeElement)
-    activeElement = activeElement.shadowRoot.activeElement
-  if (!activeElement || activeElement === ownerDocument.body || activeElement === ownerDocument.documentElement)
-    return false
-  if (containsComposed(container!, activeElement))
-    return false
-  for (const element of related ?? []) {
-    if (containsComposed(element, activeElement))
-      return false
-  }
-  return true
 }

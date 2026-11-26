@@ -6,7 +6,7 @@ import type { SplitWrapperAttrs, WrapperSpec } from '@/shared/splitWrapperAttrs'
 import { computed, nextTick, watch } from 'vue'
 import { containsComposed } from '@/shared'
 import { createWrapperEmit } from '@/shared/splitWrapperAttrs'
-import { blockPositioningWrapper, mountInternalBackdrop } from './internalBackdrop'
+import { blockPositioningWrapper, getInternalBackdrop, mountInternalBackdrop } from './internalBackdrop'
 import {
   branches,
   highestDisabledIndex,
@@ -15,6 +15,7 @@ import {
   registerStackLayer,
 } from './layerStack'
 import {
+  preventPressFocusMove,
   useFocusOutside,
   usePointerDownOutside,
 } from './utils'
@@ -28,6 +29,8 @@ export interface UseDismissableLayerOptions {
   present?: () => boolean | undefined
   /** Element left interactive through the internal backdrop (`DismissableLayer`'s `backdropCutout`). */
   backdropCutout?: () => HTMLElement | null | undefined
+  /** The layer's own visible backdrop (a `DialogOverlay`): the internal backdrop goes right below it. */
+  backdropBefore?: () => Element | null | undefined
   /** The `escapeKeyDown` event; can be prevented. */
   onEscapeKeyDown?: (event: KeyboardEvent) => void
   /** The `pointerDownOutside` event; can be prevented. */
@@ -98,6 +101,10 @@ export function useDismissableLayer(options: UseDismissableLayerOptions) {
     const isEnabledAtPress = index.value >= highestDisabledIndexAt(event.detail.originalEvent)
     if (!present() || !isEnabledAtPress || isPointerDownOnBranch)
       return
+    // A press on the layer's own backdrop returns focus as the layer closes; the
+    // press's `mousedown` must not then drop it on `body`.
+    if (disableOutsidePointerEvents() && getInternalBackdrop(element.value)?.contains(event.target as Node))
+      preventPressFocusMove(event)
     options.onPointerDownOutside?.(event)
     options.onInteractOutside?.(event)
     await nextTick()
@@ -128,11 +135,11 @@ export function useDismissableLayer(options: UseDismissableLayerOptions) {
   // order-independent, and nothing is ever mounted during SSR (`element`
   // only resolves on the client).
   watch(
-    [element, disableOutsidePointerEvents, present, () => options.backdropCutout?.()],
-    ([element, disableOutsidePointerEvents, present, cutout], _, onCleanup) => {
+    [element, disableOutsidePointerEvents, present, () => options.backdropCutout?.(), () => options.backdropBefore?.()],
+    ([element, disableOutsidePointerEvents, present, cutout, before], _, onCleanup) => {
       if (!element || !present || !disableOutsidePointerEvents)
         return
-      onCleanup(mountInternalBackdrop(element, cutout))
+      onCleanup(mountInternalBackdrop(element, cutout, before))
     },
     { immediate: true },
   )

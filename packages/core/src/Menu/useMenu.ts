@@ -4,11 +4,12 @@ import type { MenuContext, MenuRootContext } from './MenuRoot.vue'
 import type { Direction, GraceIntent, Side } from './utils'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface, SetStateOptions } from '@/shared'
 import { computed, nextTick, onBeforeUnmount, onUnmounted, ref, shallowRef, toValue, watch } from 'vue'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { createPartSurface, disclosureState, getActiveElement, getterRef, useArrowNavigation, useControllableState, useTypeahead } from '@/shared'
 import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
 import { resolveDirection } from '@/shared/useDirection'
 import { useIsUsingKeyboard } from '@/shared/useIsUsingKeyboard'
-import { createContentHideHook, FIRST_LAST_KEYS, focusFirst, hasFocusLeftContent, isMouseEvent, isPointerInGraceArea, ITEM_SELECT, LAST_KEYS, SELECTION_KEYS } from './utils'
+import { createContentHideHook, FIRST_LAST_KEYS, focusFirst, isMouseEvent, isPointerInGraceArea, ITEM_SELECT, LAST_KEYS, SELECTION_KEYS } from './utils'
 
 // =============================================================================
 // Headless composables for the Menu (overlay) family — issue #2723.
@@ -143,7 +144,6 @@ export function useMenuRoot(props: UseMenuRootProps = {}): UseMenuRootReturn {
     isUsingKeyboardRef,
     modal: modal as Ref<boolean>,
     unmountOnHide: unmountOnHide as Ref<boolean>,
-    contentElements: new Set(),
   }
 
   return { open, onOpenChange, onClose, lastChangeDetails, isControlled, menuContext, menuRootContext }
@@ -466,22 +466,10 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
       filterSearch.value = ''
       resetTypeahead()
       const container = contentElement.value
-      menuContext.contentHidden({ container, focusedBeforeShow, focusLeft: hasFocusLeftContent(container, rootContext.contentElements) })
+      menuContext.contentHidden({ container, focusedBeforeShow, focusLeft: hasFocusLeftScope(container ?? null) })
       focusedBeforeShow = null
     }
   }, { immediate: true })
-  // Registered for `hasFocusLeftContent`: focus in a submenu has not left its parent menu.
-  watch(contentElement, (element, previous) => {
-    if (previous)
-      rootContext.contentElements?.delete(previous)
-    if (element)
-      rootContext.contentElements?.add(element)
-  }, { immediate: true })
-  onUnmounted(() => {
-    if (contentElement.value)
-      rootContext.contentElements?.delete(contentElement.value)
-  })
-
   /**
    * The enabled items in order, from the collection's cached order instead of
    * a selector query over the content on every key; `undefined` (query the

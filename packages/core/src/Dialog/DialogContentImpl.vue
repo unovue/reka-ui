@@ -42,7 +42,7 @@ import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer
 import { FOCUS_SCOPE_WRAPPER, focusScopeOptions, useFocusScope } from '@/FocusScope/useFocusScope'
 import { renderAs } from '@/Primitive/renderAs'
 import { splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
-import { injectDialogRootContext } from './DialogRoot.vue'
+import { injectDialogOverlayElementContext, injectDialogRootContext } from './DialogRoot.vue'
 import { getDialogContentSurface } from './useDialog'
 import { endFocusRecord, recordFocusBeforeOpen, useWarning } from './utils'
 
@@ -100,7 +100,12 @@ const layerWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeProps(scop
   onInteractOutside: (event: PointerDownOutsideEvent | FocusOutsideEvent) => emits('interactOutside', event),
   onPointerDownOutside: (event: PointerDownOutsideEvent) => emits('pointerDownOutside', event),
 })), DISMISSABLE_LAYER_WRAPPER))
-const layer = useDismissableLayer(dismissableLayerOptions(contentElement, () => layerWrapper.value))
+// A modal content's internal backdrop goes below its `DialogOverlay`, not over it.
+const overlayElement = injectDialogOverlayElementContext(null)
+const layer = useDismissableLayer({
+  ...dismissableLayerOptions(contentElement, () => layerWrapper.value),
+  backdropBefore: () => overlayElement?.value,
+})
 
 // The trigger's `aria-controls` points at the id this element rendered (a hydrated element
 // keeps the server's), and only while it is rendered.

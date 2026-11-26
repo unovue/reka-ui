@@ -14,7 +14,7 @@ function mountDialog() {
         h(DialogRoot, null, () => [
           h(DialogTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
           h(DialogPortal, null, () => [
-            h(DialogOverlay, { style: 'position: fixed; inset: 0;' }),
+            h(DialogOverlay, { 'data-testid': 'overlay', 'style': 'position: fixed; inset: 0;' }),
             h(DialogContent, {
               'aria-describedby': undefined,
               'data-testid': 'content',
@@ -74,6 +74,21 @@ describe('given a modal Dialog, in a real browser', () => {
 
     await userEvent.click(get('outside')!)
     expect(onOutsideClick).toHaveBeenCalledTimes(1)
+  })
+  // The overlay keeps its hover and cursor styles: the internal backdrop sits below it,
+  // even with no `z-index` on the overlay.
+  it('keeps the overlay above the internal backdrop, and closes on a press on it', async () => {
+    const { get } = mountDialog()
+
+    await userEvent.click(get('trigger')!)
+    await expect.poll(() => get('content')).not.toBeNull()
+    await expect.poll(() => document.querySelector('[data-reka-internal-backdrop]')).not.toBeNull()
+    expect(document.elementFromPoint(5, 5)).toBe(get('overlay'))
+
+    // Actionable only when the overlay itself receives the press.
+    await userEvent.click(get('overlay')!, { position: { x: 5, y: 5 } })
+    await expect.poll(() => get('content')).toBeNull()
+    expect(document.activeElement).toBe(get('trigger'))
   })
 })
 

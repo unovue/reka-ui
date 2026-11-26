@@ -163,12 +163,7 @@ describe('given a layer whose trigger sits inside a focusable container (#3360)'
       expect(states).toEqual([true, false, true])
     })
 
-    // TODO(v3-port): #3366 a Menubar opened by a WebKit tap needs the Menubar part of the port (focus on
-    // the menubar element does not dismiss its menu; floating lane)
-    const isPending = (order: Order) => kind === 'menubar' && order === 'webkit touch'
-    const ORDERS: Order[] = ['webkit touch', 'chromium touch', 'mouse']
-    it.skip.each(ORDERS.filter(isPending))('opens, closes and reopens with %s presses only', () => {})
-    it.each(ORDERS.filter(order => !isPending(order)))('opens, closes and reopens with %s presses only', async (order) => {
+    it.each<Order>(['webkit touch', 'chromium touch', 'mouse'])('opens, closes and reopens with %s presses only', async (order) => {
       mountInFocusableContainer(kind)
 
       const states: boolean[] = []

@@ -7,6 +7,8 @@ import type { MenuContentHideEvent, MenuContext, MenuRootContext } from '@/Menu/
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { PopupRootStore } from '@/shared/popupHandle'
 import { computed, nextTick, ref, toValue } from 'vue'
+import { isTriggerPressInFlight, trackTriggerPress } from '@/DismissableLayer/utils'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { useMenuRoot } from '@/Menu/useMenu'
 import { containsComposed, createPartSurface } from '@/shared'
 import { createPopupRootStore, getPopupRootStore, setPopupRootStore } from '@/shared/popupHandle'
@@ -51,6 +53,8 @@ export function getDropdownMenuTriggerSurface(
       'aria-expanded': context.open.value,
       'aria-controls': context.open.value ? context.contentId : undefined,
       'disabled': isDisabled(),
+      // Lets the content tell the focus WebKit gives an ancestor of the pressed trigger (#3360).
+      'onPointerdown': trackTriggerPress,
       'onClick': async (event: MouseEvent) => {
         if (event.defaultPrevented)
           return
@@ -119,8 +123,11 @@ export function createDropdownMenuContentSurface(
     if (event.defaultPrevented)
       return
     if (!hasInteractedOutside.value) {
+      const scope = event.target
       setTimeout(() => {
-        context.triggerElement.value?.focus()
+        // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
+        if (!hasFocusLeftScope(scope))
+          context.triggerElement.value?.focus()
       }, 0)
     }
     hasInteractedOutside.value = false
@@ -149,7 +156,13 @@ export function createDropdownMenuContentSurface(
     if (!context.modal.value || isRightClick)
       hasInteractedOutside.value = true
     const trigger = context.triggerElement.value
-    if (trigger && containsComposed(trigger, event.target as Node))
+    const target = event.target as Node
+    if (trigger && containsComposed(trigger, target))
+      event.preventDefault()
+    // WebKit does not focus a pressed button but its focusable ancestor. The trigger
+    // handles its own press, so that focus move is treated like the focus the trigger
+    // itself gets in other engines (#3360).
+    else if (event.detail.originalEvent.type === 'focusin' && trigger && isTriggerPressInFlight(trigger) && containsComposed(target, trigger))
       event.preventDefault()
   }
 

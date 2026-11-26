@@ -397,3 +397,31 @@ export function trackTriggerPress(event: PointerEvent) {
 export function isTriggerPressInFlight(trigger: Element | undefined | null) {
   return !!trigger && pressedTrigger === trigger
 }
+
+/**
+ * Keeps the `mousedown` of an outside mouse press from moving focus, once the layer
+ * dismissed on that press (`event` was not prevented). A layer closes on the press's
+ * `pointerdown` and returns focus then; the `mousedown` that follows would move focus
+ * on to the pressed element, and a backdrop takes none, so it would be dropped on
+ * `body`. A touch press dispatches its `pointerDownOutside` after its mouse events.
+ */
+export function preventPressFocusMove(event: PointerDownOutsideEvent) {
+  const originalEvent = event.detail.originalEvent
+  if (!isClient || originalEvent.type !== 'pointerdown' || originalEvent.pointerType === 'touch')
+    return
+  const ownerDocument = (originalEvent.target as Node | null)?.ownerDocument ?? globalThis.document
+  function handleMouseDown(mouseEvent: MouseEvent) {
+    release()
+    if (!event.defaultPrevented)
+      mouseEvent.preventDefault()
+  }
+  // A `pointerdown` whose default was prevented has no `mousedown`.
+  function release() {
+    ownerDocument.removeEventListener('mousedown', handleMouseDown, true)
+    ownerDocument.removeEventListener('pointerup', release, true)
+    ownerDocument.removeEventListener('pointercancel', release, true)
+  }
+  ownerDocument.addEventListener('mousedown', handleMouseDown, true)
+  ownerDocument.addEventListener('pointerup', release, true)
+  ownerDocument.addEventListener('pointercancel', release, true)
+}

@@ -107,6 +107,7 @@ import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { mergeProps } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusGroup } from '@/RovingFocus/useRovingFocusGroup'
+import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
 import { useTree } from './useTree'
 
 defineOptions({
@@ -168,13 +169,30 @@ const roving = useRovingFocusGroup({
   dir: () => dir.value,
   loop: () => props.loop && !isVirtual.value,
 })
+// Only a window of a virtual tree is rendered. `TreeVirtualizer` moves focus to the
+// first or last item of the whole list, so the group must not also focus the edge of
+// the window: that focus scrolls the window back and the virtualizer focuses its new edge.
+function rovingAttrs() {
+  const attrs = roving.attrs()
+  if (!isVirtual.value)
+    return attrs
+  const onKeydown = attrs.onKeydown as (event: KeyboardEvent) => void
+  return {
+    ...attrs,
+    onKeydown: (event: KeyboardEvent) => {
+      const intent = MAP_KEY_TO_FOCUS_INTENT[event.key]
+      if (intent !== 'first' && intent !== 'last')
+        onKeydown(event)
+    },
+  }
+}
 </script>
 
 <template>
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps(roving.consumerAttrs($attrs), roving.attrs(), root.attrs.value)"
+    v-bind="mergeProps(roving.consumerAttrs($attrs), rovingAttrs(), root.attrs.value)"
   >
     <slot
       :flatten-items="flattenItems"
