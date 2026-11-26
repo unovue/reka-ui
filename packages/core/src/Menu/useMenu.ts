@@ -3,7 +3,7 @@ import type { MenuContentContext } from './MenuContentImpl.vue'
 import type { MenuContext, MenuRootContext } from './MenuRoot.vue'
 import type { Direction, GraceIntent, Side } from './utils'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface, SetStateOptions } from '@/shared'
-import { computed, nextTick, onUnmounted, ref, shallowRef, toValue, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onUnmounted, ref, shallowRef, toValue, watch } from 'vue'
 import { createPartSurface, disclosureState, getActiveElement, getterRef, useArrowNavigation, useControllableState, useTypeahead } from '@/shared'
 import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
 import { resolveDirection } from '@/shared/useDirection'
@@ -630,6 +630,13 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
 
   watch(contentElement, (el) => {
     menuContext.onContentChange(el)
+  })
+
+  onBeforeUnmount(() => {
+    // Clear before a replacement registers its content, as the watcher stops on unmount.
+    // Another content may have registered since, so only clear our own registration.
+    if (contentElement.value && menuContext.content.value === contentElement.value)
+      menuContext.onContentChange(undefined)
   })
 
   onUnmounted(() => {
