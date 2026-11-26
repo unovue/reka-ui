@@ -106,6 +106,8 @@ if (process.env.NODE_ENV !== 'production') {
       :aria-describedby="rootContext.descriptionId"
       :aria-labelledby="rootContext.titleId"
       :data-state="getOpenState(rootContext.open.value)"
+      :data-nested-dialog-open="rootContext.nestedOpenDialogCount.value > 0 ? '' : undefined"
+      :style="{ '--nested-dialogs': rootContext.nestedOpenDialogCount.value }"
       v-bind="$attrs"
       @dismiss="rootContext.onOpenChange(false)"
       @escape-key-down="emits('escapeKeyDown', $event)"
