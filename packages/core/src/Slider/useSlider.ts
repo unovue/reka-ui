@@ -4,14 +4,13 @@ import type { SliderOrientation } from './utils'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { DataOrientation, Direction } from '@/shared/types'
 import { computed, ref, toRaw, toValue } from 'vue'
-import { clamp, createPartSurface, fieldRef, getterRef, useControllableState } from '@/shared'
+import { clamp, createPartSurface, fieldRef, getDecimalCount, getterRef, useControllableState } from '@/shared'
 import { resolveDirection } from '@/shared/useDirection'
 import {
   ARROW_KEYS,
   BACK_KEYS,
   convertValueToPercentage,
   getClosestValueIndex,
-  getDecimalCount,
   getLabel,
   getNextSortedValues,
   getSliderOrientationGeometry,
@@ -308,7 +307,8 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
   let valuesBeforeSlideStart = currentModelValue.value
 
   function updateValues(value: number, atIndex: number, options: { commit?: boolean, reason?: SliderChangeReason | BaseChangeReason, event?: Event } = {}): boolean {
-    const decimalCount = getDecimalCount(step.value)
+    // Steps count from `min`, so a fractional `min` needs its digits kept too.
+    const decimalCount = Math.max(getDecimalCount(min.value), getDecimalCount(step.value))
     const snapToStep = roundValue(Math.round((value - min.value) / step.value) * step.value + min.value, decimalCount)
     const nextValue = clamp(snapToStep, min.value, max.value)
 

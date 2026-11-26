@@ -20,8 +20,7 @@ window.HTMLElement.prototype.hasPointerCapture = vi.fn().mockImplementation(id =
 window.HTMLElement.prototype.releasePointerCapture = vi.fn()
 window.HTMLElement.prototype.setPointerCapture = vi.fn()
 
-// TODO(v3-port): #3311 snap to steps relative to a fractional min (Slider source resolved to v3)
-it.skip.each([
+it.each([
   { min: 0.5, step: 1, next: 1.5 },
   { min: -0.025, step: 0.1, next: 0.075 },
   { min: 1.5e-7, step: 1e-6, next: 1.15e-6 },
