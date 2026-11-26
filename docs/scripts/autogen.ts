@@ -178,6 +178,9 @@ function parseMeta(meta: ComponentMeta) {
       if (defaultValue === 'undefined')
         defaultValue = undefined
 
+      // A default that is resolved at runtime, so not set through `withDefaults`, is documented with `@default`.
+      defaultValue = defaultValue ?? prop.tags.find(tag => tag.name === 'default')?.text
+
       if (!type.includes('AcceptableValue'))
         type = parseTypeFromSchema(prop.schema) || type
 
