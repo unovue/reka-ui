@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { cdp, commands, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from '@/Dialog'
-import { hoverForMousePointerId } from '@/test/browser'
+import { hasCDP, hoverForMousePointerId } from '@/test/browser'
 import { ToastAction, ToastClose, ToastDescription, ToastProvider, ToastRoot, ToastTitle, ToastViewport } from '.'
 
 function mountToast() {
@@ -492,7 +492,9 @@ describe('toast pause options, in a real browser', () => {
     await expect.poll(() => el('[data-testid="toast"]')).toBeTruthy()
     const toast = el('[data-testid="toast"]')!
     const { left, top } = toast.getBoundingClientRect()
-    const init = { bubbles: true, pointerId: 1, pointerType: 'touch', button: 0, isPrimary: true, clientY: top + 20 }
+    // The swipe captures the pointer, which needs the id of an active one: see `hoverForMousePointerId`.
+    const pointerId = await hoverForMousePointerId(toast)
+    const init = { bubbles: true, pointerId, pointerType: 'touch', button: 0, isPrimary: true, clientY: top + 20 }
     toast.dispatchEvent(new PointerEvent('pointerdown', { ...init, clientX: left + 20 }))
     toast.dispatchEvent(new PointerEvent('pointermove', { ...init, clientX: left + 40 }))
     await startCountdown()
@@ -555,7 +557,7 @@ describe('toast pause options, in a real browser', () => {
 // provider turns on the focus emulation of DevTools for it. The setting is one flag on
 // the page that the last caller wins, so turning it on and off again from the session of
 // the test leaves it off. Minimizing the window then takes the focus away, and restoring
-// it gives the focus back.
+// it gives the focus back. Both go through CDP: see `hasCDP`.
 const send = (method: string, params: Record<string, unknown> = {}) => (cdp() as any).send(method, params)
 
 async function setFocusEmulation(enabled: boolean) {
@@ -570,7 +572,7 @@ async function setWindowFocused(focused: boolean) {
   await changed
 }
 
-describe('toast window blur pause, when the window really loses focus', () => {
+describe.skipIf(!hasCDP)('toast window blur pause, when the window really loses focus', () => {
   beforeEach(() => setFocusEmulation(false))
 
   afterEach(async () => {
