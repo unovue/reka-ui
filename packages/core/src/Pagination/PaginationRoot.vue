@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { Ref, WatchHandle } from 'vue'
 import type { PaginationChangeReason } from './usePagination'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails, Translate } from '@/shared'
@@ -57,8 +57,9 @@ export const [injectPaginationRootContext, providePaginationRootContext]
 </script>
 
 <script setup lang="ts">
-import { useAttrs, watch } from 'vue'
+import { onBeforeUpdate, watch } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
+import { useUntrackedAttrs } from '@/shared/splitWrapperAttrs'
 import { usePagination } from './usePagination'
 
 const props = withDefaults(defineProps<PaginationRootProps>(), {
@@ -98,15 +99,24 @@ const { page, modelPage, pageCount, setPage, context } = usePagination({
 })
 
 // With `clampPage`, move a model page past the page count back into range (on mount too).
-watch([() => props.clampPage, modelPage, pageCount], ([clampPage, value, count]) => {
-  if (clampPage && value !== clamp(value, 1, count))
-    setPage(value)
-}, { immediate: true })
+// The watcher starts once `clampPage` is set: at setup, or before the update a prop change
+// makes. Until then a pagination pays one hook for it.
+let clampWatch: WatchHandle | undefined
+function watchClampPage() {
+  if (!props.clampPage || clampWatch)
+    return
+  clampWatch = watch(() => props.clampPage && modelPage.value !== clamp(modelPage.value, 1, pageCount.value), (outOfRange) => {
+    if (outOfRange)
+      setPage(modelPage.value)
+  }, { immediate: true })
+}
+watchClampPage()
+onBeforeUpdate(watchClampPage)
 
 // A `<nav>` is a landmark, and landmarks need a name to be told apart. The default steps aside for a
 // consumer `aria-label` (it falls through and wins) or `aria-labelledby`, and is only set on the `<nav>` itself.
-// Read in render, not a computed: `attrs` is not reactive, and a change of it re-renders this component.
-const attrs = useAttrs()
+// Read in render, not a computed: a change of the attrs re-renders this component.
+const attrs = useUntrackedAttrs()
 const ariaLabel = () => (props.as === 'nav' && !props.asChild && !attrs['aria-labelledby']) ? t('paginationLabel') : undefined
 
 providePaginationRootContext(context)
