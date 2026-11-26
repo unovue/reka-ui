@@ -233,13 +233,15 @@ export function usePinInput(props: UsePinInputProps = {}): UsePinInputReturn {
   }
 
   // v2 parity: `complete` follows the (deep) model watcher, so it also fires when
-  // a controlled parent fills the value, and only after the change flushed.
+  // a controlled parent fills the value, and only after the change flushed. A
+  // complete handler can submit the form at once, so it runs after the render
+  // (`flush: 'post'`) has written the hidden form input.
   watch(modelValue, () => {
     if (!isCompleted.value)
       return
     props.onComplete?.(committedMountedValues.value)
     props.emit?.('complete', committedMountedValues.value)
-  }, { deep: true })
+  }, { deep: true, flush: 'post' })
 
   const context: PinInputRootContext<PinInputType> = {
     modelValue,
