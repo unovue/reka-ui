@@ -81,7 +81,6 @@ function fromRoot(name: string, root: Component, component: Component, rootProps
 
 const page = { total: 30, itemsPerPage: 10, defaultPage: 2 }
 
-// TODO(v3-port): #3327 the Month/Year picker cases were dropped: those families are deleted in v3
 const cases: Case[] = [
   fromRoot('AccordionTrigger', AccordionRoot, AccordionTrigger, { type: 'single' }, child => h(AccordionItem, { value: 'a' }, () => child)),
   fromRoot('CalendarPrev', CalendarRoot, CalendarPrev),
@@ -156,20 +155,9 @@ function render(c: Case, disabled: boolean, as: As) {
   return { wrapper, el }
 }
 
-// TODO(v3-port): #3327 parts that still render their element with `renderAs`, so an enabled one rendered as a
-// non-button element gets disabled="false". Switching the part to `renderAsControl` fixes it; remove it here then.
-const OMIT_PENDING = new Set([
-  'ComboboxTrigger',
-  'SelectTrigger',
-  'TagsInputInput',
-  'Toggle',
-  'ToolbarButton',
-])
-const itOmits = (c: Case) => OMIT_PENDING.has(c.name) ? it.skip : it
-const itPassesFalse = (_c: Case) => it
 
 describe.each(cases)('$name', (c) => {
-  itOmits(c).each(['div', 'span', 'a'])('omits the disabled attribute when enabled and rendered as %s', (as) => {
+  it.each(['div', 'span', 'a'])('omits the disabled attribute when enabled and rendered as %s', (as) => {
     const { el } = render(c, false, as)
     expect(el.tagName).toBe(as.toUpperCase())
     expect(el.hasAttribute('disabled')).toBe(false)
@@ -193,7 +181,7 @@ describe.each(cases)('$name', (c) => {
     expect(disabled.el.getAttribute('disabled')).toBe('')
   })
 
-  itPassesFalse(c)('passes false to a component given as `as` when enabled', () => {
+  it('passes false to a component given as `as` when enabled', () => {
     expect(render(c, false, DisabledByDefault).el.getAttribute('data-component-disabled')).toBe('false')
   })
 
@@ -201,7 +189,7 @@ describe.each(cases)('$name', (c) => {
     expect(render(c, true, DisabledByDefault).el.getAttribute('data-component-disabled')).toBe('true')
   })
 
-  itPassesFalse(c)('passes false to a component child with `asChild` when enabled', () => {
+  it('passes false to a component child with `asChild` when enabled', () => {
     const { el } = render(c, false, { asChild: () => h(DisabledByDefault, () => 'part') })
     expect(el.getAttribute('data-component-disabled')).toBe('false')
   })
@@ -216,7 +204,7 @@ describe.each(cases)('$name', (c) => {
     expect(render(c, true, { asChild: () => h('span', 'part') }).el.getAttribute('disabled')).toBe('true')
   })
 
-  itPassesFalse(c)('passes false to a custom element given as `as` when enabled', async () => {
+  it('passes false to a custom element given as `as` when enabled', async () => {
     expect(await customElementDisabled(render(c, false, CUSTOM_ELEMENT).el)).toBe('false')
   })
 
@@ -224,12 +212,12 @@ describe.each(cases)('$name', (c) => {
     expect(await customElementDisabled(render(c, true, CUSTOM_ELEMENT).el)).toBe('true')
   })
 
-  itPassesFalse(c)('passes false to a custom element child with `asChild` when enabled', async () => {
+  it('passes false to a custom element child with `asChild` when enabled', async () => {
     const { el } = render(c, false, { asChild: () => h(CUSTOM_ELEMENT) })
     expect(await customElementDisabled(el)).toBe('false')
   })
 
-  itPassesFalse(c)('passes false to a component child with `as="template"` when enabled', () => {
+  it('passes false to a component child with `as="template"` when enabled', () => {
     const { el } = render(c, false, { template: () => h(DisabledByDefault, () => 'part') })
     expect(el.getAttribute('data-component-disabled')).toBe('false')
   })

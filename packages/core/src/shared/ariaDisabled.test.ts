@@ -8,12 +8,14 @@ import { CarouselAutoplayToggle, CarouselContent, CarouselItem, CarouselRoot, Ca
 import { CollapsibleRoot, CollapsibleTrigger } from '@/Collapsible'
 import { DatePickerRoot, DatePickerTrigger } from '@/DatePicker'
 import { DateRangePickerRoot, DateRangePickerTrigger } from '@/DateRangePicker'
-import { DrawerRoot, DrawerSwipeArea } from '@/Drawer'
+import { DialogClose, DialogRoot, DialogTrigger } from '@/Dialog'
+import { DrawerClose, DrawerRoot, DrawerSwipeArea, DrawerTrigger } from '@/Drawer'
 import { DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
 import { EditableEditTrigger, EditableRoot } from '@/Editable'
 import { MenubarMenu, MenubarRoot, MenubarTrigger } from '@/Menubar'
 import { NavigationMenuItem, NavigationMenuList, NavigationMenuRoot, NavigationMenuTrigger } from '@/NavigationMenu'
 import { NumberFieldDecrement, NumberFieldIncrement, NumberFieldRoot } from '@/NumberField'
+import { PopoverClose, PopoverRoot, PopoverTrigger } from '@/Popover'
 import { PaginationFirst, PaginationLast, PaginationList, PaginationListItem, PaginationNext, PaginationPrev, PaginationRoot } from '@/Pagination'
 import { Primitive } from '@/Primitive'
 import { RadioGroupItem, RadioGroupRoot } from '@/RadioGroup'
@@ -24,6 +26,7 @@ import { TabsList, TabsRoot, TabsTrigger } from '@/Tabs'
 import { TagGroupItem, TagGroupItemDelete, TagGroupRoot } from '@/TagGroup'
 import { Toggle } from '@/Toggle'
 import { ToggleGroupItem, ToggleGroupRoot } from '@/ToggleGroup'
+import { TooltipProvider, TooltipRoot, TooltipTrigger } from '@/Tooltip'
 import { ToolbarButton, ToolbarRoot, ToolbarToggleGroup, ToolbarToggleItem } from '@/Toolbar'
 import { ariaDisabledAttr } from './disabledAttr'
 
@@ -100,6 +103,21 @@ const cases: Case[] = [
     render: (disabled, as) => h(ToolbarRoot, () => h(ToolbarToggleGroup, { type: 'single' }, () => part(ToolbarToggleItem, as, { disabled, value: 'a' }))),
   },
 ]
+
+// Parts without a `disabled` prop of their own: a consumer sets `disabled` on them as an attribute
+function attr(name: string, component: Component, wrap: (child: VNode) => VNode): Case {
+  return { name, render: (disabled, as) => wrap(part(component, as, { disabled: disabled || undefined })) }
+}
+
+cases.push(
+  attr('DialogTrigger', DialogTrigger, child => h(DialogRoot, () => child)),
+  attr('DialogClose', DialogClose, child => h(DialogRoot, () => child)),
+  attr('DrawerTrigger', DrawerTrigger, child => h(DrawerRoot, () => child)),
+  attr('DrawerClose', DrawerClose, child => h(DrawerRoot, () => child)),
+  attr('PopoverTrigger', PopoverTrigger, child => h(PopoverRoot, () => child)),
+  attr('PopoverClose', PopoverClose, child => h(PopoverRoot, () => child)),
+  attr('TooltipTrigger', TooltipTrigger, child => h(TooltipProvider, () => h(TooltipRoot, () => child))),
+)
 
 const mounted: VueWrapper[] = []
 
@@ -197,30 +215,9 @@ describe('primitive', () => {
   })
 })
 
-// TODO(v3-port): #3370 parts that still render their element with `renderAs` (no aria-disabled on a
-// non-button element). Switching the part to `renderAsControl` fixes it; remove it here then.
-const ARIA_PENDING = new Set([
-  'DatePickerTrigger',
-  'DateRangePickerTrigger',
-  'DropdownMenuTrigger',
-  'MenubarTrigger',
-  'NavigationMenuTrigger',
-  'NumberFieldDecrement',
-  'NumberFieldIncrement',
-  'RadioGroupItem',
-  'RadioGroupItem (disabled group)',
-  'SelectTrigger',
-  'SwitchRoot',
-  'TagGroupItemDelete',
-  'Toggle',
-  'ToggleGroupItem',
-  'ToolbarButton',
-  'ToolbarToggleItem',
-])
-const itAria = (c: { name: string }) => ARIA_PENDING.has(c.name) ? it.skip : it
 
 describe.each(cases)('$name', (c) => {
-  itAria(c).each(['div', 'span', 'a'])('adds aria-disabled="true" when disabled and rendered as %s', (as) => {
+  it.each(['div', 'span', 'a'])('adds aria-disabled="true" when disabled and rendered as %s', (as) => {
     const el = render(() => c.render(true, as))
     expect(el.tagName).toBe(as.toUpperCase())
     expect(el.getAttribute('aria-disabled')).toBe('true')
