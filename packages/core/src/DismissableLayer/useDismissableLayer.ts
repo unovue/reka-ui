@@ -6,7 +6,7 @@ import type { SplitWrapperAttrs, WrapperSpec } from '@/shared/splitWrapperAttrs'
 import { computed, nextTick, watch } from 'vue'
 import { containsComposed } from '@/shared'
 import { createWrapperEmit } from '@/shared/splitWrapperAttrs'
-import { blockPositioningWrapper, mountInternalBackdrop } from './internalBackdrop'
+import { blockPositioningWrapper, getInternalBackdrop, mountInternalBackdrop } from './internalBackdrop'
 import {
   branches,
   highestDisabledIndex,
@@ -15,6 +15,7 @@ import {
   registerStackLayer,
 } from './layerStack'
 import {
+  preventPressFocusMove,
   useFocusOutside,
   usePointerDownOutside,
 } from './utils'
@@ -98,6 +99,10 @@ export function useDismissableLayer(options: UseDismissableLayerOptions) {
     const isEnabledAtPress = index.value >= highestDisabledIndexAt(event.detail.originalEvent)
     if (!present() || !isEnabledAtPress || isPointerDownOnBranch)
       return
+    // A press on the layer's own backdrop returns focus as the layer closes; the
+    // press's `mousedown` must not then drop it on `body`.
+    if (disableOutsidePointerEvents() && getInternalBackdrop(element.value)?.contains(event.target as Node))
+      preventPressFocusMove(event)
     options.onPointerDownOutside?.(event)
     options.onInteractOutside?.(event)
     await nextTick()

@@ -3,6 +3,7 @@ import type { DialogContentImplEmits, DialogContentImplProps } from './DialogCon
 import type { PointerDownOutsideEvent } from '@/DismissableLayer'
 import { computed, watch } from 'vue'
 import { isOwnBackdropPress } from '@/DismissableLayer/internalBackdrop'
+import { preventPressFocusMove } from '@/DismissableLayer/utils'
 import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { useEmitAsProps, useForwardElement, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
@@ -53,6 +54,10 @@ function onPointerDownOutside(event: PointerDownOutsideEvent) {
   // backdrop such as a third-party widget (Base UI `useDialogRoot`, #2822).
   else if (!isOwnBackdropPress(event.target, currentElement.value, overlayElement?.value))
     event.preventDefault()
+  // Focus returns on this `pointerdown`; the press's `mousedown` must not drop it on
+  // `body` (the layer does the same for its internal backdrop).
+  else if (overlayElement?.value?.contains(event.target as Node))
+    preventPressFocusMove(event)
 }
 
 // When `unmountOnHide` is `false` the content stays mounted on close, so

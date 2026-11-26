@@ -197,7 +197,8 @@ describe('closing a layer on its own', () => {
       await expect.poll(() => onTriggerFocus.mock.calls.length).toBe(1)
       expect(onCloseAutoFocus).toHaveBeenCalled()
       await afterTimers()
-      expect(document.activeElement).not.toBe(get('outside'))
+      // The press's `mousedown`, on the backdrop, does not drop it on `body` either
+      expect(document.activeElement).toBe(get('first-trigger'))
     })
   })
 })

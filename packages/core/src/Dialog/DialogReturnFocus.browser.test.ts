@@ -129,10 +129,7 @@ const INNER: { name: string, kind: Kind, modal?: boolean }[] = [
 const PRESS_CASES = (['Dialog', 'AlertDialog'] as Kind[]).flatMap(outer => INNER.flatMap(inner =>
   ([true, false]).flatMap(outerStaysOpen => (['Escape', 'close button', 'overlay click'] as Close[])
     // An AlertDialog does not close on an outside click, and a non-modal Dialog has no overlay.
-    // TODO(v3-port): #3286 'overlay click' is left out: a modal Dialog dismissed by a press on its
-    // backdrop closes on `pointerdown`, and that press's `mousedown` then drops the returned focus on
-    // `body` (a v3 bug, not caused by the merge).
-    .filter(close => close !== 'overlay click')
+    .filter(close => close !== 'overlay click' || (inner.kind === 'Dialog' && inner.modal !== false))
     .map(close => ({ outer, inner, outerStaysOpen, close })))))
 
 describe('given a dialog that opens while another dialog holds focus, in a real browser', () => {
