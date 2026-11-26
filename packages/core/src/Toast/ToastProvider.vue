@@ -53,8 +53,8 @@ export interface ToastProviderProps {
   /**
    * An author-localized label for each toast. Used to help screen reader users
    * associate the interruption with a toast.
-   * Defaults to the `toastLabel` message of `ConfigProvider`, which is "Notification".
-   * @defaultValue 'Notification'
+   * Defaults to the `toastLabel` message of `ConfigProvider`.
+   * @default 'Notification'
    */
   label?: string
   /**
