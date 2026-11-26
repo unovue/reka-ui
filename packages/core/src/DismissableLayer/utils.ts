@@ -361,8 +361,11 @@ let endTrackedPress = () => {}
  * that focus move apart from focus moving on its own (#3360).
  */
 export function trackTriggerPress(event: PointerEvent) {
+  startTriggerPress(event.currentTarget as Element | null, event)
+}
+
+function startTriggerPress(trigger: Element | null | undefined, event: PointerEvent) {
   endTrackedPress()
-  const trigger = event.currentTarget as Element | null
   if (!isClient || !trigger || event.button !== 0)
     return
   const ownerDocument = trigger.ownerDocument
@@ -391,6 +394,31 @@ export function trackTriggerPress(event: PointerEvent) {
   ownerDocument.addEventListener('pointerdown', release, true)
   pressedTrigger = trigger
   endTrackedPress = release
+}
+
+const pressTrackedDocuments = new WeakSet<Document>()
+
+function findPopupTrigger(event: PointerEvent) {
+  for (const target of event.composedPath()) {
+    if (target instanceof Element && target.hasAttribute('aria-haspopup'))
+      return target
+  }
+}
+
+/**
+ * `trackTriggerPress` for every popup trigger (an element with `aria-haspopup`) in
+ * `ownerDocument`, from one capture listener on the document added on the first call, for
+ * triggers without a `pointerdown` handler of their own: no listener per trigger.
+ */
+export function trackTriggerPresses(ownerDocument: Document | undefined = isClient ? document : undefined) {
+  if (!ownerDocument || pressTrackedDocuments.has(ownerDocument))
+    return
+  pressTrackedDocuments.add(ownerDocument)
+  ownerDocument.addEventListener('pointerdown', (event) => {
+    const trigger = findPopupTrigger(event)
+    if (trigger)
+      startTriggerPress(trigger, event)
+  }, true)
 }
 
 /** Whether a press tracked by `trackTriggerPress` on `trigger` is in flight. */

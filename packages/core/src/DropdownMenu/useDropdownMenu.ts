@@ -7,7 +7,7 @@ import type { MenuContentHideEvent, MenuContext, MenuRootContext } from '@/Menu/
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { PopupRootStore } from '@/shared/popupHandle'
 import { computed, nextTick, ref, toValue } from 'vue'
-import { isTriggerPressInFlight, trackTriggerPress } from '@/DismissableLayer/utils'
+import { isTriggerPressInFlight, trackTriggerPresses } from '@/DismissableLayer/utils'
 import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { useMenuRoot } from '@/Menu/useMenu'
 import { containsComposed, createPartSurface } from '@/shared'
@@ -46,6 +46,8 @@ export function getDropdownMenuTriggerSurface(
   disabled?: MaybeRefOrGetter<boolean | undefined>,
 ): PartSurface<DropdownMenuTriggerState> {
   const isDisabled = () => toValue(disabled) ?? false
+  // Lets the content tell the focus WebKit gives an ancestor of the pressed trigger (#3360).
+  trackTriggerPresses()
   return createPartSurface<DropdownMenuTriggerState>(
     () => ({
       'id': context.triggerId,
@@ -53,8 +55,6 @@ export function getDropdownMenuTriggerSurface(
       'aria-expanded': context.open.value,
       'aria-controls': context.open.value ? context.contentId : undefined,
       'disabled': isDisabled(),
-      // Lets the content tell the focus WebKit gives an ancestor of the pressed trigger (#3360).
-      'onPointerdown': trackTriggerPress,
       'onClick': async (event: MouseEvent) => {
         if (event.defaultPrevented)
           return

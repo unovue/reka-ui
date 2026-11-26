@@ -19,6 +19,7 @@ export interface DropdownMenuTriggerProps<Payload = unknown> extends PrimitivePr
 <script setup lang="ts" generic="Payload = unknown">
 import type { ComputedRef } from 'vue'
 import { computed, mergeProps, onBeforeUpdate, shallowRef, useAttrs, watch } from 'vue'
+import { trackTriggerPresses } from '@/DismissableLayer/utils'
 import { injectMenuContext } from '@/Menu'
 import { usePopperAnchor } from '@/Popper/usePopperAnchor'
 import { renderAsControl } from '@/Primitive/renderAs'
@@ -93,6 +94,8 @@ if (rootContext) {
     // On unmount, clear it only if it still holds this trigger's element.
     if (element || rootContext.triggerElement.value === previous)
       rootContext.triggerElement.value = element
+    // A trigger in another document (an iframe) has its presses tracked there.
+    trackTriggerPresses(element?.ownerDocument)
   }, { immediate: true })
 }
 
