@@ -10,13 +10,9 @@ describe('createDecade', () => {
       .toEqual(years.map(year => String(new Temporal.PlainDate(year, 1, 1))))
   }
 
-  // TODO(v3-port): #3317 v3's createDecade repeats years for asymmetric ranges
-  it.skip.each([
+  it.each([
     [-2, 5, [2023, 2024, 2025, 2026, 2027, 2028, 2029]],
     [undefined, 3, [2025, 2026, 2027]],
-  ] as const)('lists the years from offset %s up to %i (exclusive)', expectYears)
-
-  it.each([
     [-2, 2, [2023, 2024, 2025, 2026]],
   ] as const)('lists the years from offset %s up to %i (exclusive)', expectYears)
 
