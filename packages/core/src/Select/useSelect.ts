@@ -1391,10 +1391,23 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
     })
   }
 
+  const itemContext: SelectItemContext<T> = {
+    get value() {
+      return getValue()
+    },
+    textId,
+    disabled: ownDisabled,
+    isSelected,
+    onItemTextChange: (node) => {
+      textValue.value = ((textValue.value || node?.textContent) ?? '').trim()
+    },
+  }
+
   const item = createPartSurface<SelectItemState>(
     () => ({
       'role': 'option',
-      'aria-labelledby': textId,
+      // Read through the context, which follows a consumer `id` on `SelectItemText`.
+      'aria-labelledby': itemContext.textId,
       'aria-selected': isSelected.value,
       'aria-disabled': disabled.value || undefined,
       'tabindex': disabled.value ? undefined : -1,
@@ -1410,18 +1423,6 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
     }),
     () => ({ state: selectionState(isSelected.value), disabled: disabled.value, highlighted: isFocused.value }),
   )
-
-  const itemContext: SelectItemContext<T> = {
-    get value() {
-      return getValue()
-    },
-    textId,
-    disabled: ownDisabled,
-    isSelected,
-    onItemTextChange: (node) => {
-      textValue.value = ((textValue.value || node?.textContent) ?? '').trim()
-    },
-  }
 
   return { item, isSelected, isFocused, textValue, itemContext, typeaheadSelect: createTypeaheadSelect(context, getValue, () => disabled.value, options.onSelect) }
 }
