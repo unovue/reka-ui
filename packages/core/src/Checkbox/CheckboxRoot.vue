@@ -5,7 +5,7 @@ import type { CheckedState } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
-import { createContext, getRootNode, isValueEqualOrExist, useFormControl, useForwardElement, useForwardScopeId } from '@/shared'
+import { createContext, disabledAttr, getRootNode, isValueEqualOrExist, useFormControl, useForwardElement, useForwardScopeId } from '@/shared'
 import { injectCheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 
 export interface CheckboxRootProps<TrueValue = boolean, FalseValue = TrueValue> extends PrimitiveProps, FormFieldProps {
@@ -240,6 +240,8 @@ function renderAttrs() {
     'aria-label': attrs['aria-label'] || ariaLabel.value,
     'onFocus': field?.onFocus,
     'onBlur': field?.onBlur,
+    // An enabled plain non-button tag gets no `disabled="false"`; a component still receives `false`.
+    'disabled': disabledAttr(disabled.value, props.as, props.asChild),
   }
   // A parent's `aria-controls` comes first, so a consumer's wins.
   const controls = ariaControls ? { 'aria-controls': ariaControls() } : {}

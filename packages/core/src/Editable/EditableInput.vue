@@ -8,7 +8,7 @@ export interface EditableInputProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { mergeProps, nextTick, onMounted, ref, watch } from 'vue'
-import { useForwardElement } from '@/shared'
+import { disabledAttr, useForwardElement } from '@/shared'
 import { injectEditableFieldControl, injectEditableRootContext } from './EditableRoot.vue'
 import { getEditableInputSurface } from './useEditable'
 
@@ -54,6 +54,8 @@ onMounted(() => {
 const field = injectEditableFieldControl(null)?.binding
 function renderAttrs(attrs: Record<string, unknown>) {
   const own: Record<string, unknown> = { ...input.attrs.value }
+  // An enabled plain non-input tag gets no `disabled="false"`; a component still receives `false`.
+  own.disabled = disabledAttr(context.disabled.value, props.as, props.asChild)
   if (attrs['aria-labelledby'] || hasLabelElement.value)
     own['aria-label'] = undefined
   if (!field) {

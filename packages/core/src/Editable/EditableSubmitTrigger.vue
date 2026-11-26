@@ -6,7 +6,7 @@ export interface EditableSubmitTriggerProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
-import { useForwardElement } from '@/shared'
+import { disabledAttr, useForwardElement } from '@/shared'
 import { injectEditableRootContext } from './EditableRoot.vue'
 import { getEditableTriggerSurface } from './useEditable'
 
@@ -24,6 +24,7 @@ defineExpose(expose)
   <Primitive
     :ref="forwardRef"
     v-bind="trigger.attrs.value"
+    :disabled="disabledAttr(context.disabled.value, props.as, props.asChild)"
     :as="props.as"
     :as-child="props.asChild"
     :type="as === 'button' ? 'button' : undefined"
