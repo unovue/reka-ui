@@ -1037,8 +1037,7 @@ describe('date and time segment names', () => {
     expect(Object.values(messages).slice(0, 3)).toEqual(dayMonthYear)
   })
 
-  // TODO(v3-port): #3418 v3's DateField segments do not call useTranslations
-  it.skip.each([
+  it.each([
     ['de', ['Tag', 'Monat', 'Jahr']],
     ['ja', ['日', '月', '年']],
     ['ar', ['يوم', 'الشهر', 'السنة']],
@@ -1050,8 +1049,7 @@ describe('date and time segment names', () => {
     expect(labels().filter(label => english.includes(label!))).toEqual([])
   })
 
-  // TODO(v3-port): #3418 v3's DateField segments do not call useTranslations
-  it.skip('lets a message set after them win, also one that equals the default', async () => {
+  it('lets a message set after them win, also one that equals the default', async () => {
     const translations = { ...createDateSegmentTranslations('de'), dateFieldDay: 'day,', dateFieldMonth: 'Kalendermonat' }
     await mountFixture({ template: field, defaults: [], data: { zoned, locale: 'de' } }, undefined, { translations })
     expect(labels().slice(0, 3)).toEqual(['day,', 'Kalendermonat', 'Jahr'])
