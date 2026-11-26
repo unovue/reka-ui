@@ -11,6 +11,7 @@ import {
   DrawerPopup,
   DrawerPortal,
   DrawerRoot,
+  DrawerSwipeArea,
   DrawerTitle,
   DrawerTrigger,
   DrawerViewport,
@@ -891,5 +892,23 @@ describe('given a Drawer root that stays mounted', () => {
     expect(context().contentElement.value).toBe(content)
 
     unmount()
+  })
+})
+
+describe('given a DrawerSwipeArea', () => {
+  const renderArea = (props: Record<string, unknown>) => {
+    const { container } = render(() => h(DrawerRoot, () => h(DrawerSwipeArea, { 'data-testid': 'area', ...props })))
+    return container.querySelector<HTMLElement>('[data-testid="area"]')!
+  }
+
+  it.each(['div', 'span'])('renders no disabled attribute while enabled (%s)', (as) => {
+    expect(renderArea({ as }).hasAttribute('disabled')).toBe(false)
+  })
+
+  it('keeps the disabled attribute while disabled, without aria-disabled', () => {
+    const area = renderArea({ disabled: true })
+    expect(area.getAttribute('disabled')).toBe('true')
+    // The swipe area is not a control, so its disabled state is not announced.
+    expect(area.hasAttribute('aria-disabled')).toBe(false)
   })
 })
