@@ -391,7 +391,7 @@ export interface UseListboxRootProps<T = AcceptableValue> {
   /**
    * When `true`, a programmatic `modelValue` change made while focus is outside the listbox
    * highlights the selected item without focusing it or scrolling the page to it.
-   * @defaultValue `false`
+   * @defaultValue `true`
    */
   keepFocusOnValueChange?: MaybeRefOrGetter<boolean | undefined>
   /**
@@ -904,7 +904,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
       // item the way the mount highlight does: no focus, and no `scrollIntoView`, which could
       // scroll the page away from the focused element. Read the focus now, before the update
       // renders: it may remove the focused item, and the focus would leave with it.
-      const keepFocusOnValueChange = !!toValue(props.keepFocusOnValueChange)
+      const keepFocusOnValueChange = toValue(props.keepFocusOnValueChange) ?? true
       const keepFocus = scroll && keepFocusOnValueChange && !toValue(props.element)?.contains(getActiveElement())
       const generation = keepFocusOnValueChange ? ++highlightGeneration : undefined
       const isStale = generation === undefined ? undefined : () => generation !== highlightGeneration

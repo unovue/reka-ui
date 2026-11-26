@@ -1351,7 +1351,7 @@ describe('given a Listbox driven by `highlightItem` from a sibling input', () =>
   })
 })
 
-describe('given a Listbox with `keepFocusOnValueChange`', () => {
+describe('given a Listbox whose value changes programmatically (`keepFocusOnValueChange`)', () => {
   window.HTMLElement.prototype.scrollIntoView = vi.fn()
 
   function mountListbox(keepFocusOnValueChange?: boolean) {
@@ -1388,8 +1388,8 @@ describe('given a Listbox with `keepFocusOnValueChange`', () => {
   })
 
   it.each([
-    ['keeps focus on the input', true],
-    ['moves focus to the item by default', undefined],
+    ['keeps focus on the input by default', undefined],
+    ['moves focus to the item with `false`', false],
   ])('%s when the value changes programmatically', async (_, keepFocusOnValueChange) => {
     const { wrapper, selected } = mountListbox(keepFocusOnValueChange)
     await flush()
@@ -1401,8 +1401,8 @@ describe('given a Listbox with `keepFocusOnValueChange`', () => {
 
     const cherry = wrapper.findAll('[role=option]').find(i => i.text() === 'Cherry')!
     expect(cherry.attributes('data-highlighted')).toBe('')
-    expect(document.activeElement).toBe(keepFocusOnValueChange ? input : cherry.element)
-    expect(window.HTMLElement.prototype.scrollIntoView).toHaveBeenCalledTimes(keepFocusOnValueChange ? 0 : 1)
+    expect(document.activeElement).toBe(keepFocusOnValueChange === false ? cherry.element : input)
+    expect(window.HTMLElement.prototype.scrollIntoView).toHaveBeenCalledTimes(keepFocusOnValueChange === false ? 1 : 0)
   })
 
   const propsOf = (component: unknown) => (component as { props: Record<string, unknown> }).props

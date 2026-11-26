@@ -626,6 +626,8 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     filter,
     filterSearch,
     highlightScroll,
+    // Not a Combobox prop: a combobox keeps the listbox's v2 handling of a programmatic value change.
+    keepFocusOnValueChange: false,
   })
 
   const resetSearchTerm = createEventHook<ComboboxOpenChangeReason | BaseChangeReason | undefined>()

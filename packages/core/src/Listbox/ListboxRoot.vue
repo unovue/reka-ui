@@ -142,8 +142,9 @@ export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, F
    * (e.g. on a text input) highlights the selected item without focusing it or scrolling the
    * page to it, so focus stays where it is. A virtualized list still scrolls its own viewport
    * to the item. When focus is already inside the listbox, focus follows the new highlight as
-   * usual. User interaction (click, keyboard, typeahead) is not affected.
-   * @defaultValue false
+   * usual. User interaction (click, keyboard, typeahead) is not affected. When `false`, the
+   * change moves focus to the selected item and scrolls it into view.
+   * @defaultValue true
    */
   keepFocusOnValueChange?: boolean
   /**
@@ -193,6 +194,7 @@ import { useListboxRoot } from './useListbox'
 const props = withDefaults(defineProps<ListboxRootProps & { multiple?: M }>(), {
   selectionBehavior: 'toggle',
   orientation: 'vertical',
+  keepFocusOnValueChange: true,
 })
 // Typed by `multiple` only (#2824 item 4); the props are not generic over `T`,
 // so the value type stays `AcceptableValue` as in v2.

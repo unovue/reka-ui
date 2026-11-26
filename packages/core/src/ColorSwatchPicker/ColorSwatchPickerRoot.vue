@@ -59,6 +59,7 @@ defineExpose(expose)
   <ListboxRoot
     :ref="forwardRef"
     v-bind="mergeProps(forwarded, listboxProps)"
+    :keep-focus-on-value-change="false"
     as-child
   >
     <ListboxContent

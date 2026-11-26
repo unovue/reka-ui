@@ -1118,3 +1118,19 @@ To accept a PIN shorter than the number of inputs, such as a 4 to 6 digit code i
 ```
 
 `require-complete` (or `:require-complete="true"`) is now the default and can be removed.
+
+## Listbox keeps focus when its value changes
+
+`keepFocusOnValueChange` on `ListboxRoot` now defaults to `true` (v2: `false`), and so does the `keepFocusOnValueChange` option of `useListboxRoot()`. When code changes `modelValue` while focus is outside the listbox, for example while the user types in a text input, the selected item is highlighted and becomes the tab stop, but focus stays where it is and the page is not scrolled to the listbox. A virtualized list still scrolls its own viewport to the item. In v2 the change moved focus to the item and scrolled it into view. When focus is already inside the listbox, focus follows the new item as before, and clicks, keyboard navigation and typeahead are unchanged. `ComboboxRoot`, `AutocompleteRoot` and `ColorSwatchPickerRoot` are unchanged.
+
+To move focus to the item on every programmatic change, set the prop to `false`:
+
+```vue
+<!-- v2: a value set from code moved focus to the item -->
+<ListboxRoot v-model="fruit">
+
+<!-- v3: same behavior -->
+<ListboxRoot v-model="fruit" :keep-focus-on-value-change="false">
+```
+
+`keep-focus-on-value-change` (or `:keep-focus-on-value-change="true"`) is now the default and can be removed.

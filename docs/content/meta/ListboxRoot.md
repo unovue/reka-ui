@@ -59,9 +59,10 @@
   },
   {
     'name': 'keepFocusOnValueChange',
-    'description': '<p>When <code>true</code>, a programmatic <code>modelValue</code> change made while focus is outside the listbox\n(e.g. on a text input) highlights the selected item without focusing it or scrolling the\npage to it, so focus stays where it is. A virtualized list still scrolls its own viewport\nto the item. When focus is already inside the listbox, focus follows the new highlight as\nusual. User interaction (click, keyboard, typeahead) is not affected.</p>\n',
+    'description': '<p>When <code>true</code>, a programmatic <code>modelValue</code> change made while focus is outside the listbox\n(e.g. on a text input) highlights the selected item without focusing it or scrolling the\npage to it, so focus stays where it is. A virtualized list still scrolls its own viewport\nto the item. When focus is already inside the listbox, focus follows the new highlight as\nusual. User interaction (click, keyboard, typeahead) is not affected. When <code>false</code>, the\nchange moves focus to the selected item and scrolls it into view.</p>\n',
     'type': 'boolean',
-    'required': false
+    'required': false,
+    'default': 'true'
   },
   {
     'name': 'loop',
@@ -172,7 +173,7 @@
 | `filter` | Filters the items by the `ListboxFilter` search term: called as `filter(text, search, value)` with the item's `textValue` (or text content; in a `ListboxVirtualizer`, `textContent(option)`), it returns whether the item matches. Items that do not match are not rendered, so keyboard navigation, typeahead and select-all skip them. Omitted or `null`, the listbox does not filter (filter the items yourself, or on a server). | `ListboxFilterFunction<AcceptableValue> \| null` | No | - |
 | `getNavigationIntent` | Resolves what a keydown means for keyboard navigation. Return `undefined` to fall back to the default mapping (arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), `null` to opt the key out (for Enter this also skips the selection), or `'select'` to select the highlighted item as Enter does. `ListboxFilter` never passes unmodified printable keys (they stay text input), and Space on a focused item already selects it, so a `'select'` intent for Space does not select it twice. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null \| undefined)` | No | - |
 | `highlightOnHover` | When `true`, hover over item will trigger highlight | `boolean` | No | - |
-| `keepFocusOnValueChange` | When `true`, a programmatic `modelValue` change made while focus is outside the listbox (e.g. on a text input) highlights the selected item without focusing it or scrolling the page to it, so focus stays where it is. A virtualized list still scrolls its own viewport to the item. When focus is already inside the listbox, focus follows the new highlight as usual. User interaction (click, keyboard, typeahead) is not affected. | `boolean` | No | - |
+| `keepFocusOnValueChange` | When `true`, a programmatic `modelValue` change made while focus is outside the listbox (e.g. on a text input) highlights the selected item without focusing it or scrolling the page to it, so focus stays where it is. A virtualized list still scrolls its own viewport to the item. When focus is already inside the listbox, focus follows the new highlight as usual. User interaction (click, keyboard, typeahead) is not affected. When `false`, the change moves focus to the selected item and scrolls it into view. | `boolean` | No | `true` |
 | `loop` | When `true`, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
 | `max` | Maximum number of options the user can select. Only applies when `multiple` is `true`. A selection that would go over it (click, \<kbd>Enter\</kbd>, range or select-all) is blocked and emits `invalid`. `0` means no limit. It does not clamp a `modelValue` set programmatically. | `number` | No | - |
 | `modelValue` | The controlled value of the listbox. Can be binded with `v-model`. | `AcceptableValue \| AcceptableValue[]` | No | - |
