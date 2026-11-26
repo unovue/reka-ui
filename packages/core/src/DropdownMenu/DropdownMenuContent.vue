@@ -13,7 +13,7 @@ export interface DropdownMenuContentProps extends MenuContentProps {}
 import { injectMenuContext, MenuContent } from '@/Menu'
 import { provideMenuBackdropCutoutContext } from '@/Menu/MenuContentImpl.vue'
 import { omitEntryFocusListener } from '@/Menu/utils'
-import { useForwardElement, useForwardPropsEmits } from '@/shared'
+import { useContentId, useForwardElement, useForwardPropsEmits } from '@/shared'
 import { injectDropdownMenuRootContext } from './DropdownMenuRoot.vue'
 import { createDropdownMenuContentSurface } from './useDropdownMenu'
 
@@ -24,10 +24,12 @@ defineOptions({
 const props = defineProps<DropdownMenuContentProps>()
 const emits = defineEmits<DropdownMenuContentEmits>()
 const forwarded = useForwardPropsEmits(props, emits)
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
 const rootContext = injectDropdownMenuRootContext()
+// A consumer `id` is the content's id, which the trigger's `aria-controls` references.
+useContentId(rootContext, currentElement)
 // The trigger stays interactive through a modal menu's backdrop (Base UI).
 provideMenuBackdropCutoutContext(rootContext.triggerElement)
 

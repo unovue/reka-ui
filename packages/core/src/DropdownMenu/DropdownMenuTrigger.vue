@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { DropdownMenuHandle } from './handle'
 import type { PrimitiveProps } from '@/Primitive'
-import { disabledAttr, useForwardElement, useId } from '@/shared'
+import { disabledAttr, useForwardElement, useId, useRenderedContentId, useTriggerId } from '@/shared'
 
 export interface DropdownMenuTriggerProps<Payload = unknown> extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -17,7 +17,9 @@ export interface DropdownMenuTriggerProps<Payload = unknown> extends PrimitivePr
 </script>
 
 <script setup lang="ts" generic="Payload = unknown">
+import type { ComputedRef } from 'vue'
 import { computed, mergeProps, onBeforeUpdate, shallowRef, useAttrs, watch } from 'vue'
+import { injectMenuContext } from '@/Menu'
 import { usePopperAnchor } from '@/Popper/usePopperAnchor'
 import { renderAs } from '@/Primitive/renderAs'
 import { getPopupRootStore, usePopupHandleTrigger } from '@/shared/popupHandle'
@@ -97,7 +99,19 @@ if (rootContext) {
 // Ids, aria, `data-popup-open`/`data-disabled` and the click/keydown handlers come
 // from the same builder `useDropdownMenu().trigger` uses.
 const trigger = rootContext ? getDropdownMenuTriggerSurface(rootContext, () => props.disabled) : getDetachedTrigger()
-const attrs = computed(() => detached.enabled.value ? getDetachedTrigger().attrs.value : trigger.attrs.value)
+// Without a handle, a consumer `id` (or an `id` on the asChild child) is the trigger's id, which
+// the content's `aria-labelledby` follows; `aria-controls` references the content only while
+// its element is rendered.
+let contentId: ComputedRef<string | undefined> | undefined
+if (rootContext) {
+  useTriggerId(rootContext, triggerElement)
+  contentId = useRenderedContentId(rootContext, injectMenuContext())
+}
+const attrs = computed(() => detached.enabled.value
+  ? getDetachedTrigger().attrs.value
+  : rootContext
+    ? { ...trigger.attrs.value, 'aria-controls': rootContext.open.value ? contentId!.value : undefined }
+    : trigger.attrs.value)
 
 // The menu's anchor, unless the trigger is detached.
 const anchor = usePopperAnchor({ consumerAttrs: true, element: triggerElement, enabled: () => !detached.enabled.value, scope: 'menu' })

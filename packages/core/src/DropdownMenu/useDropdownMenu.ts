@@ -231,11 +231,16 @@ export function useDropdownMenu<Payload = unknown>(props: UseDropdownMenuProps<P
     return onOpenChange(!open.value, reason, event)
   }
 
+  // Writable: the trigger and the content adopt a consumer `id` (`useTriggerId`,
+  // `useContentId`), which the other one references.
+  const ownTriggerId = ref(`${baseId}-trigger`)
+  const contentId = ref(`${baseId}-content`)
   const handleStore = createPopupRootStore<Payload>({
     handle: () => toValue(props.handle),
     open,
     setState: onOpenChange,
     baseId,
+    contentId: () => contentId.value,
     triggerId: props.triggerId,
     defaultTriggerId: props.defaultTriggerId,
   })
@@ -248,7 +253,6 @@ export function useDropdownMenu<Payload = unknown>(props: UseDropdownMenuProps<P
       ownTriggerElement.value = element
     },
   })
-  const ownTriggerId = `${baseId}-trigger`
 
   const context: DropdownMenuRootContext = {
     open,
@@ -263,11 +267,14 @@ export function useDropdownMenu<Payload = unknown>(props: UseDropdownMenuProps<P
     // trigger owns the menu, so it never points at a missing id.
     get triggerId() {
       if (!handleStore.handle.value)
-        return ownTriggerId
+        return ownTriggerId.value
       return handleStore.activeTriggerElement.value ? handleStore.activeTriggerId.value! : ''
     },
+    // The id a trigger without a handle renders.
+    set triggerId(value) { ownTriggerId.value = value },
     triggerElement,
-    contentId: `${baseId}-content`,
+    get contentId() { return contentId.value },
+    set contentId(value) { contentId.value = value },
     modal: menuRootContext.modal,
     dir: menuRootContext.dir,
   }
