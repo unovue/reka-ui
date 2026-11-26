@@ -61,6 +61,25 @@ describe('accordion vs v2', () => {
     wrapper.unmount()
   })
 
+  it('honours listener modifiers on the item\'s update:open', async () => {
+    const once: boolean[] = []
+    const always: boolean[] = []
+    const wrapper = mount(defineComponent({
+      components,
+      setup: () => ({ once, always }),
+      template: `<AccordionRoot type="multiple"><AccordionItem value="a" @update:open.once="once.push($event)" @update:open="always.push($event)">
+        <AccordionHeader><AccordionTrigger class="t">A</AccordionTrigger></AccordionHeader>
+        <AccordionContent>p</AccordionContent></AccordionItem></AccordionRoot>`,
+    }), { attachTo: document.body })
+    await wrapper.find('.t').trigger('click')
+    await tick()
+    await wrapper.find('.t').trigger('click')
+    await tick()
+    expect(once).toEqual([true])
+    expect(always).toEqual([true, false])
+    wrapper.unmount()
+  })
+
   it('root slot props spread onto a child', async () => {
     const Child = defineComponent({
       props: ['modelValue'],

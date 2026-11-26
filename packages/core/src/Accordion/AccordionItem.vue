@@ -40,15 +40,10 @@ export const [injectAccordionItemContext, provideAccordionItemContext]
 </script>
 
 <script setup lang="ts">
-import { computed, mergeProps, useAttrs, withKeys } from 'vue'
+import { computed, withKeys } from 'vue'
 import { provideCollapsibleRootContext } from '@/Collapsible/CollapsibleRoot.vue'
 import { Primitive } from '@/Primitive'
 import { useAgentItem } from '@/shared/useAgentRegistration'
-
-defineOptions({
-  // Bound by hand, so that an `@update:open` listener is called instead of added to the element.
-  inheritAttrs: false,
-})
 
 const props = withDefaults(
   defineProps<AccordionItemProps>(),
@@ -56,6 +51,11 @@ const props = withDefaults(
     unmountOnHide: undefined,
   },
 )
+
+const emits = defineEmits<{
+  /** Event handler called when a toggle asks for the item to open or close. The accordion's `modelValue` holds its open state. */
+  'update:open': [value: boolean]
+}>()
 
 defineSlots<{
   default?: (props: {
@@ -101,8 +101,7 @@ provideAccordionItemContext(defineReactiveIds({
 // The item is its own collapsible root: `AccordionTrigger` and `AccordionContent` read this context
 // as they would under a `CollapsibleRoot`, without the component and its `v-model` state in
 // between. The open state belongs to the accordion, so a toggle only reports the state it asks
-// for to an `@update:open` listener on the item, which is what reached `CollapsibleRoot` before.
-const attrs = useAttrs()
+// for as `update:open`, which is what `CollapsibleRoot` emitted before.
 provideCollapsibleRootContext(defineReactiveIds({
   contentId: '',
   disabled,
@@ -111,12 +110,7 @@ provideCollapsibleRootContext(defineReactiveIds({
   onOpenToggle: () => {
     if (disabled.value)
       return
-    const listener = attrs['onUpdate:open'] as ((value: boolean) => void) | ((value: boolean) => void)[] | undefined
-    const value = !open.value
-    if (Array.isArray(listener))
-      listener.forEach(fn => fn(value))
-    else
-      listener?.(value)
+    emits('update:open', !open.value)
   },
 }, ['contentId']))
 
@@ -141,29 +135,16 @@ function handleArrowKey(e: KeyboardEvent) {
 }
 
 const onKeydown = withKeys(handleArrowKey, ['up', 'down', 'left', 'right', 'home', 'end'])
-
-// The item's own bindings, then everything the consumer passed but the `update:open` listener, which
-// wins over them as it did when it fell through.
-function itemAttrs() {
-  let consumer = attrs
-  if ('onUpdate:open' in consumer) {
-    const { 'onUpdate:open': _, ...rest } = consumer
-    consumer = rest
-  }
-  return mergeProps({
-    'data-state': dataState.value,
-    'data-disabled': dataDisabled.value,
-    'data-orientation': rootContext.orientation,
-    onKeydown,
-  }, consumer)
-}
 </script>
 
 <template>
   <Primitive
-    v-bind="itemAttrs()"
     :as="props.as"
     :as-child="props.asChild"
+    :data-state="dataState"
+    :data-disabled="dataDisabled"
+    :data-orientation="rootContext.orientation"
+    @keydown="onKeydown"
   >
     <slot :open="open" />
   </Primitive>
