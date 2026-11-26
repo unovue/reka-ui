@@ -1128,6 +1128,25 @@ describe('given a ToastViewport hotkey', () => {
     await fireEvent.keyDown(window, { key: '†', code: 'KeyT', altKey: true })
     expect(document.activeElement).toBe(viewport)
   })
+
+  it('should follow a changed hotkey and label it', async () => {
+    document.body.innerHTML = ''
+    const hotkey = ref(['F8'])
+    wrapper = mount(defineComponent({
+      render: () => h(ToastProvider, null, {
+        default: () => h(ToastViewport, { hotkey: hotkey.value }),
+      }),
+    }), { attachTo: document.body })
+    hotkey.value = ['F6']
+    await nextTick()
+    const viewport = document.querySelector('ol')!
+
+    await fireEvent.keyDown(window, { key: 'F8', code: 'F8' })
+    expect(document.activeElement).not.toBe(viewport)
+    await fireEvent.keyDown(window, { key: 'F6', code: 'F6' })
+    expect(document.activeElement).toBe(viewport)
+    expect(document.querySelector('[role="region"]')?.getAttribute('aria-label')).toBe('Notifications (F6)')
+  })
 })
 
 // The label defaults are messages of `ConfigProvider` (#3418).

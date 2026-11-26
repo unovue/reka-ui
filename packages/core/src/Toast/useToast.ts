@@ -681,8 +681,8 @@ export interface UseToastViewportOptions {
   providerContext: ToastProviderContext
   /** The viewport list element. */
   viewportElement: Ref<HTMLElement | undefined | null>
-  /** Keys that move focus to the viewport. Read once. @defaultValue `['F8']` */
-  hotkey?: string[]
+  /** Keys that move focus to the viewport, read on every key press. @defaultValue `['F8']` */
+  hotkey?: MaybeRefOrGetter<string[] | undefined>
   /** Region label; `{hotkey}` is replaced. @defaultValue `'Notifications ({hotkey})'` */
   label?: MaybeRefOrGetter<string | ((hotkey: string) => string) | undefined>
   /** The toast elements, oldest first (the SFC hands its collection). */
@@ -717,13 +717,13 @@ export interface UseToastViewportReturn {
  */
 export function useToastViewport(options: UseToastViewportOptions): UseToastViewportReturn {
   const { providerContext, viewportElement: currentElement, headFocusProxy, tailFocusProxy } = options
-  const hotkey = options.hotkey ?? ['F8']
+  const hotkey = computed(() => toValue(options.hotkey) ?? ['F8'])
   const hasToasts = computed(() => providerContext.toastCount.value > 0)
 
   const KEY_RE = /Key/g
   const DIGIT_RE = /Digit/g
-  const hotkeyMessage = hotkey.join('+').replace(KEY_RE, '').replace(DIGIT_RE, '')
   const label = computed(() => {
+    const hotkeyMessage = hotkey.value.join('+').replace(KEY_RE, '').replace(DIGIT_RE, '')
     const value = toValue(options.label) ?? 'Notifications ({hotkey})'
     return typeof value === 'string' ? value.replace('{hotkey}', hotkeyMessage) : value(hotkeyMessage)
   })
@@ -754,8 +754,9 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
   // The hotkey is a key combination: every entry must be pressed, a modifier (`altKey`,
   // `ctrlKey`, …) or the `code` of the key itself.
   useEventListener('keydown', (event: KeyboardEvent) => {
-    const isHotkeyPressed = hotkey.length !== 0
-      && hotkey.every(key => event[key as keyof KeyboardEvent] || event.code === key)
+    const keys = hotkey.value
+    const isHotkeyPressed = keys.length !== 0
+      && keys.every(key => event[key as keyof KeyboardEvent] || event.code === key)
     if (isHotkeyPressed)
       viewportElement.value?.focus()
   })

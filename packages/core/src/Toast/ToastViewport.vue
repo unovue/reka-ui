@@ -54,7 +54,7 @@ const tailFocusProxyRef = ref<HTMLElement>()
 const { hasToasts, region, viewport, onHeadProxyFocus, onTailProxyFocus } = useToastViewport({
   providerContext,
   viewportElement: currentElement as Ref<HTMLElement | undefined>,
-  hotkey: props.hotkey,
+  hotkey: () => props.hotkey,
   label: () => props.label ?? ((hotkey: string) => t('toastViewportLabel', { hotkey })),
   getToasts: () => getItems().map(i => i.ref),
   headFocusProxy: headFocusProxyRef,
