@@ -3,7 +3,7 @@ import type {
   SelectContentImplEmits,
   SelectContentImplProps,
 } from './SelectContentImpl.vue'
-import { computed, onMounted, ref, useAttrs } from 'vue'
+import { computed, onMounted, ref, useAttrs, watch } from 'vue'
 
 export type SelectContentEmits = SelectContentImplEmits
 
@@ -47,6 +47,23 @@ const presenceRef = ref<InstanceType<typeof Presence>>()
 
 const present = computed(() => props.forceMount || rootContext.open.value)
 
+// Whether the root is still the content, which stays until its exit is over.
+// It follows the Presence one step behind: the Presence takes its element out
+// in its own update, and only then does the root swap to the fragment below.
+// Swapping in the update that ends the Presence would mount the fragment's
+// holder while a Vue `<Transition>` around the content is starting its leave,
+// and entering a new root there ends that leave at once. A post-flush watcher
+// runs in the same tick, so the options are still never missing from a paint
+// and the trigger keeps its label.
+const renderPresence = ref(present.value)
+watch(
+  [present, () => presenceRef.value?.present],
+  ([isPresent, isPresenceMounted]) => {
+    renderPresence.value = isPresent || !!isPresenceMounted
+  },
+  { flush: 'post' },
+)
+
 // The agent marks written on the content still cover its items while they render off the page.
 const attrs = useAttrs()
 // Read on each render: attrs aren't reactive, and a change to them renders the component again.
@@ -55,7 +72,7 @@ const agentMarks = () => Object.fromEntries(Object.entries(attrs).filter(([key])
 
 <template>
   <Presence
-    v-if="present || presenceRef?.present"
+    v-if="present || renderPresence"
     ref="presenceRef"
     :present="present"
   >

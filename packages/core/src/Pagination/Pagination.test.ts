@@ -2,8 +2,8 @@ import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import { h, nextTick } from 'vue'
-import { PaginationNext, PaginationPrev, PaginationRoot } from '.'
+import { h, nextTick, ref } from 'vue'
+import { PaginationEllipsis, PaginationNext, PaginationPrev, PaginationRoot } from '.'
 import Pagination from './story/_Pagination.vue'
 
 describe('given default Pagination', () => {
@@ -379,5 +379,105 @@ describe('when the page count shrinks', () => {
     await wrapper.setProps({ total: 30 })
     await nextTick()
     expect(wrapper.emitted('update:page')).toEqual([[5], [3]])
+  })
+})
+
+describe('given the Pagination landmark name', () => {
+  const mountRoot = (props: Record<string, unknown> = {}) => mount(PaginationRoot, { props: { total: 100, ...props } as any })
+
+  it('should name the nav by default', () => {
+    const wrapper = mountRoot()
+    expect(wrapper.element.tagName).toBe('NAV')
+    expect(wrapper.attributes('aria-label')).toBe('pagination')
+  })
+
+  it('should let a consumer `aria-label` win', () => {
+    expect(mountRoot({ 'aria-label': 'Search results pages' }).attributes('aria-label')).toBe('Search results pages')
+  })
+
+  it('should drop the default name for `aria-labelledby`', () => {
+    const wrapper = mountRoot({ 'aria-labelledby': 'heading' })
+    expect(wrapper.attributes('aria-label')).toBeUndefined()
+    expect(wrapper.attributes('aria-labelledby')).toBe('heading')
+  })
+
+  it('should not label an element that is not a nav', () => {
+    expect(mountRoot({ as: 'div' }).attributes('aria-label')).toBeUndefined()
+  })
+})
+
+describe('given a PaginationEllipsis', () => {
+  const mountEllipsis = (slot?: () => unknown, props: Record<string, unknown> = {}) =>
+    mount(PaginationEllipsis, { props: props as any, slots: slot ? { default: slot } : undefined, attachTo: document.body })
+
+  it.each([
+    ['its default content', undefined],
+    ['a slotted ellipsis character', () => '\u2026'],
+    ['three dots', () => '...'],
+    ['an icon', () => h('svg')],
+  ])('should be hidden from assistive technology with %s', async (_name, slot) => {
+    const wrapper = mountEllipsis(slot as any)
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBe('true')
+  })
+
+  it('should stay exposed when it carries its own text', async () => {
+    const wrapper = mountEllipsis(() => [h('svg'), h('span', 'More pages')])
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBeUndefined()
+  })
+
+  it('should stay exposed when it is focusable', async () => {
+    const button = mountEllipsis(undefined, { as: 'button' })
+    const nested = mountEllipsis(() => h('button', '\u2026'))
+    await nextTick()
+    expect(button.attributes('aria-hidden')).toBeUndefined()
+    expect(nested.attributes('aria-hidden')).toBeUndefined()
+  })
+
+  it.each([
+    ['a button with a negative tabindex', undefined, { as: 'button', tabindex: '-1' }],
+    ['a disclosure', () => h('details', [h('summary', '\u2026')]), {}],
+    ['an image with alternative text', () => h('img', { alt: 'More pages' }), {}],
+    ['an icon with an ARIA name', () => h('svg', { 'aria-label': 'More pages' }), {}],
+  ])('should stay exposed as %s', async (_name, slot, props) => {
+    const wrapper = mountEllipsis(slot as any, props)
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBeUndefined()
+  })
+
+  it('should follow its content when it changes', async () => {
+    const interactive = ref(false)
+    const wrapper = mount(() => h(PaginationEllipsis, null, () => interactive.value ? h('button', '\u2026') : '\u2026'), { attachTo: document.body })
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBe('true')
+
+    interactive.value = true
+    await nextTick()
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBeUndefined()
+
+    interactive.value = false
+    await nextTick()
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBe('true')
+  })
+
+  it('should follow an attribute that makes its content focusable', async () => {
+    const href = ref<string>()
+    const wrapper = mount(() => h(PaginationEllipsis, null, () => h('a', { href: href.value }, '\u2026')), { attachTo: document.body })
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBe('true')
+
+    href.value = '#more'
+    await nextTick()
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBeUndefined()
+  })
+
+  it('should let a consumer `aria-hidden` win', async () => {
+    const wrapper = mountEllipsis(undefined, { 'aria-hidden': 'false' })
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBe('false')
   })
 })

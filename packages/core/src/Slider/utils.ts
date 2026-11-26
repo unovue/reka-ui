@@ -1,5 +1,7 @@
 import type { ComputedRef } from 'vue'
+import type { Translate } from '@/shared/translations'
 import { clamp, createRekaContext } from '@/shared'
+import { defaultTranslate } from '@/shared/translations'
 
 export interface SliderOrientationPrivateProps {
   min: number
@@ -32,12 +34,12 @@ export function convertValueToPercentage(value: number, min: number, max: number
 /**
  * Returns a label for each thumb when there are two or more thumbs
  */
-export function getLabel(index: number, totalValues: number) {
+export function getLabel(index: number, totalValues: number, t: Translate = defaultTranslate) {
   if (totalValues > 2)
-    return `Value ${index + 1} of ${totalValues}`
+    return t('sliderValue', { index: index + 1, total: totalValues })
 
   else if (totalValues === 2)
-    return ['Minimum', 'Maximum'][index]
+    return [t('sliderMinimum'), t('sliderMaximum')][index]
 
   else
     return undefined

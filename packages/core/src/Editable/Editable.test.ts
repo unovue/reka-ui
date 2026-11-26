@@ -1,9 +1,11 @@
 import type { EditableRootProps } from './EditableRoot.vue'
 import userEvent from '@testing-library/user-event'
-import { render } from '@testing-library/vue'
+import { fireEvent, render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, nextTick } from 'vue'
 import { useTestKbd } from '@/shared'
+import { EditableArea, EditableEditTrigger, EditableInput, EditablePreview, EditableRoot } from '.'
 import Editable from './story/_Editable.vue'
 
 const kbd = useTestKbd()
@@ -151,11 +153,13 @@ describe('editable', () => {
   })
 
   it('prevents entering edit mode when disabled', async () => {
-    const { preview, edit } = setup({ editableProps: { disabled: true } })
+    const { preview, edit, input } = setup({ editableProps: { disabled: true } })
 
     await userEvent.click(preview)
 
-    expect(edit).not.toBeVisible()
+    // The edit trigger hides while editing, so it staying visible means edit mode was not entered.
+    expect(edit).toBeVisible()
+    expect(input).not.toBeVisible()
   })
 
   it('prevents editing the input value when readonly', async () => {
@@ -188,5 +192,105 @@ describe('editable', () => {
     await userEvent.type(input, 'lorem ipsum dolor sit amet')
 
     expect(input).toHaveValue('lorem ipsu')
+  })
+})
+
+describe('given a disabled Editable', () => {
+  it('should not enter edit mode when the preview receives focus', async () => {
+    const { preview, input } = setup({ editableProps: { disabled: true, defaultValue: 'Value' } })
+
+    await fireEvent.focusIn(preview)
+    await nextTick()
+
+    expect(preview).toBeVisible()
+    expect(input).not.toBeVisible()
+  })
+
+  it('should not enter edit mode on double click', async () => {
+    const { preview, input } = setup({ editableProps: { disabled: true, activationMode: 'dblclick' } })
+
+    await fireEvent.dblClick(preview)
+    await nextTick()
+
+    expect(input).not.toBeVisible()
+  })
+
+  it('should take the preview out of the tab order', async () => {
+    const { preview, rerender } = setup({ editableProps: { disabled: true } })
+    expect(preview).toHaveAttribute('tabindex', '-1')
+
+    await rerender({ editableProps: { disabled: false } })
+    expect(preview).toHaveAttribute('tabindex', '0')
+  })
+})
+
+describe('given a disabled Editable with a natively focusable preview', () => {
+  it('should take a button preview out of the tab order', () => {
+    const { getByTestId } = render(defineComponent({
+      components: { EditableRoot, EditableArea, EditablePreview, EditableInput },
+      template: `<EditableRoot disabled><EditableArea><EditablePreview as="button" data-testid="preview" /><EditableInput /></EditableArea></EditableRoot>`,
+    }))
+    expect(getByTestId('preview').tabIndex).toBe(-1)
+  })
+})
+
+describe('given the Editable input name', () => {
+  function renderLabelled(template: string) {
+    return render(defineComponent({
+      components: { EditableRoot, EditableArea, EditablePreview, EditableInput },
+      template,
+    }))
+  }
+  const parts = (inputAttrs = '') => `<EditableArea><EditablePreview /><EditableInput data-testid="input" ${inputAttrs} /></EditableArea>`
+
+  it('should bind the root `id` to the input', () => {
+    const { getByTestId } = renderLabelled(`<EditableRoot id="title">${parts()}</EditableRoot>`)
+    expect(getByTestId('input')).toHaveAttribute('id', 'title')
+  })
+
+  it('should fall back to the default name', () => {
+    const { getByTestId } = renderLabelled(`<EditableRoot>${parts()}</EditableRoot>`)
+    expect(getByTestId('input')).toHaveAttribute('aria-label', 'editable input')
+    expect(getByTestId('input')).not.toHaveAttribute('id')
+  })
+
+  it('should let a consumer `aria-label` win', () => {
+    const { getByTestId } = renderLabelled(`<EditableRoot>${parts('aria-label="Project title"')}</EditableRoot>`)
+    expect(getByTestId('input')).toHaveAttribute('aria-label', 'Project title')
+  })
+
+  it('should drop the default name for `aria-labelledby`', () => {
+    const { getByTestId } = renderLabelled(`<span id="heading">Project title</span><EditableRoot start-with-edit-mode>${parts('aria-labelledby="heading"')}</EditableRoot>`)
+    expect(getByTestId('input')).not.toHaveAttribute('aria-label')
+    expect(getByTestId('input')).toHaveAccessibleName('Project title')
+  })
+
+  it('should be named by a label pointing at the root `id`', async () => {
+    const { getByTestId } = renderLabelled(`<label for="title">Project title</label><EditableRoot id="title" start-with-edit-mode>${parts()}</EditableRoot>`)
+    await nextTick()
+    expect(getByTestId('input')).not.toHaveAttribute('aria-label')
+    expect(getByTestId('input')).toHaveAccessibleName('Project title')
+  })
+})
+
+describe('given a label added after the Editable input mounts', () => {
+  it('should drop the default name once editing starts', async () => {
+    const { getByTestId, container } = render(defineComponent({
+      components: { EditableRoot, EditableArea, EditablePreview, EditableInput, EditableEditTrigger },
+      template: `<div><EditableRoot id="late"><EditableArea><EditablePreview /><EditableInput data-testid="input" /></EditableArea><EditableEditTrigger data-testid="edit" /></EditableRoot></div>`,
+    }))
+    const input = getByTestId('input')
+    expect(input).toHaveAttribute('aria-label', 'editable input')
+
+    const label = document.createElement('label')
+    label.htmlFor = 'late'
+    label.textContent = 'Late label'
+    container.prepend(label)
+
+    await userEvent.click(getByTestId('edit'))
+    await nextTick()
+
+    expect(input).not.toHaveAttribute('aria-label')
+    expect(input).toHaveAccessibleName('Late label')
   })
 })
