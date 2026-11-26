@@ -8,7 +8,8 @@
     "docs:preview": "vitepress preview",
     "docs:contributors": "tsx scripts/update-contributors.ts",
     "docs:sponsors": "tsx scripts/update-sponsors.ts",
-    "docs:gen": "tsx scripts/autogen.ts"
+    "docs:gen": "tsx scripts/autogen.ts",
+    "docs:check": "tsx scripts/check-includes.ts"
   },
   "peerDependencies": {
     "typescript": "*"

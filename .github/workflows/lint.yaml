@@ -49,6 +49,10 @@ jobs:
       - name: Generate API docs
         run: pnpm docs:gen
 
+      # Every API table include resolves, and every exported part has an API section
+      - name: Check API table includes
+        run: pnpm docs:check
+
       - name: Check for drift
         run: |
           if [ -n "$(git status --porcelain -- docs/content/meta)" ]; then

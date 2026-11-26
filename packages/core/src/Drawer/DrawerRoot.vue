@@ -27,8 +27,9 @@ export interface DrawerOpenChangeDetails {
 }
 
 export interface DrawerRootProps {
-  /** v-model:open */
+  /** The controlled open state of the drawer. Can be bound as `v-model:open`. */
   open?: boolean
+  /** The open state of the drawer when it is initially rendered. Use when you do not need to control its open state. */
   defaultOpen?: boolean
   /**
    * Modality of the drawer.
@@ -41,8 +42,9 @@ export interface DrawerRootProps {
   swipeDirection?: SwipeDirection
   /** Preset snap positions (fractions 0-1, pixels >1, or '148px'/'30rem' strings) */
   snapPoints?: DrawerSnapPoint[]
-  /** v-model:snapPoint */
+  /** The controlled active snap point. Can be bound as `v-model:snapPoint`. */
   snapPoint?: DrawerSnapPoint | null
+  /** The snap point that is active when the drawer is initially rendered. Use when you do not need to control the active snap point. */
   defaultSnapPoint?: DrawerSnapPoint | null
   /**
    * When true, snaps to the next sequential snap point (one step at a time).
@@ -60,6 +62,7 @@ export type DrawerRootEmits = {
    * Animations that never end are not waited for.
    */
   'update:openComplete': [value: boolean]
+  /** Event handler called when the active snap point changes. */
   'update:snapPoint': [value: DrawerSnapPoint | null]
 }
 
@@ -123,7 +126,12 @@ const props = withDefaults(defineProps<DrawerRootProps>(), {
 const emit = defineEmits<DrawerRootEmits>()
 
 defineSlots<{
-  default?: (props: { open: boolean, close: () => void }) => any
+  default?: (props: {
+    /** Current open state */
+    open: boolean
+    /** Close the drawer */
+    close: () => void
+  }) => any
 }>()
 
 // Manual open state management — we need to pass optional details on emit
