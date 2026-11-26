@@ -45,7 +45,12 @@ export interface HoverCardRootContext {
    * so its outcome is only known when the timer fires; `reason`/`event` travel
    * with it into `beforeUpdate:open` / `update:open`.
    */
-  onOpen: (reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event) => void
+  onOpen: (reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event, owner?: object) => void
+  /**
+   * Withdraws `owner`'s pending open request (see `onOpen`); the open timer is
+   * cleared once no other requester is left. Never writes `open`.
+   */
+  onCancelOpen?: (owner: object) => void
   /**
    * Cancels a pending open and closes after `closeDelay`, unless text is being
    * selected or the pointer is down on the content. Deferred like `onOpen`.

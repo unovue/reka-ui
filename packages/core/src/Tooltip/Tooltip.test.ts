@@ -730,3 +730,22 @@ describe('given a tooltip waiting to open in a KeepAlive page', () => {
     wrapper.unmount()
   })
 })
+
+describe('given a Tooltip trigger that unmounts while it is pressed', () => {
+  it('should remove its document pointerup listener', async () => {
+    const wrapper = mount(
+      () => h(TooltipProvider, null, () => h(TooltipRoot, null, () => h(TooltipTrigger, null, () => 'trigger'))),
+      { attachTo: document.body },
+    )
+    const addSpy = vi.spyOn(document, 'addEventListener')
+    const removeSpy = vi.spyOn(document, 'removeEventListener')
+
+    await wrapper.find('button').trigger('pointerdown')
+    const [, listener] = addSpy.mock.calls.find(([type]) => type === 'pointerup')!
+    wrapper.unmount()
+
+    expect(removeSpy).toHaveBeenCalledWith('pointerup', listener)
+    addSpy.mockRestore()
+    removeSpy.mockRestore()
+  })
+})
