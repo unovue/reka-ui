@@ -1230,13 +1230,12 @@ export interface UseSelectItemReturn<T = AcceptableValue> {
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle pure
  */
-function focusItemOnPointerdown(event: PointerEvent) {
-  (event.currentTarget as HTMLElement).focus({ preventScroll: true })
-}
-
-function preventTouchend(event: TouchEvent) {
-  event.preventDefault()
-  event.stopPropagation()
+// Touch selects on `click`: iOS Safari fires `pointerup` on whatever item ends up under the
+// finger once a scroll through the list stops, while a `click` never follows a scroll.
+// Mouse and pen keep selecting on `pointerup`, so they can press the trigger, move down the
+// list and release over an item.
+function isTouch(event: PointerEvent) {
+  return event.pointerType === 'touch'
 }
 
 export function useSelectItem<T extends AcceptableValue = AcceptableValue>(options: UseSelectItemOptions<T>): UseSelectItemReturn<T> {
@@ -1261,7 +1260,7 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
   const textId = options.textId ?? `${context.baseId}-item-text-${++selectItemCount}`
 
   function handleSelectCustomEvent(ev: PointerEvent | KeyboardEvent, reason: 'item-press' | 'item-keydown') {
-    if (ev.defaultPrevented)
+    if (ev.defaultPrevented || disabled.value)
       return
     handleAndDispatchCustomEvent(
       SELECT_SELECT,
@@ -1286,7 +1285,7 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
     if (disabled.value) {
       contentContext?.onItemLeave?.()
     }
-    else {
+    else if (!isTouch(event)) {
       // even though safari doesn't support this option, it's acceptable
       // as it only means it might scroll a few pixels when using the pointer.
       (event.currentTarget as HTMLElement | null)?.focus({ preventScroll: true })
@@ -1302,6 +1301,8 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
   }
 
   async function onKeydown(event: KeyboardEvent) {
+    if (SELECTION_KEYS.includes(event.key))
+      isSelectionKeyDown = true
     await nextTick()
     if (event.defaultPrevented)
       return
@@ -1322,8 +1323,50 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
   }
   const onBlur = () => {
     isFocused.value = false
+    isSelectionKeyDown = false
   }
-  const onPointerup = (event: PointerEvent) => handleSelectCustomEvent(event, 'item-press')
+
+  // Whether a touch press began on this item. The trigger opens the content on a touch
+  // `pointerup`, so the `click` that ends that same tap can land on an item that was just
+  // rendered under the finger; only a tap that started here may select.
+  let touchPressStarted = false
+  // That tap's `pointerup`, handed to `select` as the `originalEvent` just as when it selected itself.
+  let tapPointerUp: PointerEvent | undefined
+  // Whether a selection key is held. An item rendered as a native button turns that key into a
+  // `click` of its own, which must not select a second time.
+  let isSelectionKeyDown = false
+
+  const onPointerdown = (event: PointerEvent) => {
+    touchPressStarted = isTouch(event)
+    tapPointerUp = undefined
+    if (!touchPressStarted)
+      (event.currentTarget as HTMLElement).focus({ preventScroll: true })
+  }
+  const onPointerup = (event: PointerEvent) => {
+    if (!isTouch(event))
+      handleSelectCustomEvent(event, 'item-press')
+    else if (touchPressStarted)
+      tapPointerUp = event
+  }
+  const onClick = (event: MouseEvent) => {
+    const startedOnItem = touchPressStarted
+    const pointerUp = tapPointerUp
+    touchPressStarted = false
+    tapPointerUp = undefined
+    if (event.defaultPrevented)
+      return
+    // A click that no pointer produced (`detail` is 0), e.g. from assistive technology
+    const isVirtualClick = event.detail === 0 && !isSelectionKeyDown
+    // Browsers dispatch `click` as a `PointerEvent`; it stands in when there was no `pointerup`.
+    if (startedOnItem || isVirtualClick)
+      handleSelectCustomEvent(pointerUp ?? event as PointerEvent, 'item-press')
+  }
+  const onKeyup = () => {
+    // The `click` a native button makes from Space comes right after `keyup`
+    setTimeout(() => {
+      isSelectionKeyDown = false
+    })
+  }
 
   const item = createPartSurface<SelectItemState>(
     () => ({
@@ -1334,12 +1377,13 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
       'tabindex': disabled.value ? undefined : -1,
       'onFocus': onFocus,
       'onBlur': onBlur,
+      'onClick': onClick,
       'onPointerup': onPointerup,
-      'onPointerdown': focusItemOnPointerdown,
-      'onTouchend': preventTouchend,
+      'onPointerdown': onPointerdown,
       'onPointermove': onPointermove,
       'onPointerleave': onPointerleave,
       'onKeydown': onKeydown,
+      'onKeyup': onKeyup,
     }),
     () => ({ state: selectionState(isSelected.value), disabled: disabled.value, highlighted: isFocused.value }),
   )

@@ -207,8 +207,7 @@ describe('given default Select', () => {
     })
 
     describe('touch interop', () => {
-      // TODO(v3-port): #3134 touch/pen items select on click (Select source resolved to v3)
-      it.skip('should not select the item a touch scroll ends on', async () => {
+      it('should not select the item a touch scroll ends on', async () => {
         const selection = wrapper.findAll('[role=option]')[1]
         await fireEvent.pointerDown(selection.element, { pointerType: 'touch' })
         // iOS Safari fires pointerup on the item under the finger when the scroll stops, but no click follows
@@ -251,8 +250,7 @@ describe('given default Select', () => {
         await vi.waitFor(() => expect(valueBox.html()).toContain('Banana'))
       })
 
-      // TODO(v3-port): #3134 touch/pen items select on click (Select source resolved to v3)
-      it.skip('should select on a click without pointer events', async () => {
+      it('should select on a click without pointer events', async () => {
         // Assistive technology activates with a click that no pointer produced (`detail: 0`)
         const selection = wrapper.findAll('[role=option]')[1]
         await fireEvent.click(selection.element)
