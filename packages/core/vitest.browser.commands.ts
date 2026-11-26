@@ -49,3 +49,13 @@ export const setReducedMotion: BrowserCommand<[value: 'reduce' | 'no-preference'
     throw new Error(`setReducedMotion needs the playwright provider, not ${context.provider.name}`)
   await context.page.emulateMedia({ reducedMotion: value })
 }
+
+/**
+ * Runs a garbage collection in the test page, in every engine. CDP's
+ * `HeapProfiler.collectGarbage` exists in Chromium only.
+ */
+export const requestGC: BrowserCommand<[]> = async (context) => {
+  if (context.provider.name !== 'playwright')
+    throw new Error(`requestGC needs the playwright provider, not ${context.provider.name}`)
+  await context.page.requestGC()
+}

@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { cdp } from 'vitest/browser'
+import { commands } from 'vitest/browser'
 import { defineComponent, h, nextTick, shallowRef } from 'vue'
 import { useHideOthers } from './useHideOthers'
 
@@ -58,7 +58,7 @@ describe('useHideOthers cleanup', () => {
     // until the end of the current job. Keep the component wrapper alive, as
     // a persistent dialog context can retain a closed content instance.
     await new Promise(resolve => setTimeout(resolve, 0))
-    await cdp().send('HeapProfiler.collectGarbage')
+    await commands.requestGC()
     expect(background.deref() === undefined).toBe(true)
     wrapper.unmount()
   })
