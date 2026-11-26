@@ -77,17 +77,30 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
   })
   instance.exposed = ret
 
+  // The component the exposed object was last merged for, and the exposed object it had then
+  let mergedRef: T | undefined
+  let mergedChildExposed: Record<string, any> | null | undefined
+
   /**
    * Set the forwarded ref and merge the child's exposed values.
    *
    * Null refs and wrapped refs without an element clear forwarded state and the
    * cached element so detached content can be collected.
    *
+   * Vue calls a function ref on every patch of the node it sits on, so a call with the
+   * component that is already forwarded, whose own exposed object has not been replaced,
+   * keeps the merged object instead of building it again.
+   *
    * @param ref - The current DOM element, component instance, or null on removal.
    */
   function forwardRef(ref: Element | T | null) {
+    if (ref && ref === mergedRef && ref === currentRef.value && ref.$.exposed === mergedChildExposed && ref.$el)
+      return
+
     // A wrapped null element is still a ref clear.
     currentRef.value = ref && '$el' in ref && !ref.$el ? null : ref
+    mergedRef = undefined
+    mergedChildExposed = undefined
 
     if (!ref || !currentRef.value) {
       instance.exposed = ret
@@ -101,9 +114,12 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
     if (!(ref instanceof Element) && !Object.hasOwn(ref, '$el')) {
       // Retrieves the `exposed` data that has not been unwrapped by `vue` from `$.exposed`.
       const childExposed = ref.$.exposed
-      const merged = Object.defineProperties({}, Object.getOwnPropertyDescriptors(ret))
+      // A child that exposes nothing (a `Primitive`) adds no key, so `ret` already is the merged object
+      let merged = ret
 
       for (const key in childExposed) {
+        if (merged === ret)
+          merged = Object.defineProperties({}, Object.getOwnPropertyDescriptors(ret))
         Object.defineProperty(merged, key, {
           enumerable: true,
           configurable: true,
@@ -115,6 +131,8 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
       }
 
       instance.exposed = merged
+      mergedRef = ref
+      mergedChildExposed = childExposed
     }
   }
 
