@@ -1,6 +1,6 @@
 import type { ComputedRef, Ref } from 'vue'
-import { rendersForeignId } from './usePartId'
 import { getCurrentInstance, onActivated, onBeforeMount, onBeforeUnmount, onBeforeUpdate, onDeactivated, onMounted, onUpdated, ref, shallowRef, toRaw, useAttrs, watch } from 'vue'
+import { rendersForeignId } from './usePartId'
 
 // How many content elements are rendered for a context. Kept beside the context rather
 // than on it, so the context types stay as they are.
@@ -32,11 +32,22 @@ function idProperty(name: string) {
         enumerable: true,
         configurable: true,
         // `toRaw`: read through a reactive proxy of the context, `this[key]` would be unwrapped.
+        // The slot holds the plain id until the first read, which puts a ref in its place:
+        // an id nothing reads (a closed popup's content id) costs no ref.
         get(this: object) {
-          return (toRaw(this) as Record<symbol, Ref<string>>)[key]!.value
+          const raw = toRaw(this) as Record<symbol, string | Ref<string>>
+          let slot = raw[key]!
+          if (typeof slot === 'string')
+            slot = raw[key] = shallowRef(slot)
+          return slot.value
         },
         set(this: object, value: string) {
-          (toRaw(this) as Record<symbol, Ref<string>>)[key]!.value = value
+          const raw = toRaw(this) as Record<symbol, string | Ref<string>>
+          const slot = raw[key]!
+          if (typeof slot === 'string')
+            raw[key] = value
+          else
+            slot.value = value
         },
       },
     }
@@ -46,15 +57,15 @@ function idProperty(name: string) {
 }
 
 /**
- * Adds the given string properties to a context object, backed by refs, so the context
- * keeps its plain `string` types while templates that read those properties re-render
- * when they change. The properties must not be in `context` yet: pass the context
+ * Adds the given string properties to a context object, backed by refs (created on the first
+ * read), so the context keeps its plain `string` types while templates that read those
+ * properties re-render when they change. The properties must not be in `context` yet: pass the context
  * without them and their initial values in `ids`.
  */
 export function defineReactiveIds<T extends object, K extends keyof T & string>(context: Omit<T, K>, ids: Pick<T, K>): T {
   for (const name in ids) {
     const { key, descriptor } = idProperty(name)
-    ;(context as Record<symbol, unknown>)[key] = shallowRef(ids[name])
+    ;(context as Record<symbol, unknown>)[key] = ids[name]
     Object.defineProperty(context, name, descriptor)
   }
   return context as T
