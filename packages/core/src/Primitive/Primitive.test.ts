@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
-import { defineComponent, h, markRaw, nextTick, ref } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
+import { createSSRApp, defineComponent, h, markRaw, nextTick, reactive, ref } from 'vue'
 import { Primitive } from '.'
 
 describe('test Primitive functionalities', () => {
@@ -156,6 +156,38 @@ describe('test Primitive functionalities', () => {
       expect(element.attributes('class')).toBe('parent-class child-class more-child-class')
     })
 
+    it('should keep the child\'s template ref in every instance and after an update', async () => {
+      const Trigger = defineComponent({
+        components: { Primitive },
+        props: { active: Boolean },
+        setup() {
+          return { button: ref<HTMLElement>() }
+        },
+        template: `
+          <Primitive as-child :data-active="active">
+            <button ref="button">Trigger</button>
+          </Primitive>
+        `,
+      })
+      const wrapper = mount(defineComponent({
+        components: { Trigger },
+        props: { active: Boolean },
+        template: '<Trigger ref="first" :active="active" /><Trigger ref="second" :active="active" />',
+      }))
+      const [first, second] = wrapper.findAll('button').map(button => button.element)
+      const expectRefs = () => {
+        const { $refs } = wrapper.vm as any
+        expect($refs.first.button).toBe(first)
+        expect($refs.second.button).toBe(second)
+      }
+
+      expectRefs()
+
+      await wrapper.setProps({ active: true })
+      expect(first.dataset.active).toBe('true')
+      expectRefs()
+    })
+
     it('should render the Component that passed in as', () => {
       const Button = markRaw(defineComponent({
         setup(props, { slots }) {
@@ -265,6 +297,143 @@ describe('test Primitive functionalities', () => {
       expect(element.exists()).toBe(true)
       expect(element.attributes('class')).toBe('parent-class child-class')
     })
+  })
+
+  it('should follow attribute and `as` changes from the parent', async () => {
+    const wrapper = mount(Primitive, {
+      props: { as: 'span' },
+      attrs: { 'data-state': 'closed' },
+    })
+    expect(wrapper.html()).toBe('<span data-state="closed"></span>')
+
+    await wrapper.setProps({ 'data-state': 'open' } as any)
+    expect(wrapper.html()).toBe('<span data-state="open"></span>')
+
+    await wrapper.setProps({ as: 'p' })
+    expect(wrapper.html()).toBe('<p data-state="open"></p>')
+  })
+
+  it('should create no setup context', () => {
+    // A setup context costs an attrs proxy and an `expose` closure per instance, and Primitive
+    // wraps nearly every part
+    const plain = mount(Primitive)
+    expect(plain.vm.$.setupContext).toBeNull()
+
+    const asChild = mount(Primitive, { props: { asChild: true }, slots: { default: '<div />' } })
+    const instances: any[] = []
+    for (let vnode = asChild.vm.$.subTree; vnode?.component; vnode = vnode.component.subTree)
+      instances.push(vnode.component)
+    expect(asChild.vm.$.setupContext).toBeNull()
+    for (const instance of instances)
+      expect(instance.setupContext).toBeNull()
+  })
+
+  it('should render `asChild` with one component instance', () => {
+    // An `asChild` Primitive used to render a nested `Slot` component around the child
+    const wrapper = mount(Primitive, {
+      props: { asChild: true },
+      attrs: { 'data-parent': '' },
+      slots: { default: '<button class="child">Child</button>' },
+    })
+    expect(wrapper.html()).toBe('<button data-parent="" class="child">Child</button>')
+    // The root of the Primitive is the child element itself, not another component
+    expect(wrapper.vm.$.subTree.component).toBeNull()
+    expect(wrapper.vm.$.subTree.type).toBe('button')
+    expect(wrapper.vm.$el).toBe(wrapper.element)
+  })
+
+  it('should not render a plain object without a render function', () => {
+    const wrapper = mount(Primitive, {
+      props: {
+        as: { template: '<b>{{ 7 * 191 }}</b>' },
+      },
+    })
+    expect(wrapper.html()).not.toContain('1337')
+    expect(wrapper.find('div').exists()).toBe(true)
+  })
+
+  it('should not render a plain VNode object', () => {
+    const wrapper = mount(Primitive, {
+      props: {
+        as: { __v_isVNode: true, type: 'i', props: { innerHTML: '1337' }, shapeFlag: 1, children: null },
+      },
+    })
+    expect(wrapper.html()).not.toContain('1337')
+  })
+
+  it('should not render a script or iframe element', () => {
+    for (const as of ['script', 'iframe', 'IFRAME']) {
+      const wrapper = mount(Primitive, { props: { as }, slots: { default: 'alert(1)' } })
+      expect(wrapper.html()).not.toMatch(/<(script|iframe)/i)
+      expect(wrapper.find('div').exists()).toBe(true)
+    }
+  })
+
+  it('should not render a malformed tag name', () => {
+    const wrapper = mount(Primitive, { props: { as: 'img src=x onerror=alert(1)' } })
+    expect(wrapper.html()).not.toContain('onerror')
+    expect(wrapper.find('div').exists()).toBe(true)
+  })
+
+  it('should not render an element-like template object', () => {
+    const wrapper = mount(Primitive, { props: { as: { template: { nodeType: 1, innerHTML: '<b>{{ 7 * 191 }}</b>' } } } })
+    expect(wrapper.html()).not.toContain('1337')
+  })
+
+  it('should not render a plain object wrapped in `__v_raw`', async () => {
+    const { renderToString } = await import('vue/server-renderer')
+    const html = await renderToString(createSSRApp({ render: () => h(Primitive, { as: { __v_raw: { template: '<b>{{ 7 * 191 }}</b>' } } }) }))
+    expect(html).not.toContain('1337')
+  })
+
+  it('should render a reactive component', () => {
+    const wrapper = mount(Primitive, { props: { as: reactive({ render: () => h('button', 'Action') }) } })
+    expect(wrapper.find('button').exists()).toBe(true)
+  })
+
+  it('should render a custom element name with `_` or `.`', () => {
+    for (const as of ['my-el_v2', 'x-a.b']) {
+      const wrapper = mount(Primitive, { props: { as } })
+      expect(wrapper.element.tagName.toLowerCase()).toBe(as)
+    }
+  })
+
+  it('should still reject `_` or `.` outside a custom element name', () => {
+    for (const as of ['my_el', 'a.b']) {
+      const wrapper = mount(Primitive, { props: { as } })
+      expect(wrapper.element.tagName).toBe('DIV')
+    }
+  })
+
+  it('should reject a long invalid `as` without backtracking', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const as = `a${'-'.repeat(50_000)}!`
+    const start = performance.now()
+    const wrapper = mount(Primitive, { props: { as } })
+    expect(performance.now() - start).toBeLessThan(1000)
+    expect(wrapper.element.tagName).toBe('DIV')
+    vi.restoreAllMocks()
+  })
+
+  it('should warn once per unsafe `as` value in development', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      mount(Primitive, { props: { as: 'embed' } })
+      mount(Primitive, { props: { as: 'embed' } })
+      mount(Primitive, { props: { as: 'frameset' } })
+      const component = { template: '<b />' }
+      mount(Primitive, { props: { as: component } })
+      mount(Primitive, { props: { as: component } })
+
+      expect(warn).toHaveBeenCalledTimes(3)
+      expect(warn.mock.calls[0][0]).toContain('"embed"')
+      expect(warn.mock.calls[0][0]).toContain('`div`')
+      expect(warn.mock.calls[1][0]).toContain('"frameset"')
+      expect(warn.mock.calls[2][0]).toContain('render')
+    }
+    finally {
+      warn.mockRestore()
+    }
   })
 
   it('honors the #render slot, letting the consumer own the element', () => {

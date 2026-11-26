@@ -27,7 +27,7 @@ afterEach(() => {
 describe('dev warnings', () => {
   // The published build has no `import.meta.env`, so a warning behind it never reaches users.
   // `process.env.NODE_ENV !== 'production'` survives the build and is dropped by the consumer's bundler.
-  // TODO(v3-port): #3382 v3 src still guards warnings with the Vite-only dev flag
+  // TODO(v3-port): #3382 only `date/runtime.ts` still names the Vite-only dev flag (in a comment); dates lane
   it.skip('should not guard anything in src with the Vite-only dev flag', () => {
     const offenders = sourceFiles(SRC)
       .filter(file => readFileSync(file, 'utf8').includes(BANNED))
@@ -50,8 +50,7 @@ describe('dev warnings', () => {
       expect(warn).toHaveBeenCalledTimes(warns ? 1 : 0)
     })
 
-    // TODO(v3-port): #3382 v3's useColorSwatch warns behind the Vite-only dev flag, so it ignores NODE_ENV=production
-    ;(warns ? it : it.skip)(`should ${warns ? 'warn' : 'stay silent'} about a ColorSwatch color with no contrast`, async () => {
+    it(`should ${warns ? 'warn' : 'stay silent'} about a ColorSwatch color with no contrast`, async () => {
       vi.stubEnv('NODE_ENV', mode)
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       mount(ColorSwatch, { props: { color: 'not-a-color' } })

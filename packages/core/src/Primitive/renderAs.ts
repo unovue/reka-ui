@@ -1,6 +1,7 @@
 import type { Component, FunctionalComponent, VNode } from 'vue'
 import type { AsTag } from './Primitive'
 import { createVNode, h } from 'vue'
+import { ariaDisabledAttr, isNativeDisabledTag } from '../shared/disabledAttr'
 import { isSelfClosingTag, resolveRenderTag } from './useRender'
 
 /*
@@ -121,4 +122,55 @@ export function rendersChildren(
   defaultTagName: AsTag = 'div',
 ): boolean {
   return !isSelfClosingTag(resolveRenderTag(as, asChild, defaultTagName))
+}
+
+/**
+ * Plain tags without a native `disabled` (`div`, `span`, `a`, …) for a part that binds `disabled`:
+ * a functional component that drops `disabled: false` (which would render `disabled="false"`)
+ * and exposes `disabled` with `aria-disabled`, as `Primitive` does. Its template ref is the
+ * element, as for any functional component.
+ */
+const controlTypes = new Map<string, FunctionalComponent>()
+
+function controlType(tag: string): FunctionalComponent {
+  let type = controlTypes.get(tag)
+  if (!type) {
+    type = (_, { attrs, slots }) => {
+      const props: Record<string, unknown> = { ...attrs }
+      if (props.disabled === false)
+        props.disabled = undefined
+      const ariaDisabled = ariaDisabledAttr(tag, props)
+      if (ariaDisabled)
+        props['aria-disabled'] = ariaDisabled
+      return h(tag, props, slots.default?.())
+    }
+    // The attrs are rendered above; inheriting them as well would merge class,
+    // style and listeners twice.
+    type.inheritAttrs = false
+    type.displayName = tag
+    controlTypes.set(tag, type)
+  }
+  return type
+}
+
+/**
+ * `renderAs` for a part that binds a boolean `disabled` (a trigger or a button-like control).
+ * A tag with a native `disabled` (the usual `button`) renders the element directly, exactly as
+ * `renderAs`; any other plain tag renders through a functional component that omits
+ * `disabled="false"` and adds `aria-disabled="true"` when disabled, the way `Primitive` does for
+ * the parts it renders. A component or custom element gets the boolean unchanged; `asChild`
+ * renders `Slot`, which does the same for the child it lands on.
+ * @internal
+ */
+export function renderAsControl(
+  as: AsTag | Component | undefined,
+  asChild?: boolean,
+  defaultTagName: AsTag = 'button',
+): Component | VNode {
+  const tag = resolveRenderTag(as, asChild, defaultTagName)
+  if (typeof tag !== 'string')
+    return tag
+  if (isSelfClosingTag(tag))
+    return emptyType(tag)
+  return isNativeDisabledTag(tag) || tag.includes('-') ? elementType(tag) : controlType(tag)
 }

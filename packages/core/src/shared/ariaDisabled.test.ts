@@ -139,8 +139,7 @@ describe('ariaDisabledAttr', () => {
 describe('primitive', () => {
   const primitive = (props: Record<string, unknown>, child?: () => VNode) => render(() => h(Primitive, { ...target, ...props }, child ?? (() => 'part')))
 
-  // TODO(v3-port): #3370 v3's Primitive does not add aria-disabled to a disabled non-button element
-  it.skip.each(['div', 'span', 'a'])('adds aria-disabled="true" to a disabled %s', (as) => {
+  it.each(['div', 'span', 'a'])('adds aria-disabled="true" to a disabled %s', (as) => {
     const el = primitive({ as, disabled: '' })
     expect(el.getAttribute('aria-disabled')).toBe('true')
     expect(el.getAttribute('disabled')).toBe('')
@@ -163,8 +162,7 @@ describe('primitive', () => {
     expect(primitive({ 'as': 'div', 'disabled': '', 'aria-disabled': null }).hasAttribute('aria-disabled')).toBe(false)
   })
 
-  // TODO(v3-port): #3370 v3's Primitive does not add aria-disabled to a disabled non-button element
-  it.skip('adds aria-disabled="true" to a disabled div child with asChild', () => {
+  it('adds aria-disabled="true" to a disabled div child with asChild', () => {
     const el = primitive({ asChild: true, disabled: '' }, () => h('div', 'part'))
     expect(el.tagName).toBe('DIV')
     expect(el.getAttribute('aria-disabled')).toBe('true')
@@ -186,8 +184,7 @@ describe('primitive', () => {
     expect(el.getAttribute('data-attrs')).toBe('disabled')
   })
 
-  // TODO(v3-port): #3370 v3's Primitive does not add aria-disabled to a disabled non-button element
-  it.skip('updates when the disabled state changes', async () => {
+  it('updates when the disabled state changes', async () => {
     const wrapper = mount(defineComponent({
       props: { disabled: Boolean },
       setup: props => () => h(Primitive, { ...target, as: 'span', disabled: props.disabled ? '' : undefined }, () => 'part'),
@@ -200,9 +197,30 @@ describe('primitive', () => {
   })
 })
 
+// TODO(v3-port): #3370 parts that still render their element with `renderAs` (no aria-disabled on a
+// non-button element). Switching the part to `renderAsControl` fixes it; remove it here then.
+const ARIA_PENDING = new Set([
+  'DatePickerTrigger',
+  'DateRangePickerTrigger',
+  'DropdownMenuTrigger',
+  'MenubarTrigger',
+  'NavigationMenuTrigger',
+  'NumberFieldDecrement',
+  'NumberFieldIncrement',
+  'RadioGroupItem',
+  'RadioGroupItem (disabled group)',
+  'SelectTrigger',
+  'SwitchRoot',
+  'TagGroupItemDelete',
+  'Toggle',
+  'ToggleGroupItem',
+  'ToolbarButton',
+  'ToolbarToggleItem',
+])
+const itAria = (c: { name: string }) => ARIA_PENDING.has(c.name) ? it.skip : it
+
 describe.each(cases)('$name', (c) => {
-  // TODO(v3-port): #3370 v3's parts do not add aria-disabled when rendered as a non-button element
-  it.skip.each(['div', 'span', 'a'])('adds aria-disabled="true" when disabled and rendered as %s', (as) => {
+  itAria(c).each(['div', 'span', 'a'])('adds aria-disabled="true" when disabled and rendered as %s', (as) => {
     const el = render(() => c.render(true, as))
     expect(el.tagName).toBe(as.toUpperCase())
     expect(el.getAttribute('aria-disabled')).toBe('true')
@@ -218,8 +236,7 @@ describe.each(cases)('$name', (c) => {
     expect(el.hasAttribute('aria-disabled')).toBe(false)
   })
 
-  // TODO(v3-port): #3370 v3's parts do not add aria-disabled when rendered as a non-button element
-  it.skip('adds aria-disabled="true" to a div child with `asChild` when disabled', () => {
+  it('adds aria-disabled="true" to a div child with `asChild` when disabled', () => {
     const el = render(() => c.render(true, { asChild: () => h('div', 'part') }))
     expect(el.tagName).toBe('DIV')
     expect(el.getAttribute('aria-disabled')).toBe('true')

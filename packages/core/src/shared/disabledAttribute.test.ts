@@ -156,8 +156,34 @@ function render(c: Case, disabled: boolean, as: As) {
   return { wrapper, el }
 }
 
-// TODO(v3-port): #3327 v3's parts still render disabled="false" on an enabled non-button element (Carousel, from v2, only as an element)
-const itOmits = (c: Case) => c.name === 'CarouselAutoplayToggle' ? it : it.skip
+// TODO(v3-port): #3327 parts that still render their element with `renderAs`, so an enabled one rendered as a
+// non-button element gets disabled="false". Switching the part to `renderAsControl` fixes it; remove it here then.
+const OMIT_PENDING = new Set([
+  'CalendarNext',
+  'CalendarPrev',
+  'CheckboxRoot',
+  'ColorFieldInput',
+  'ComboboxTrigger',
+  'DatePickerTrigger',
+  'DateRangePickerTrigger',
+  'DrawerSwipeArea',
+  'DropdownMenuTrigger',
+  'EditableCancelTrigger',
+  'EditableEditTrigger',
+  'EditableInput',
+  'EditableSubmitTrigger',
+  'MenubarTrigger',
+  'NavigationMenuTrigger',
+  'PinInputInput',
+  'RangeCalendarNext',
+  'RangeCalendarPrev',
+  'SelectTrigger',
+  'SwitchRoot',
+  'TagsInputInput',
+  'Toggle',
+  'ToolbarButton',
+])
+const itOmits = (c: Case) => OMIT_PENDING.has(c.name) ? it.skip : it
 // TODO(v3-port): #3327 v3's SwitchRoot does not pass `disabled: false` on to a component, custom element or `asChild` child
 const itPassesFalse = (c: Case) => c.name === 'SwitchRoot' ? it.skip : it
 
@@ -199,8 +225,7 @@ describe.each(cases)('$name', (c) => {
     expect(el.getAttribute('data-component-disabled')).toBe('false')
   })
 
-  // TODO(v3-port): #3327 v3's Slot keeps disabled="false" on a plain `asChild` child
-  it.skip('omits the disabled attribute on a plain child with `asChild` when enabled', () => {
+  it('omits the disabled attribute on a plain child with `asChild` when enabled', () => {
     const { el } = render(c, false, { asChild: () => h('span', 'part') })
     expect(el.tagName).toBe('SPAN')
     expect(el.hasAttribute('disabled')).toBe(false)
@@ -228,8 +253,7 @@ describe.each(cases)('$name', (c) => {
     expect(el.getAttribute('data-component-disabled')).toBe('false')
   })
 
-  // TODO(v3-port): #3327 v3's Slot keeps disabled="false" on a plain `as="template"` child
-  it.skip('omits the disabled attribute on a plain child with `as="template"` when enabled', () => {
+  it('omits the disabled attribute on a plain child with `as="template"` when enabled', () => {
     const { el } = render(c, false, { template: () => h('span', 'part') })
     expect(el.tagName).toBe('SPAN')
     expect(el.hasAttribute('disabled')).toBe(false)

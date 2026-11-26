@@ -20,6 +20,11 @@ export function disabledAttr(disabled: boolean | undefined, as: unknown, asChild
 // Elements the native `disabled` attribute works on
 const NATIVE_DISABLED_TAGS = ['button', 'input', 'select', 'textarea', 'fieldset', 'option', 'optgroup']
 
+/** Whether the native `disabled` attribute works on `tag` (a form control). @internal */
+export function isNativeDisabledTag(tag: string): boolean {
+  return NATIVE_DISABLED_TAGS.includes(tag)
+}
+
 /**
  * The `aria-disabled` to add to an element rendered with the native `disabled` attribute. Only form
  * controls support `disabled`, so on any other plain tag (`div`, `span`, `a`, …) the disabled state is

@@ -92,6 +92,9 @@ export function getStepperItemSurface(context: StepperRootContext, item: Stepper
     () => ({
       'aria-current': item.state.value === 'current' ? 'true' : undefined,
       'disabled': item.disabled.value || !item.isFocusable.value ? '' : undefined,
+      // A container, not a control: its trigger carries the disabled state, so `Primitive`
+      // must not add `aria-disabled` for the `disabled` attribute above.
+      'aria-disabled': null,
     }),
     () => itemState(context, item),
   )

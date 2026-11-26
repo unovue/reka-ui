@@ -1,8 +1,9 @@
 import type { AriaAttributes, Component, DefineSetupFnComponent, HTMLAttributes, PropType } from 'vue'
 import { defineComponent, getCurrentInstance, h, mergeProps, toRaw } from 'vue'
 // Direct relative import (not the `@/shared` barrel) to avoid a Primitive ↔ shared cycle.
+import { ariaDisabledAttr } from '../shared/disabledAttr'
 import { useForwardElement } from '../shared/useForwardElement'
-import { Slot } from './Slot'
+import { renderSlotChild, Slot } from './Slot'
 import { isSelfClosingTag, resolveRenderTag, warnRenderSlotWithAsChild } from './useRender'
 
 export type AsTag
@@ -163,7 +164,6 @@ export const Primitive = defineComponent({
     // Primitive for nothing.
     const rawProps = toRaw(props)
 
-    // eslint-disable-next-line node/prefer-global/process
     if (process.env.NODE_ENV !== 'production')
       warnRenderSlotWithAsChild(resolveRenderTag(props.as, props.asChild) === Slot)
 
@@ -180,8 +180,17 @@ export const Primitive = defineComponent({
       }
 
       const tag = resolveRenderTag(rawProps.as, rawProps.asChild)
+      // Rendered here, not through a nested `Slot` component: the same nodes
+      // for one instance less. The element ref is merged into the child's.
+      if (tag === Slot)
+        return renderSlotChild(attrs, slots, elementRef)
+
       const vnodeProps = needsMergeProps(attrs) ? mergeProps(attrs) : { ...attrs }
       vnodeProps.ref = elementRef
+      // Native `disabled` only works on form controls, so expose it with `aria-disabled` elsewhere
+      const ariaDisabled = ariaDisabledAttr(tag, vnodeProps)
+      if (ariaDisabled)
+        vnodeProps['aria-disabled'] = ariaDisabled
       return h(
         tag,
         vnodeProps,

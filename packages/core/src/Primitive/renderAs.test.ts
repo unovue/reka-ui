@@ -157,11 +157,11 @@ describe('renderAs', () => {
       setup: () => () => h(part, props, () => h('span', 'x')),
     }))
     const instanceOf = (w: ReturnType<typeof Host>) => (w.vm.$ as ComponentInternalInstance)
-    // host + part (+ Slot for asChild)
+    // host + part (+ Slot for asChild; an asChild Primitive renders its child itself)
     expect(count(instanceOf(Host(Direct)))).toBe(2)
     expect(count(instanceOf(Host(ViaPrimitive)))).toBe(3)
     expect(count(instanceOf(Host(Direct, { asChild: true })))).toBe(3)
-    expect(count(instanceOf(Host(ViaPrimitive, { asChild: true })))).toBe(4)
+    expect(count(instanceOf(Host(ViaPrimitive, { asChild: true })))).toBe(3)
   })
 
   it('merges the consumer listener after the part one, like Primitive', async () => {

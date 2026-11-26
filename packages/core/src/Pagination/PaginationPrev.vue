@@ -6,7 +6,7 @@ export interface PaginationPrevProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { injectPaginationRootContext } from './PaginationRoot.vue'
 import { getPaginationNavigationSurface } from './usePagination'
 
@@ -22,7 +22,7 @@ const surface = getPaginationNavigationSurface(rootContext, 'prev')
 
 <template>
   <component
-    :is="renderAs(as, asChild)"
+    :is="renderAsControl(as, asChild)"
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
     v-bind="surface.attrs.value"

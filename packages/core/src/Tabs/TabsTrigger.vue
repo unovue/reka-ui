@@ -18,7 +18,7 @@ export interface TabsTriggerProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { mergeProps, onActivated, onDeactivated, onScopeDispose } from 'vue'
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { useAgentItem } from '@/shared/useAgentRegistration'
 import { injectTabsRootContext } from './TabsRoot.vue'
@@ -72,7 +72,7 @@ function renderAttrs(attrs: Record<string, unknown>) {
 
 <template>
   <component
-    :is="renderAs(as, asChild)"
+    :is="renderAsControl(as, asChild)"
     :ref="forwardRef"
     v-bind="renderAttrs($attrs)"
   >
