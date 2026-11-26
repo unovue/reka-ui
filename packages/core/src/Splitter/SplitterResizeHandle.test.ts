@@ -2,8 +2,9 @@ import type { VueWrapper } from '@vue/test-utils'
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
-import { defineComponent, nextTick, ref } from 'vue'
+import { defineComponent, KeepAlive, nextTick, ref } from 'vue'
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from '.'
+import { useWindowSplitterResizeHandlerBehavior } from './utils/composables/useWindowSplitterBehavior'
 
 // Regression test for https://github.com/unovue/reka-ui/issues/3126
 // A handle mounted into a group that is already in the page (e.g. with v-if)
@@ -307,6 +308,68 @@ describe('resize handles in two documents', () => {
   })
 })
 
+describe('resize handle in a deactivated <KeepAlive> page', () => {
+  let wrapper: VueWrapper
+
+  afterEach(() => {
+    wrapper.unmount()
+    document.body.innerHTML = ''
+  })
+
+  it('should leave the hit test while deactivated and rejoin it when activated', async () => {
+    const SplitterPage = defineComponent({
+      components: { SplitterGroup, SplitterPanel, SplitterResizeHandle },
+      template: `
+        <SplitterGroup direction="horizontal">
+          <SplitterPanel />
+          <SplitterResizeHandle id="handle" />
+          <SplitterPanel />
+        </SplitterGroup>
+      `,
+    })
+    const OtherPage = defineComponent({ template: '<p id="other">Other page</p>' })
+    const page = ref<'splitter' | 'other'>('splitter')
+
+    wrapper = mount(defineComponent({
+      components: { KeepAlive, SplitterPage, OtherPage },
+      setup: () => ({ page }),
+      template: `
+        <KeepAlive>
+          <SplitterPage v-if="page === 'splitter'" />
+          <OtherPage v-else />
+        </KeepAlive>
+      `,
+    }), { attachTo: document.body })
+    await nextTick()
+
+    const handle = document.getElementById('handle')!
+    page.value = 'other'
+    await nextTick()
+    expect(handle.isConnected).toBe(false)
+
+    const errors: unknown[] = []
+    const onError = (event: ErrorEvent) => {
+      errors.push(event.error)
+      event.preventDefault()
+    }
+    window.addEventListener('error', onError)
+    try {
+      await fireEvent.mouseMove(document.getElementById('other')!, { clientX: 0, clientY: 0 })
+    }
+    finally {
+      window.removeEventListener('error', onError)
+    }
+    expect(errors).toEqual([])
+    expect(handle.getAttribute('data-state')).toBe('inactive')
+
+    page.value = 'splitter'
+    await nextTick()
+    expect(handle.isConnected).toBe(true)
+    await fireEvent.mouseMove(handle, { clientX: 0, clientY: 0 })
+    expect(handle.getAttribute('data-state')).toBe('hover')
+  })
+})
+
 describe('resize handle focus', () => {
   let wrapper: VueWrapper
 
@@ -392,5 +455,65 @@ describe('resize handle focus', () => {
     handle(0).blur()
     await nextTick()
     expect(handle(0).hasAttribute('data-resize-handle-active')).toBe(false)
+  })
+})
+
+describe('resize handle keyboard behavior without a group element', () => {
+  it.each([null, undefined])('should not handle keys while the group element is %s', (groupElement) => {
+    const handle = document.createElement('div')
+    useWindowSplitterResizeHandlerBehavior({
+      disabled: ref(false),
+      handleId: 'handle',
+      resizeHandler: ref(null),
+      panelGroupElement: ref(groupElement) as any,
+      element: ref(handle),
+    })
+
+    const event = new KeyboardEvent('keydown', { key: 'F6', cancelable: true })
+    handle.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+  })
+})
+
+describe('resize handle separator semantics', () => {
+  let wrapper: VueWrapper
+
+  afterEach(() => {
+    wrapper.unmount()
+    document.body.innerHTML = ''
+  })
+
+  function mountGroup(direction: 'horizontal' | 'vertical', disabled = false) {
+    wrapper = mount(defineComponent({
+      components: { SplitterGroup, SplitterPanel, SplitterResizeHandle },
+      setup: () => ({ direction, disabled: ref(disabled) }),
+      template: `
+        <SplitterGroup :direction="direction">
+          <SplitterPanel id="side" :order="1" :default-size="30" />
+          <SplitterResizeHandle id="handle" :disabled="disabled" />
+          <SplitterPanel id="main" :order="2" />
+        </SplitterGroup>
+      `,
+    }), { attachTo: document.body })
+    return wrapper.find('[role=separator]')
+  }
+
+  // The separator runs across the direction the panels are laid out in.
+  it.each([
+    ['horizontal', 'vertical'],
+    ['vertical', 'horizontal'],
+  ] as const)('should be a %s group\'s %s separator', (direction, orientation) => {
+    const handle = mountGroup(direction)
+    expect(handle.attributes('aria-orientation')).toBe(orientation)
+    expect(handle.attributes('data-orientation')).toBe(direction)
+  })
+
+  it('should expose its disabled state', async () => {
+    const handle = mountGroup('horizontal', true)
+    expect(handle.attributes('aria-disabled')).toBe('true')
+
+    ;(wrapper.vm as any).disabled = false
+    await nextTick()
+    expect(handle.attributes('aria-disabled')).toBeUndefined()
   })
 })

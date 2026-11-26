@@ -3,7 +3,9 @@ import type { Mock } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { computed, defineComponent, h, nextTick, ref } from 'vue'
+import { ColorSwatchPickerRoot } from '@/ColorSwatchPicker'
+import { ComboboxRoot } from '@/Combobox'
 import { useKbd } from '@/shared'
 import { handleSubmit } from '@/test'
 import { ListboxContent, ListboxFilter, ListboxItem, ListboxItemIndicator, ListboxRoot, ListboxVirtualizer } from '.'
@@ -105,6 +107,18 @@ describe('given default Listbox', () => {
     })
 
     it('should highlight text starting with B', () => {
+      const item = items.find(i => i.text().startsWith('B'))
+      expect(document.activeElement).toBe(item?.element)
+    })
+  })
+
+  describe('when holding `Shift` before typing a letter', async () => {
+    beforeEach(async () => {
+      await content.trigger('keydown', { key: 'Shift', shiftKey: true })
+      await content.trigger('keydown', { key: 'B', shiftKey: true })
+    })
+
+    it('should ignore the named key and highlight text starting with B', () => {
       const item = items.find(i => i.text().startsWith('B'))
       expect(document.activeElement).toBe(item?.element)
     })
@@ -304,6 +318,20 @@ describe('given a virtualized Listbox on initial mount', () => {
     const items = wrapper.findAll('[role=option]')
     expect(document.activeElement).toBe(items[0].element)
     expect(scrollSpy).toHaveBeenCalled()
+  })
+
+  it('should ignore named keys in typeahead', async () => {
+    const wrapper = mount(VirtualListbox, { props: { count: 5 }, attachTo: document.body })
+    await flush()
+    const content = wrapper.find('[role=listbox]')
+    await content.trigger('focus')
+    expect(document.activeElement?.getAttribute('data-index')).toBe('0')
+
+    await content.trigger('keydown', { key: 'Shift', shiftKey: true })
+    await content.trigger('keydown', { key: 'I', shiftKey: true })
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    await nextTick()
+    expect(document.activeElement?.getAttribute('data-index')).toBe('1')
   })
 
   describe('with `loop`', () => {
@@ -807,18 +835,21 @@ describe('given ListboxItem with reactive `disabled` prop', () => {
 
     expect(items[0].attributes('data-disabled')).toBeUndefined()
     expect(items[0].attributes('disabled')).toBeUndefined()
+    expect(items[0].attributes('aria-disabled')).toBeUndefined()
 
     isDisabled.value = true
     await nextTick()
 
     expect(items[0].attributes('data-disabled')).toBe('')
     expect(items[0].attributes('disabled')).toBe('')
+    expect(items[0].attributes('aria-disabled')).toBe('true')
 
     isDisabled.value = false
     await nextTick()
 
     expect(items[0].attributes('data-disabled')).toBeUndefined()
     expect(items[0].attributes('disabled')).toBeUndefined()
+    expect(items[0].attributes('aria-disabled')).toBeUndefined()
   })
 })
 
@@ -918,6 +949,58 @@ describe('given ListboxItem with reactive fallthrough attrs', () => {
     finally {
       window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
     }
+  })
+})
+
+describe('given a Listbox whose highlighted item leaves the document', () => {
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  const Fixture = defineComponent({
+    props: {
+      options: { type: Array as () => string[], default: () => ['Apple', 'Banana', 'Cherry'] },
+      withFilter: Boolean,
+    },
+    setup(props) {
+      const search = ref('')
+      const items = computed(() => props.options.filter(item => item.toLowerCase().includes(search.value.toLowerCase())))
+      return () => h(ListboxRoot, null, () => [
+        props.withFilter
+          ? h(ListboxFilter, { 'data-testid': 'filter', 'modelValue': search.value, 'onUpdate:modelValue': (value: string) => search.value = value })
+          : null,
+        h(ListboxContent, { 'data-testid': 'content' }, () => items.value.map(item => h(ListboxItem, { key: item, value: item }, () => item))),
+      ])
+    },
+  })
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should remove aria-activedescendant when the filter term matches no item', async () => {
+    const wrapper = mount(Fixture, { attachTo: document.body, props: { withFilter: true } })
+    const filter = wrapper.find('[data-testid="filter"]')
+    await filter.trigger('keydown', { key: 'ArrowDown' })
+    expect(filter.attributes('aria-activedescendant')).toBeTruthy()
+
+    await filter.setValue('zzz')
+    await nextTick()
+
+    expect(wrapper.findAll('[role="option"]')).toHaveLength(0)
+    expect(filter.attributes('aria-activedescendant')).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it('should keep the content in the tab order when the highlighted item is removed', async () => {
+    const wrapper = mount(Fixture, { attachTo: document.body })
+    const content = wrapper.find('[data-testid="content"]')
+    await content.trigger('focus')
+    expect(content.attributes('tabindex')).toBe('-1')
+    expect(wrapper.find('[role="option"]').attributes('tabindex')).toBe('0')
+
+    await wrapper.setProps({ options: ['Banana', 'Cherry'] })
+
+    expect(content.attributes('tabindex')).toBe('0')
+    wrapper.unmount()
   })
 })
 
@@ -1152,5 +1235,344 @@ describe('given ListboxItem slot props and ListboxItemIndicator', () => {
     expect(b.attributes('data-state')).toBe('unchecked')
     expect(a.attributes('forcemount')).toBeUndefined()
     expect(a.attributes('aria-hidden')).toBe('true')
+  })
+})
+
+describe('given a Listbox driven by `highlightItem` from a sibling input', () => {
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+  window.HTMLElement.prototype.scrollTo = vi.fn()
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect
+  beforeAll(() => {
+    // jsdom reports zero-sized rects; give the virtualizer a viewport so its items mount.
+    window.HTMLElement.prototype.getBoundingClientRect = function () {
+      return { width: 200, height: 200, top: 0, left: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }
+    }
+  })
+  afterAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
+  })
+
+  const options = Array.from({ length: 50 }, (_, i) => `Item ${i}`)
+
+  function mountListbox(virtual: boolean, disabled: string[] = []) {
+    const listbox = ref<InstanceType<typeof ListboxRoot>>()
+    const shown = ref(options)
+    const onHighlight = vi.fn()
+    const item = (option: string) => h(ListboxItem, { key: option, value: option, disabled: disabled.includes(option) }, () => option)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => [
+          h('input', { 'data-testid': 'search' }),
+          h(ListboxRoot, { ref: listbox, onHighlight }, () =>
+            h(ListboxContent, { style: 'height: 200px; overflow: auto' }, () => virtual
+              ? h(ListboxVirtualizer, { options: shown.value }, {
+                  default: ({ option }: any) => item(option),
+                })
+              : shown.value.map(item))),
+        ]
+      },
+    }), { attachTo: document.body })
+    return { wrapper, listbox, shown, onHighlight }
+  }
+
+  async function flush() {
+    await nextTick()
+    await nextTick()
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    await nextTick()
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  describe.each([['non-virtual', false], ['virtual', true]])('%s', (_, virtual) => {
+    it('should highlight the item without moving focus with `{ focus: false }`', async () => {
+      const { wrapper, listbox, onHighlight } = mountListbox(virtual as boolean)
+      await flush()
+      const input = wrapper.find('[data-testid=search]').element as HTMLInputElement
+      input.focus()
+
+      listbox.value!.highlightItem('Item 3', { focus: false })
+      await flush()
+
+      const item = wrapper.findAll('[role=option]').find(i => i.text() === 'Item 3')!
+      expect(item.attributes('data-highlighted')).toBe('')
+      expect(listbox.value!.highlightedElement).toBe(item.element)
+      expect(onHighlight).toHaveBeenLastCalledWith(expect.objectContaining({ value: 'Item 3' }))
+      expect(document.activeElement).toBe(input)
+    })
+
+    it('should still move focus to the item by default', async () => {
+      const { wrapper, listbox } = mountListbox(virtual as boolean)
+      await flush()
+      const input = wrapper.find('[data-testid=search]').element as HTMLInputElement
+      input.focus()
+
+      listbox.value!.highlightItem('Item 3')
+      await flush()
+
+      const item = wrapper.findAll('[role=option]').find(i => i.text() === 'Item 3')!
+      expect(item.attributes('data-highlighted')).toBe('')
+      expect(document.activeElement).toBe(item.element)
+    })
+
+    it('should not highlight a disabled item', async () => {
+      const { wrapper, listbox } = mountListbox(virtual as boolean, ['Item 3'])
+      await flush()
+      const highlighted = listbox.value!.highlightedElement
+
+      listbox.value!.highlightItem('Item 3', { focus: false })
+      await flush()
+
+      const item = wrapper.findAll('[role=option]').find(i => i.text() === 'Item 3')!
+      expect(item.attributes('data-highlighted')).toBeUndefined()
+      expect(listbox.value!.highlightedElement).toBe(highlighted)
+    })
+
+    it('should highlight the requested item when the options are reordered before it renders', async () => {
+      const { wrapper, listbox, shown } = mountListbox(virtual as boolean)
+      await flush()
+
+      listbox.value!.highlightItem('Item 1', { focus: false })
+      shown.value = ['Item 0', 'Item 2', 'Item 1', ...options.slice(3)]
+      await flush()
+
+      const highlighted = wrapper.findAll('[data-highlighted]')
+      expect(highlighted.map(i => i.text())).toEqual(['Item 1'])
+    })
+  })
+})
+
+describe('given a Listbox with `keepFocusOnValueChange`', () => {
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  function mountListbox(keepFocusOnValueChange?: boolean) {
+    const selected = ref<string>()
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => [
+          h('input', { 'data-testid': 'search', 'aria-label': 'Search' }),
+          h(ListboxRoot, {
+            keepFocusOnValueChange,
+            'modelValue': selected.value,
+            'onUpdate:modelValue': (value: string) => { selected.value = value },
+          }, () => h(ListboxContent, { 'aria-label': 'Fruits' }, () =>
+            ['Apple', 'Banana', 'Cherry'].map(value => h(ListboxItem, { key: value, value }, () => value)))),
+        ]
+      },
+    }), { attachTo: document.body })
+    return { wrapper, selected }
+  }
+
+  async function flush() {
+    for (let i = 0; i < 3; i++) await nextTick()
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.mocked(window.HTMLElement.prototype.scrollIntoView).mockClear()
+  })
+
+  it('should pass axe accessibility tests', async () => {
+    const { wrapper } = mountListbox(true)
+    await flush()
+    expect(await axe(wrapper.element.parentElement!)).toHaveNoViolations()
+  })
+
+  it.each([
+    ['keeps focus on the input', true],
+    ['moves focus to the item by default', undefined],
+  ])('%s when the value changes programmatically', async (_, keepFocusOnValueChange) => {
+    const { wrapper, selected } = mountListbox(keepFocusOnValueChange)
+    await flush()
+    const input = wrapper.find('[data-testid=search]').element as HTMLInputElement
+    input.focus()
+
+    selected.value = 'Cherry'
+    await flush()
+
+    const cherry = wrapper.findAll('[role=option]').find(i => i.text() === 'Cherry')!
+    expect(cherry.attributes('data-highlighted')).toBe('')
+    expect(document.activeElement).toBe(keepFocusOnValueChange ? input : cherry.element)
+    expect(window.HTMLElement.prototype.scrollIntoView).toHaveBeenCalledTimes(keepFocusOnValueChange ? 0 : 1)
+  })
+
+  it('is not a prop of the components built on Listbox', () => {
+    expect(ListboxRoot.props).toHaveProperty('keepFocusOnValueChange')
+    expect(ComboboxRoot.props).toHaveProperty('highlightOnHover')
+    expect(ComboboxRoot.props).not.toHaveProperty('keepFocusOnValueChange')
+    expect(ColorSwatchPickerRoot.props).toHaveProperty('loop')
+    expect(ColorSwatchPickerRoot.props).not.toHaveProperty('keepFocusOnValueChange')
+  })
+})
+
+describe('given a multiple Listbox with `max`', () => {
+  const kbd = useKbd()
+  let wrapper: VueWrapper<InstanceType<typeof Listbox>>
+  let content: DOMWrapper<Element>
+  let items: DOMWrapper<Element>[]
+
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  async function setup(props: Record<string, unknown>) {
+    document.body.innerHTML = ''
+    wrapper = mount(Listbox, { props: { multiple: true, ...props }, attachTo: document.body })
+    await nextTick()
+    content = wrapper.find('[role=listbox]')
+    items = wrapper.findAll('[role=option]')
+    await content.trigger('focus')
+  }
+
+  const selected = () => items.filter(i => i.attributes('aria-selected') === 'true').map(i => i.text())
+
+  it('should block a click that goes over `max` and emit `invalid`', async () => {
+    await setup({ max: 2 })
+    await items[0].trigger('click')
+    await items[1].trigger('click')
+    await items[2].trigger('click')
+    expect(selected()).toEqual([items[0].text(), items[1].text()])
+    expect(wrapper.emitted('invalid')).toEqual([[items[2].text()]])
+  })
+
+  it('should block `Enter` that goes over `max` and still allow deselecting', async () => {
+    await setup({ max: 1 })
+    await content.trigger('keydown', { key: kbd.ENTER })
+    await content.trigger('keydown', { key: kbd.ARROW_DOWN })
+    await content.trigger('keydown', { key: kbd.ENTER })
+    expect(selected()).toEqual([items[0].text()])
+    expect(wrapper.emitted('invalid')).toEqual([[items[1].text()]])
+
+    await items[0].trigger('click')
+    expect(selected()).toEqual([])
+  })
+
+  it('should block select-all that goes over `max`', async () => {
+    await setup({ max: 2 })
+    await content.trigger('keydown', { key: 'a', ctrlKey: true })
+    expect(selected()).toEqual([])
+    expect(wrapper.emitted('invalid')).toEqual([[items[2].text()]])
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('should block a `Shift` range selection that goes over `max`', async () => {
+    await setup({ max: 2, selectionBehavior: 'replace' })
+    await items[0].trigger('click')
+    await content.trigger('keydown.shift', { key: kbd.ARROW_DOWN })
+    expect(selected()).toEqual([items[0].text(), items[1].text()])
+    await content.trigger('keydown.shift', { key: kbd.ARROW_DOWN })
+    expect(selected()).toEqual([items[0].text(), items[1].text()])
+    expect(wrapper.emitted('invalid')).toEqual([[items[2].text()]])
+  })
+
+  it('should still highlight a programmatic change after a click blocked by `max`', async () => {
+    await setup({ max: 1, modelValue: [] })
+    const first = items[0].text()
+    await wrapper.setProps({ modelValue: [first] })
+    await new Promise(r => setTimeout(r, 5))
+    await items[1].trigger('click')
+    expect(wrapper.emitted('invalid')).toEqual([[items[1].text()]])
+    await new Promise(r => setTimeout(r, 5))
+    await wrapper.setProps({ modelValue: [items[3].text()] })
+    await nextTick()
+    await nextTick()
+    await nextTick()
+    expect(items[3].attributes('data-highlighted')).toBe('')
+  })
+
+  it('should not limit the selection without `max`', async () => {
+    await setup({})
+    await content.trigger('keydown', { key: 'a', ctrlKey: true })
+    expect(selected()).toHaveLength(items.length)
+    expect(wrapper.emitted('invalid')).toBeUndefined()
+  })
+})
+
+describe('given a virtualized multiple Listbox with `max`', () => {
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+  window.HTMLElement.prototype.scrollTo = vi.fn()
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect
+  beforeAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = function () {
+      return { width: 200, height: 200, top: 0, left: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }
+    }
+  })
+  afterAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
+  })
+
+  const options = Array.from({ length: 10 }, (_, i) => `Item ${i}`)
+  const onInvalid = vi.fn()
+  const onUpdate = vi.fn()
+  const VirtualListbox = defineComponent({
+    props: { max: { type: Number, default: 0 }, selectionBehavior: { type: String, default: 'toggle' } },
+    setup(props) {
+      return () => h(ListboxRoot, { 'multiple': true, 'max': props.max, 'selectionBehavior': props.selectionBehavior as any, 'onInvalid': onInvalid, 'onUpdate:modelValue': onUpdate }, () =>
+        h(ListboxContent, { style: 'height: 200px; overflow: auto' }, () =>
+          h(ListboxVirtualizer, { options }, {
+            default: ({ option }: any) => h(ListboxItem, { value: option }, () => option),
+          })))
+    },
+  })
+
+  async function flush() {
+    await nextTick()
+    await nextTick()
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    await nextTick()
+  }
+
+  beforeEach(() => {
+    onInvalid.mockClear()
+    onUpdate.mockClear()
+    document.body.innerHTML = ''
+  })
+
+  it('should block select-all that goes over `max`', async () => {
+    const wrapper = mount(VirtualListbox, { props: { max: 3 }, attachTo: document.body })
+    await flush()
+    const content = wrapper.find('[role=listbox]')
+    await content.trigger('focus')
+    await content.trigger('keydown', { key: 'a', ctrlKey: true })
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(onInvalid).toHaveBeenCalledWith('Item 3')
+  })
+
+  it('should block a `Shift` range selection that goes over `max`', async () => {
+    const wrapper = mount(VirtualListbox, { props: { max: 2, selectionBehavior: 'replace' }, attachTo: document.body })
+    await flush()
+    const content = wrapper.find('[role=listbox]')
+    await content.trigger('focus')
+    await wrapper.find('[data-index="0"]').trigger('click')
+    await content.trigger('keydown', { key: 'End', shiftKey: true })
+    await flush()
+    expect(onUpdate).toHaveBeenLastCalledWith(['Item 0'])
+    expect(onInvalid).toHaveBeenCalledWith('Item 2')
+  })
+
+  it('should not limit select-all without `max`', async () => {
+    const wrapper = mount(VirtualListbox, { attachTo: document.body })
+    await flush()
+    const content = wrapper.find('[role=listbox]')
+    await content.trigger('focus')
+    await content.trigger('keydown', { key: 'a', ctrlKey: true })
+    expect(onUpdate).toHaveBeenLastCalledWith(options)
+    expect(onInvalid).not.toHaveBeenCalled()
   })
 })

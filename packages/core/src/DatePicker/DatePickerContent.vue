@@ -39,8 +39,6 @@ provideFieldControlOwner(injectFieldForControl())
       :ref="forwardRef"
       v-bind="{ ...forwarded, ...$attrs }"
       @open-auto-focus="event => {
-        emits('openAutoFocus', event)
-
         if (!event.defaultPrevented && event.target) {
           handleCalendarInitialFocus(event.target as HTMLElement)
           event.preventDefault()

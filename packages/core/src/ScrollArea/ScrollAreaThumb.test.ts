@@ -19,7 +19,9 @@ describe('scroll area thumb frame loop', () => {
   let onViewportChange: (viewport: HTMLElement | null) => void
 
   beforeEach(async () => {
-    vi.useFakeTimers()
+    // jsdom queues its `<style>` load task with `setImmediate`; leave that real so the timer
+    // count below only sees timers the component schedules.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'performance', 'Date'] })
     frames = new Map()
     frameId = 0
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {

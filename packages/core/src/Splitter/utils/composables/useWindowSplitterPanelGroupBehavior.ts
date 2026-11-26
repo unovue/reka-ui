@@ -57,7 +57,7 @@ export function useWindowSplitterPanelGroupBehavior({
 
       const resizeHandleElement = resizeHandleElements[index]
       if (resizeHandleElement == null) {
-        if (import.meta.env.DEV)
+        if (process.env.NODE_ENV !== 'production')
           console.warn(`WARNING: Missing resize handle for PanelGroup "${groupId}"`)
       }
       else {

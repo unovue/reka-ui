@@ -1,8 +1,10 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { findByRole, queryByRole, waitFor } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, h } from 'vue'
+import { ContextMenuContent, ContextMenuItem, ContextMenuPortal, ContextMenuRoot, ContextMenuTrigger } from '.'
 import ContextMenu from './story/_ContextMenu.vue'
 import ControlledContextMenu from './story/_ControlledContextMenu.vue'
 
@@ -267,5 +269,80 @@ describe('given controlled ContextMenu', () => {
           .toContain('translate(98px, 100px)')
       })
     })
+  })
+})
+
+// https://github.com/unovue/reka-ui/issues/1844
+describe('given nested ContextMenus', () => {
+  let wrapper: VueWrapper
+  const opened: string[] = []
+
+  // Each trigger holds the next menu's root, so a press on an inner trigger bubbles through the outer ones.
+  async function mountNested(ids: string[], disabled: string[] = []) {
+    const menu = (index: number): ReturnType<typeof h> => h(ContextMenuRoot, {
+      'onUpdate:open': (open: boolean) => open && opened.push(ids[index]),
+    }, () => [
+      h(ContextMenuTrigger, { 'data-testid': ids[index], 'disabled': disabled.includes(ids[index]) }, () => [
+        ids[index],
+        index + 1 < ids.length ? menu(index + 1) : null,
+      ]),
+      h(ContextMenuPortal, () => h(ContextMenuContent, () => h(ContextMenuItem, () => `${ids[index]} item`))),
+    ])
+    wrapper = mount(defineComponent(() => () => menu(0)), { attachTo: document.body })
+    // Vue ignores bubbling events stamped in the same millisecond its listeners were attached
+    const mountedAt = Date.now()
+    await vi.waitFor(() => expect(Date.now()).toBeGreaterThan(mountedAt))
+  }
+
+  function pointerDown(id: string, pointerType = 'touch', pointerId = 1) {
+    document.querySelector(`[data-testid="${id}"]`)!
+      .dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerType, pointerId }))
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    opened.length = 0
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
+    vi.useRealTimers()
+  })
+
+  it.each(['touch', 'pen'])('opens only the inner menu on a %s long press', async (pointerType) => {
+    await mountNested(['outer', 'inner'])
+    pointerDown('inner', pointerType)
+    await vi.advanceTimersByTimeAsync(700)
+
+    expect(opened).toEqual(['inner'])
+    expect(document.querySelectorAll('[role="menu"]')).toHaveLength(1)
+  })
+
+  it('opens only the innermost of three menus on a long press', async () => {
+    await mountNested(['outer', 'middle', 'inner'])
+    pointerDown('inner')
+    await vi.advanceTimersByTimeAsync(700)
+
+    expect(opened).toEqual(['inner'])
+  })
+
+  it('opens the outer menu on a long press on a disabled inner trigger', async () => {
+    await mountNested(['outer', 'inner'], ['inner'])
+    pointerDown('inner')
+    await vi.advanceTimersByTimeAsync(700)
+
+    expect(opened).toEqual(['outer'])
+  })
+
+  // A new touch point cancels the long press already running on the trigger, as on a single trigger.
+  it('opens only the inner menu when a second finger presses it while the first holds the outer trigger', async () => {
+    await mountNested(['outer', 'inner'])
+    pointerDown('outer', 'touch', 1)
+    await vi.advanceTimersByTimeAsync(300)
+    pointerDown('inner', 'touch', 2)
+    await vi.advanceTimersByTimeAsync(700)
+
+    expect(opened).toEqual(['inner'])
   })
 })

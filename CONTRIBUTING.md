@@ -77,6 +77,7 @@ All commands run from the repo root.
 | Bundle size | `pnpm --filter reka-ui size` |
 | Browser benchmark | `pnpm bench` (see [Benchmarks](#benchmarks)) |
 | Subpath exports regen | `pnpm --filter reka-ui gen:exports` (after adding or removing a family in `src/index.ts`) |
+| Published package (exports, types, Node load) | `pnpm build && pnpm package:check` |
 
 > - `pnpm test` is **watch mode**. For a one-shot run (CI-style) use
 >   `pnpm --filter reka-ui exec vitest run`.

@@ -35,7 +35,7 @@ Import all parts and piece them together.
 
 ```vue
 <script setup>
-import { StepperDescription, StepperIndicator, StepperItem, StepperRoot, StepperTitle, StepperTrigger } from 'reka-ui'
+import { StepperDescription, StepperIndicator, StepperItem, StepperRoot, StepperSeparator, StepperTitle, StepperTrigger } from 'reka-ui'
 </script>
 
 <template>
@@ -138,9 +138,28 @@ If you want to hide the title, wrap it inside our Visually Hidden utility like t
 
 An optional accessible description to be announced when the stepper trigger is focused.
 
-If you want to hide the description, wrap it inside our Visually Hidden utility like this `<VisuallyHidden asChild>`. If you want to remove the description entirely, remove this part and pass `aria-describedby="undefined"` to `StepperTrigger`.
+If you want to hide the description, wrap it inside our Visually Hidden utility like this `<VisuallyHidden asChild>`. If you want to remove the description entirely, remove this part.
 
-<!-- @include: @/meta/StepperItem.md -->
+<!-- @include: @/meta/StepperDescription.md -->
+
+### Separator
+
+A visual divider between steps. It is purely decorative, follows the root's `orientation`, and reflects the state of the item it is placed in.
+
+<!-- @include: @/meta/StepperSeparator.md -->
+
+<DataAttributesTable
+  :data="[
+    {
+      attribute: '[data-state]',
+      values: ['active', 'inactive', 'completed'],
+    },
+    {
+      attribute: '[data-orientation]',
+      values: ['vertical', 'horizontal'],
+    },
+  ]"
+/>
 
 ## Examples
 
@@ -221,6 +240,24 @@ const stepper = useTemplateRef('stepper')
 - [Stepper Form Wizard](/examples/stepper-form-wizard): Gate each step of a multi-step form on its own validation, so Next and the step triggers stay in sync.
 
 ## Accessibility
+
+### Trigger name and current step
+
+`StepperTrigger` is named by the item's rendered `StepperTitle` and `StepperDescription`, in that order, through `aria-labelledby`. Only the parts that are rendered are referenced. Pass an `aria-label` or `aria-labelledby` to `StepperTrigger` to name it yourself; the description is then exposed through `aria-describedby`.
+
+The trigger of the current step has `aria-current="step"`. `StepperItem` keeps `aria-current="true"` for styling.
+
+### Step announcements
+
+The live region announces the active step's one-based position among the rendered steps, independently of its `step` value. Use `announce` to translate or replace the message:
+
+```vue
+<StepperRoot :announce="(step, total) => `Étape ${step} sur ${total}`">
+  <!-- Stepper items -->
+</StepperRoot>
+```
+
+Set `:announce="false"` when your application provides its own live announcement. No message is announced when the active value does not match a rendered step.
 
 ### Keyboard Interactions
 

@@ -121,7 +121,20 @@ Contains content to be rendered when the dialog is open.
     {
       attribute: '[data-state]',
       values: ['open', 'closed'],
-    }
+    },
+    {
+      attribute: '[data-nested-dialog-open]',
+      values: ['Present when a nested dialog is open'],
+    },
+  ]"
+/>
+
+<CssVariablesTable
+  :data="[
+    {
+      cssVariable: '--nested-dialogs',
+      description: 'The number of nested dialogs that are open on top of this one',
+    },
   ]"
 />
 

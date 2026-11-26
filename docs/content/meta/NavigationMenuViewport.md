@@ -23,6 +23,12 @@
     'required': false
   },
   {
+    'name': 'avoidClipping',
+    'description': '<p>When <code>true</code>, keeps the viewport inside the ancestors that clip it (an <code>overflow</code> other\nthan <code>visible</code>, or paint containment) instead of the document, and sets the position\ncss variables in the coordinates of the viewport\'s containing block.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'forceMount',
     'description': '<p>Used to force mounting when more control is needed. Useful when\ncontrolling animation with Vue animation libraries.</p>\n',
     'type': 'boolean',
@@ -40,6 +46,7 @@
 | `align` | Placement of the viewport for css variables `(--reka-navigation-menu-viewport-left, --reka-navigation-menu-viewport-top)`. | `"start" \| "center" \| "end"` | No | `"center"` |
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `avoidClipping` | When true, keeps the viewport inside the ancestors that clip it (an overflow other than visible, or paint containment) instead of the document, and sets the position css variables in the coordinates of the viewport's containing block. | `boolean` | No | - |
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
 
 </llm-only>

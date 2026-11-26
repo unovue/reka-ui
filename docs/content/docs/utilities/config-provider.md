@@ -14,6 +14,7 @@ Wraps your app to provide global configurations.
     'Enables all primitives to inherit global reading direction.',
     'Enables changing the behavior of scroll body when setting body lock.',
     'Much more controls to prevent layout shifts.',
+    'Translates the labels the primitives give to assistive technology.',
   ]"
 />
 
@@ -49,6 +50,8 @@ Use the config provider.
 
 Set global direction to `rtl`, and scroll body behavior to `false` (will not set any padding/margin).
 
+By default, the scrollbar width is added to the body's own right padding while scroll is locked, and the body's margin is left alone. Both are put back as they were when the lock is released. Pass an object such as `{ padding: 20 }` or `{ margin: true }` to choose what is set: `true` adds the scrollbar width to the existing value, a number is in pixels, and a string is used as written. `{ margin: true }` on its own moves the compensation to the margin and leaves the padding alone; set `padding` as well to change both.
+
 ```vue
 <script setup lang="ts">
 import { ConfigProvider } from 'reka-ui'
@@ -63,6 +66,30 @@ import { ConfigProvider } from 'reka-ui'
   </ConfigProvider>
 </template>
 ```
+
+## Translations
+
+Some primitives give assistive technology text of their own, such as the `aria-label` of `PaginationNext`. It is English by default. Pass `translations` to replace it, by key. Keys that are left out keep the built-in text.
+
+```vue
+<script setup lang="ts">
+import { ConfigProvider } from 'reka-ui'
+</script>
+
+<template>
+  <ConfigProvider
+    :translations="{
+      paginationPrev: 'Vorherige Seite',
+      paginationNext: 'Nächste Seite',
+      paginationPage: 'Seite {page}',
+    }"
+  >
+    <slot />
+  </ConfigProvider>
+</template>
+```
+
+See [Translating built-in labels](/docs/guides/i18n#translating-built-in-labels) for every key and its default.
 
 ## Hydration issue
 

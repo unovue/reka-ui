@@ -50,11 +50,7 @@ describe('given default Autocomplete', () => {
     })
 
     it('should pass axe accessibility tests', async () => {
-      expect(await axe(wrapper.element, {
-        rules: {
-          'aria-required-children': { enabled: false },
-        },
-      })).toHaveNoViolations()
+      expect(await axe(wrapper.element)).toHaveNoViolations()
     })
 
     it('should show the popup content', () => {
@@ -94,6 +90,15 @@ describe('given default Autocomplete', () => {
       expect(input.attributes('aria-activedescendant')).toBeTruthy()
       await input.trigger('keydown', { key: 'Escape' })
       await vi.waitFor(() => expect(document.querySelector('[role="option"]')).toBeNull())
+      expect(input.attributes('aria-activedescendant')).toBeUndefined()
+    })
+
+    it('should remove aria-activedescendant when the typed text matches no option', async () => {
+      await input.trigger('keydown', { key: 'ArrowDown' })
+      expect(input.attributes('aria-activedescendant')).toBeTruthy()
+      input.element.value = 'zzz'
+      await input.trigger('input')
+      await vi.waitFor(() => expect(wrapper.find('[role=listbox]').attributes('data-empty')).toBeDefined())
       expect(input.attributes('aria-activedescendant')).toBeUndefined()
     })
 

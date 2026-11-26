@@ -66,6 +66,10 @@ describe('given default ColorSlider', () => {
       const thumb = wrapper.find('[role="slider"]')
       expect(thumb.attributes('data-disabled')).toBe('')
     })
+
+    it('should mark the thumb as aria-disabled', () => {
+      expect(wrapper.find('[role="slider"]').attributes('aria-disabled')).toBe('true')
+    })
   })
 
   describe('keyboard navigation', () => {

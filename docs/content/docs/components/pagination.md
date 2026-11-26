@@ -79,7 +79,7 @@ Used to show the list of pages. It also makes pagination accessible to assistive
 
 Used to render the button that changes the current page.
 
-<!-- @include: @/meta/PaginationItem.md -->
+<!-- @include: @/meta/PaginationListItem.md -->
 
 <DataAttributesTable
   :data="[
@@ -205,6 +205,42 @@ const currentPage = ref(1)
   </PaginationRoot>
 </template>
 ```
+
+### Keep the page within the page count
+
+When `total` or `itemsPerPage` shrinks, for example after filtering a list, the current page can end up past the last page. Set `clampPage` to move it to the last page and emit `update:page`.
+
+A `total` of `0` resets the page to `1`, so keep the previous `total` while new data loads.
+
+```vue line=10
+<script setup lang="ts">
+import { PaginationRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+const currentPage = ref(10)
+const total = ref(100)
+</script>
+
+<template>
+  <PaginationRoot v-model:page="currentPage" :total="total" :items-per-page="10" clamp-page>
+    ...
+  </PaginationRoot>
+</template>
+```
+
+## Accessibility
+
+`PaginationRoot` renders a `<nav>` landmark named `pagination`. Give it your own name with `aria-label` or `aria-labelledby`, for example when a page has more than one pagination.
+
+```vue
+<template>
+  <PaginationRoot aria-label="Search results pages">
+    …
+  </PaginationRoot>
+</template>
+```
+
+A `PaginationEllipsis` that only holds `…` or an icon is hidden from assistive technology. One with its own text or a focusable element is left as it is.
 
 ## Keyboard Interactions
 

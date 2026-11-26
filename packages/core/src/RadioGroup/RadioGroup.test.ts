@@ -63,6 +63,83 @@ describe('given a default RadioGroup', () => {
       })
     })
   })
+
+  describe('on a fast key tap where keyup precedes the deferred selection', () => {
+    beforeEach(async () => {
+      radios[0].element.focus()
+      await fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' })
+      await fireEvent.keyUp(radios[0].element, { key: 'ArrowDown' })
+      await sleep(0)
+    })
+
+    it('should still select the newly focused item', () => {
+      expect(radios[2].element).toBe(document.activeElement)
+      expect(radios[2].attributes('data-state')).toBe('checked')
+      expect(radios[0].attributes('data-state')).toBe('unchecked')
+    })
+  })
+
+  describe('on a synchronous keydown and keyup', () => {
+    beforeEach(async () => {
+      radios[0].element.focus()
+      radios[0].element.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+      radios[0].element.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowDown', bubbles: true }))
+      // focus moves in `nextTick`, then the selection runs in a timeout
+      await nextTick()
+      await sleep(0)
+    })
+
+    it('should select the newly focused item', () => {
+      expect(radios[2].element).toBe(document.activeElement)
+      expect(radios[2].attributes('data-state')).toBe('checked')
+      expect(radios[0].attributes('data-state')).toBe('unchecked')
+    })
+  })
+
+  describe('when focus moves on before the deferred selection runs', () => {
+    beforeEach(async () => {
+      radios[0].element.focus()
+      await fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' })
+      await fireEvent.keyUp(document.activeElement!, { key: 'ArrowDown' })
+      radios[0].element.focus()
+      await sleep(0)
+    })
+
+    it('should not select the item that lost focus', () => {
+      expect(radios[0].element).toBe(document.activeElement)
+      expect(radios[0].attributes('data-state')).toBe('checked')
+      expect(radios[2].attributes('data-state')).toBe('unchecked')
+    })
+  })
+})
+
+describe('given a RadioGroup inside a closed shadow root', () => {
+  it('should select the item that arrow-key navigation focused', async () => {
+    document.body.innerHTML = ''
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const shadowRoot = host.attachShadow({ mode: 'closed' })
+    const container = document.createElement('div')
+    shadowRoot.appendChild(container)
+    const wrapper = mount({
+      components: { RadioGroupItem, RadioGroupRoot },
+      template: `<RadioGroupRoot default-value="a" orientation="horizontal" :loop="false">
+        <RadioGroupItem value="a" aria-label="First" />
+        <RadioGroupItem value="b" aria-label="Second" />
+      </RadioGroupRoot>`,
+    }, { attachTo: container })
+    const [first, second] = wrapper.findAll('[role=radio]')
+    await nextTick()
+
+    first.element.focus()
+    await fireEvent.keyDown(first.element, { key: 'ArrowRight' })
+    await sleep(0)
+
+    expect(shadowRoot.activeElement).toBe(second.element)
+    expect(second.attributes('data-state')).toBe('checked')
+    expect(first.attributes('data-state')).toBe('unchecked')
+    wrapper.unmount()
+  })
 })
 
 describe('given disabled RadioGroup', () => {
@@ -132,6 +209,24 @@ describe('given a RadioGroupItem whose label is not found', () => {
 
     expect(wrapper.find('[role=radio]').attributes('aria-label')).toBe('Explicit')
     wrapper.unmount()
+  })
+})
+
+describe('given the required prop', () => {
+  function mountGroup(required: boolean) {
+    return mount({
+      components: { RadioGroupItem, RadioGroupRoot },
+      setup: () => ({ required }),
+      template: '<RadioGroupRoot :required="required"><RadioGroupItem value="a" aria-label="First" /></RadioGroupRoot>',
+    })
+  }
+
+  it('should not render a required attribute on the radio of an optional group', () => {
+    expect(mountGroup(false).find('[role=radio]').attributes()).not.toHaveProperty('required')
+  })
+
+  it('should render a required attribute on the radio of a required group', () => {
+    expect(mountGroup(true).find('[role=radio]').attributes('required')).toBe('')
   })
 })
 

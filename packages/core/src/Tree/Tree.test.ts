@@ -2,7 +2,7 @@ import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { useKbd } from '@/shared'
 import { TreeItem, TreeRoot, TreeVirtualizer } from '.'
 import Tree from './story/_Tree.vue'
@@ -96,6 +96,15 @@ describe('given default Tree', () => {
     it('should highlight text starting with l', async () => {
       await content.trigger('keydown', { key: 'l' })
       const item = items.find(i => i.text().startsWith('l'))
+      expect(document.activeElement).toBe(item?.element)
+    })
+  })
+
+  describe('when holding `Shift` before typing a letter', async () => {
+    it('should ignore the named key and highlight text starting with r', async () => {
+      await content.trigger('keydown', { key: 'Shift', shiftKey: true })
+      await content.trigger('keydown', { key: 'R', shiftKey: true })
+      const item = items.find(i => i.text().startsWith('routes'))
       expect(document.activeElement).toBe(item?.element)
     })
   })
@@ -285,6 +294,41 @@ describe('given a Tree with a custom children structure', () => {
         expect(items[3].text()).toBe('Tree.vue')
       })
     })
+  })
+})
+
+describe('selection with a custom child accessor', () => {
+  const leaf = { title: 'leaf' }
+  const branch = { title: 'branch', nodes: [leaf] }
+  const root = { title: 'root', nodes: [branch] }
+
+  function mountTree(props: { propagateSelect?: boolean, bubbleSelect?: boolean, defaultValue?: Array<typeof leaf> }) {
+    return mount(Tree, {
+      props: {
+        items: [root],
+        getChildren: item => item.nodes,
+        multiple: true,
+        expanded: ['root', 'branch'],
+        ...props,
+      },
+    })
+  }
+
+  it('selects and deselects all descendants of the parent', async () => {
+    const wrapper = mountTree({ propagateSelect: true })
+    const [parent, child, grandchild] = wrapper.findAll('[role=treeitem]')
+    await parent.trigger('click')
+    expect([child, grandchild].map(item => item.attributes('aria-selected'))).toEqual(['true', 'true'])
+    await parent.trigger('click')
+    expect([child, grandchild].map(item => item.attributes('aria-selected'))).toEqual(['false', 'false'])
+  })
+
+  it.each([
+    { bubbleSelect: true, defaultValue: [leaf] },
+    { propagateSelect: true, defaultValue: [root, branch] },
+  ])('reports a partially selected subtree for %o', (props) => {
+    const wrapper = mountTree(props)
+    expect(wrapper.getComponent(TreeItem).vm.isIndeterminate).toBe(true)
   })
 })
 
@@ -593,7 +637,7 @@ describe('given a Tree with `loop`', () => {
             items,
             getKey: (item: any) => item.title,
             loop: true,
-          }, () => h(TreeVirtualizer as any, { textContent: (item: any) => item.value.title }, {
+          }, () => h(TreeVirtualizer as any, { textContent: (item: any) => item.title }, {
             default: ({ item }: any) => h(TreeItem as any, { ...item.bind, disabled: disabled.includes(item.index) }, { default: () => item.value.title }),
           })))
         },
@@ -634,6 +678,16 @@ describe('given a Tree with `loop`', () => {
       expect(document.activeElement?.getAttribute('data-index')).toBe('0')
     })
 
+    it('should ignore named keys in typeahead', async () => {
+      const wrapper = mountVirtualTree(5)
+      await nextTick()
+      ;(wrapper.find('[data-index="0"]').element as HTMLElement).focus()
+
+      await press('Shift', { shiftKey: true })
+      await press('I', { shiftKey: true })
+      expect(document.activeElement?.getAttribute('data-index')).toBe('1')
+    })
+
     it('should not wrap at the end of the rendered window', async () => {
       // jsdom never scrolls, so only the first window of the 100 items is rendered.
       const wrapper = mountVirtualTree(100)
@@ -645,5 +699,210 @@ describe('given a Tree with `loop`', () => {
       await press(kbd.ARROW_DOWN)
       expect(document.activeElement).toBe(lastRendered.element)
     })
+  })
+})
+
+describe('given a Tree with a controlled `expanded`', () => {
+  const treeItems = [
+    { title: 'fruits', children: [{ title: 'grape' }, { title: 'kiwi' }] },
+    { title: 'vegetables', children: [{ title: 'leek' }] },
+  ]
+
+  function mountTree(expanded: string[]) {
+    return mount(defineComponent({
+      props: { expanded: { type: Array, required: true } },
+      setup(props) {
+        return () => h(TreeRoot as any, {
+          items: treeItems,
+          getKey: (item: any) => item.title,
+          expanded: props.expanded,
+        }, {
+          default: ({ flattenItems }: any) => flattenItems.map((item: any) =>
+            h(TreeItem as any, { key: item._id, ...item.bind }, { default: () => item.value.title }),
+          ),
+        })
+      },
+    }), { attachTo: document.body, props: { expanded } })
+  }
+
+  const titles = (wrapper: VueWrapper) => wrapper.findAll('[role=treeitem]').map(item => item.text())
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should render the children of the expanded items only', () => {
+    const wrapper = mountTree(['fruits'])
+    expect(titles(wrapper)).toEqual(['fruits', 'grape', 'kiwi', 'vegetables'])
+  })
+
+  it('should render again when `expanded` changes', async () => {
+    const wrapper = mountTree(['fruits'])
+    await wrapper.setProps({ expanded: ['vegetables'] })
+    expect(titles(wrapper)).toEqual(['fruits', 'vegetables', 'leek'])
+    expect(wrapper.findAll('[role=treeitem]').map(item => item.attributes('aria-expanded')))
+      .toEqual(['false', 'true', undefined])
+  })
+})
+
+describe('given a multiple Tree with many selected keys', () => {
+  interface Node { id: string, children?: Node[] }
+
+  function build(depth: number, prefix: string): Node[] {
+    return Array.from({ length: 4 }, (_, i) => {
+      const id = `${prefix}-${i}`
+      return depth > 0 ? { id, children: build(depth - 1, id) } : { id }
+    })
+  }
+  const items = build(3, 'n')
+  const all: Node[] = []
+  const collect = (nodes: Node[]) => nodes.forEach((n) => {
+    all.push(n)
+    collect(n.children ?? [])
+  })
+  collect(items)
+  const descendants = (n: Node): Node[] => (n.children ?? []).flatMap(c => [c, ...descendants(c)])
+  // Every third node, plus a duplicate and an unknown key
+  const selected = [...all.filter((_, i) => i % 3 === 0), all[0], { id: 'unknown' }]
+  const selectedIds = selected.map(n => n.id)
+
+  function render(props: Record<string, any>) {
+    const states: Record<string, { selected: boolean, indeterminate: boolean | undefined }> = {}
+    mount(defineComponent({
+      setup: () => () => h(TreeRoot as any, {
+        items,
+        getKey: (n: Node) => n.id,
+        multiple: true,
+        modelValue: selected,
+        expanded: all.map(n => n.id),
+        ...props,
+      }, {
+        default: ({ flattenItems }: any) => flattenItems.map((item: any) => h(TreeItem as any, { key: item._id, ...item.bind }, {
+          default: ({ isSelected, isIndeterminate }: any) => {
+            states[item._id] = { selected: isSelected, indeterminate: isIndeterminate }
+            return item._id
+          },
+        })),
+      }),
+    }))
+    return states
+  }
+
+  it.each(['bubbleSelect', 'propagateSelect'])('matches a direct search of the model value with %s', (mode) => {
+    const states = render({ [mode]: true })
+    expect(Object.keys(states)).toHaveLength(all.length)
+    for (const node of all) {
+      const isSelected = selectedIds.includes(node.id)
+      const kids = descendants(node)
+      let indeterminate: boolean | undefined
+      if (kids.length && mode === 'bubbleSelect')
+        indeterminate = kids.some(k => selectedIds.includes(k.id)) && !kids.every(k => selectedIds.includes(k.id))
+      else if (kids.length && isSelected)
+        indeterminate = !kids.every(k => selectedIds.includes(k.id))
+      expect(states[node.id], node.id).toEqual({ selected: isSelected, indeterminate })
+    }
+  })
+})
+
+describe('given a Tree whose items carry their subtree', () => {
+  interface Node { id: string, label?: string, children?: Node[] }
+
+  // Reading `visited` on a grandchild stands for walking the selected item's subtree.
+  function build() {
+    let visits = 0
+    const leaf = (id: string): Node => Object.defineProperty({ id } as Node, 'visited', {
+      enumerable: true,
+      get: () => ++visits,
+    })
+    const items: Node[] = ['a', 'b'].map(id => ({
+      id,
+      label: id,
+      children: [{ id: `${id}-0`, children: [leaf(`${id}-0-0`), leaf(`${id}-0-1`)] }],
+    }))
+    return { items, visits: () => visits }
+  }
+
+  function mountTree(props: Record<string, any>, items: Node[]) {
+    const emitted: any[] = []
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(TreeRoot as any, {
+        items,
+        'getKey': (n: Node) => n.id,
+        'onUpdate:modelValue': (value: any) => emitted.push(value),
+        ...props,
+      }, {
+        default: ({ flattenItems }: any) => flattenItems.map((item: any) => h(TreeItem as any, { key: item._id, ...item.bind }, () => item._id)),
+      }),
+    }), { attachTo: document.body })
+    return { wrapper, emitted }
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it.each([false, true])('should not walk the subtree of the selected item (multiple: %s)', async (multiple) => {
+    const { items, visits } = build()
+    const { wrapper, emitted } = mountTree({ multiple }, items)
+
+    await wrapper.findAll('[role=treeitem]')[0].trigger('click')
+    await nextTick()
+
+    expect(emitted).toHaveLength(1)
+    expect(wrapper.findAll('[role=treeitem]')[0].attributes('aria-selected')).toBe('true')
+    expect(visits()).toBe(0)
+  })
+
+  // The children of a single selected item are not watched, so a change inside them is not a selection change.
+  it('should not watch the children of a single selected item', async () => {
+    const { items } = build()
+    const selected = ref<Node>({ ...items[0] })
+    const { emitted } = mountTree({ modelValue: selected.value }, items)
+
+    selected.value.children!.push({ id: 'a-new' })
+    await nextTick()
+
+    expect(emitted).toHaveLength(0)
+  })
+
+  it('should emit when the parent pushes to or splices the selection in place', async () => {
+    const { items } = build()
+    const selected = ref<Node[]>([])
+    const { wrapper, emitted } = mountTree({ multiple: true, modelValue: selected.value }, items)
+
+    selected.value.push(items[0])
+    await nextTick()
+    expect(emitted).toHaveLength(1)
+    expect(emitted[0].map((n: Node) => n.id)).toEqual(['a'])
+    expect(wrapper.findAll('[role=treeitem]')[0].attributes('aria-selected')).toBe('true')
+
+    selected.value.splice(0, 1, items[1])
+    await nextTick()
+    expect(emitted).toHaveLength(2)
+    expect(emitted[1].map((n: Node) => n.id)).toEqual(['b'])
+  })
+
+  it('should emit when a field of an item in a multiple selection is changed in place', async () => {
+    const { items } = build()
+    const selected = ref<Node[]>([{ ...items[0] }])
+    const { emitted } = mountTree({ multiple: true, modelValue: selected.value }, items)
+
+    selected.value[0].label = 'renamed'
+    await nextTick()
+
+    expect(emitted).toHaveLength(1)
+    expect(emitted[0][0].label).toBe('renamed')
+  })
+
+  it('should emit when a field of the selected item is changed in place', async () => {
+    const { items } = build()
+    const selected = ref<Node>({ ...items[0] })
+    const { emitted } = mountTree({ modelValue: selected.value }, items)
+
+    selected.value.label = 'renamed'
+    await nextTick()
+
+    expect(emitted).toHaveLength(1)
+    expect(emitted[0].label).toBe('renamed')
   })
 })

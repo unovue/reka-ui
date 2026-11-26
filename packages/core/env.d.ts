@@ -8,6 +8,11 @@
 import type { AxeMatchers } from 'vitest-axe/matchers'
 import 'vitest'
 
+declare global {
+  /** Exact package version, injected at build time. */
+  const __REKA_UI_VERSION__: string | undefined
+}
+
 declare module 'vitest' {
   export interface Assertion extends AxeMatchers {}
   export interface AsymmetricMatchersContaining extends AxeMatchers {}
@@ -17,6 +22,7 @@ declare module 'vitest' {
 declare module 'vitest/browser' {
   interface BrowserCommands {
     wheelAt: (x: number, y: number, deltaY: number) => Promise<void>
-    mouseDrag: (fromX: number, fromY: number, toX: number, toY: number, steps?: number) => Promise<void>
+    mouseDrag: (fromX: number, fromY: number, toX: number, toY: number, steps?: number, holdMs?: number) => Promise<void>
+    setReducedMotion: (value: 'reduce' | 'no-preference') => Promise<void>
   }
 }

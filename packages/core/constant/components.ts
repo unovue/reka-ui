@@ -65,6 +65,18 @@ export const components = {
     'CalendarViewTrigger',
   ] as const,
 
+  carousel: [
+    'CarouselRoot',
+    'CarouselViewport',
+    'CarouselContent',
+    'CarouselItem',
+    'CarouselPrevious',
+    'CarouselNext',
+    'CarouselIndicator',
+    'CarouselIndicatorGroup',
+    'CarouselAutoplayToggle',
+  ] as const,
+
   checkbox: [
     'CheckboxGroupRoot',
     'CheckboxRoot',
@@ -217,6 +229,7 @@ export const components = {
 
   drawer: [
     'DrawerRoot',
+    'DrawerProvider',
     'DrawerTrigger',
     'DrawerPortal',
     'DrawerBackdrop',
@@ -400,7 +413,9 @@ export const components = {
   scrollArea: [
     'ScrollAreaRoot',
     'ScrollAreaViewport',
+    'ScrollAreaVirtualizer',
     'ScrollAreaScrollbar',
+    'ScrollAreaScrollbarGlimpse',
     'ScrollAreaThumb',
     'ScrollAreaCorner',
   ] as const,
@@ -427,6 +442,13 @@ export const components = {
 
   separator: [
     'Separator',
+  ] as const,
+
+  sliderArea: [
+    'SliderAreaRoot',
+    'SliderAreaArea',
+    'SliderAreaRegion',
+    'SliderAreaThumb',
   ] as const,
 
   slider: [

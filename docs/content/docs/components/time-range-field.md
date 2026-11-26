@@ -492,6 +492,54 @@ const maxTime = new Temporal.PlainTime(18, 0)
 </template>
 ```
 
+### Ranges That Cross Midnight
+
+By default, a range whose end is earlier than its start is invalid. Set `allow-wrap` to accept a daily window that wraps past midnight, such as an overnight shift.
+
+Wrapping only applies when both values fall on the same calendar day, which is always true for `Time` values. If the values carry a date and the end is on an earlier day than the start, the range stays invalid. `min-value` and `max-value` still bound the start and the end separately, so they cannot describe a window that crosses midnight.
+
+```vue
+<script setup>
+import { Time } from '@internationalized/date'
+import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+// Overnight shift: 22:00 to 06:00 the next morning
+const shift = ref({
+  start: new Time(22, 0),
+  end: new Time(6, 0)
+})
+</script>
+
+<template>
+  <TimeRangeFieldRoot
+    v-slot="{ segments }"
+    v-model="shift"
+    allow-wrap
+    locale="en-GB"
+    class="flex items-center"
+  >
+    <TimeRangeFieldInput
+      v-for="(item, index) in segments.start"
+      :key="`start-${item.part}-${index}`"
+      :part="item.part"
+      type="start"
+    >
+      {{ item.value }}
+    </TimeRangeFieldInput>
+    <span class="mx-2">to</span>
+    <TimeRangeFieldInput
+      v-for="(item, index) in segments.end"
+      :key="`end-${item.part}-${index}`"
+      :part="item.part"
+      type="end"
+    >
+      {{ item.value }}
+    </TimeRangeFieldInput>
+  </TimeRangeFieldRoot>
+</template>
+```
+
 ### With Step Increment
 
 ```vue

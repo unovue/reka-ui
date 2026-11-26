@@ -223,11 +223,11 @@ const delimiter = /[ ,;\t\n\r]+/
     },
     {
       keys: ['Home'],
-      description: '<span> Set the first tag active</span>',
+      description: '<span> When a tag is active, set the first tag active. Otherwise moves the caret in the input.</span>',
     },
     {
       keys: ['End'],
-      description: '<span> Set the last tag active</span>',
+      description: '<span> When a tag is active, set the last tag active. Otherwise moves the caret in the input.</span>',
     },
   ]"
 />

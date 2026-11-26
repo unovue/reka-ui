@@ -1,0 +1,14 @@
+reka-ui
+Copyright (c) UnoVue Contributors. Licensed under the MIT License (see LICENSE).
+
+This package includes material from third-party projects:
+
+vercel-labs/ui (https://github.com/vercel-labs/ui)
+Licensed under the Apache License, Version 2.0
+(http://www.apache.org/licenses/LICENSE-2.0).
+  - src/agent/tools.ts: the agent tool names, descriptions and input schemas
+    (`agentTools`), modified from packages/core/src/page/agent/agent.ts and
+    kept word for word so agents written for the UI SDK agent bridge work with
+    reka-ui unchanged.
+The agent bridge's wire format (snapshot, query and act) follows the same
+project's design; the rest of src/agent is an independent implementation.

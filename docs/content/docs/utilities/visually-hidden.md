@@ -55,27 +55,7 @@ import { VisuallyHidden } from 'reka-ui'
 
 Anything you put inside this component will be hidden from the screen but will be announced by screen readers.
 
-<PropsTable
-  :data="[
-    {
-      name: 'as',
-      type: 'string | Component',
-      default: 'span',
-      description: '<p>The element or component this component should render as. Can be overwrite by <Code>asChild</Code></p>'
-    },
-    {
-      name: 'asChild',
-      required: false,
-      type: 'boolean',
-      default: 'false',
-      description:  `<p>Change the default rendered element for the one passed as a child,
-          merging their props and behavior.
-          <br />
-          <br />
-          Read our <a href=&quot;../guides/composition&quot;>Composition</a> guide for more details.</p>`
-    },
-  ]"
-/>
+<!-- @include: @/meta/VisuallyHidden.md -->
 
 ## Accessibility
 

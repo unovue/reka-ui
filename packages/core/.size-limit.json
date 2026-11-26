@@ -32,7 +32,7 @@
   {
     "path": "dist/index.js",
     "import": "{ DateFieldRoot, DateFieldInput }",
-    "limit": "19 KB",
+    "limit": "21 KB",
     "name": "DateField"
   },
   {
@@ -73,8 +73,26 @@
   },
   {
     "path": "dist/index.js",
+    "import": "{ CarouselRoot, CarouselViewport, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, CarouselIndicatorGroup, CarouselIndicator, CarouselAutoplayToggle }",
+    "limit": "15 KB",
+    "name": "Carousel"
+  },
+  {
+    "path": "dist/index.js",
     "import": "*",
     "limit": "202.3 KB",
     "name": "Full library"
+  },
+  {
+    "path": "dist/vapor/index.js",
+    "import": "{ DialogRoot, DialogContent, DialogOverlay, DialogTrigger }",
+    "limit": "15 KB",
+    "name": "Vapor: Dialog (reka-ui/vapor)"
+  },
+  {
+    "path": "dist/vapor/index.js",
+    "import": "*",
+    "limit": "119 KB",
+    "name": "Vapor: full entry (reka-ui/vapor)"
   }
 ]

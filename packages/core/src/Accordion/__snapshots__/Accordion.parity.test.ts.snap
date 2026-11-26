@@ -1,0 +1,17 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`accordion vs v2 > consumer listeners on content and item 1`] = `
+[
+  "content animationstart",
+  "content animationend",
+  "item animationend",
+  "content animationend",
+  "item animationend",
+  "item update:open false",
+  "state closed",
+  "content beforematch",
+  "item update:open true",
+  "content-found",
+  "state open",
+]
+`;

@@ -158,3 +158,56 @@ The component that displays the color swatch within an item.
 The component that indicates the selected color swatch within an item.
 
 <!-- @include: @/meta/ColorSwatchPickerItemIndicator.md -->
+
+## Accessibility
+
+Adheres to the [Listbox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/). The root renders with `role="listbox"` and each item with `role="option"`, labelled with the name of its color. These names are approximate, so similar shades can end up with the same one; pass your own `aria-label` to the items when the palette needs more precise names. The picker itself has no built-in label, so give `ColorSwatchPickerRoot` an accessible name with `aria-label` or `aria-labelledby`.
+
+Focus is managed with a roving tabindex, so the picker is a single tab stop. Moving focus with the arrow keys does not change the selection; press <kbd>Space</kbd> or <kbd>Enter</kbd> to select. The one exception is `multiple` combined with `selectionBehavior="replace"`, where holding <kbd>Shift</kbd> while moving focus extends the selection from the item you last selected, as long as the range stays within `max` when one is set.
+
+### Keyboard Interactions
+
+<KeyboardTable
+  :data="[
+    {
+      keys: ['Tab'],
+      description: 'Moves focus into or out of the picker.',
+    },
+    {
+      keys: ['ArrowRight'],
+      description: '<span>Moves focus to the next item when <code>orientation</code> is <code>horizontal</code> (default). Reversed when <code>dir</code> is <code>rtl</code>.</span>',
+    },
+    {
+      keys: ['ArrowLeft'],
+      description: '<span>Moves focus to the previous item when <code>orientation</code> is <code>horizontal</code> (default). Reversed when <code>dir</code> is <code>rtl</code>.</span>',
+    },
+    {
+      keys: ['ArrowDown'],
+      description: '<span>Moves focus to the next item when <code>orientation</code> is <code>vertical</code>.</span>',
+    },
+    {
+      keys: ['ArrowUp'],
+      description: '<span>Moves focus to the previous item when <code>orientation</code> is <code>vertical</code>.</span>',
+    },
+    {
+      keys: ['Home'],
+      description: 'Moves focus to the first item.',
+    },
+    {
+      keys: ['End'],
+      description: 'Moves focus to the last item.',
+    },
+    {
+      keys: ['Space'],
+      description: '<span>Selects the focused item. With the default <code>selectionBehavior</code> of <code>toggle</code>, deselects it when it is already selected.</span>',
+    },
+    {
+      keys: ['Enter'],
+      description: '<span>Selects the focused item. With the default <code>selectionBehavior</code> of <code>toggle</code>, deselects it when it is already selected.</span>',
+    },
+    {
+      keys: ['Ctrl/Cmd + A'],
+      description: '<span>Selects all items when <code>multiple</code> is set, unless a <code>max</code> is set and would be exceeded.</span>',
+    },
+  ]"
+/>

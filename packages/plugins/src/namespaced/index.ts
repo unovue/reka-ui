@@ -116,6 +116,28 @@ export const Calendar = {
   ViewTrigger: typeof CalendarViewTrigger
 }
 
+export const Carousel = {
+  Root: CarouselRoot,
+  Viewport: CarouselViewport,
+  Content: CarouselContent,
+  Item: CarouselItem,
+  Previous: CarouselPrevious,
+  Next: CarouselNext,
+  Indicator: CarouselIndicator,
+  IndicatorGroup: CarouselIndicatorGroup,
+  AutoplayToggle: CarouselAutoplayToggle,
+} as {
+  Root: typeof CarouselRoot
+  Viewport: typeof CarouselViewport
+  Content: typeof CarouselContent
+  Item: typeof CarouselItem
+  Previous: typeof CarouselPrevious
+  Next: typeof CarouselNext
+  Indicator: typeof CarouselIndicator
+  IndicatorGroup: typeof CarouselIndicatorGroup
+  AutoplayToggle: typeof CarouselAutoplayToggle
+}
+
 export const Checkbox = {
   GroupRoot: CheckboxGroupRoot,
   Root: CheckboxRoot,
@@ -386,6 +408,7 @@ export const Dialog = {
 
 export const Drawer = {
   Root: DrawerRoot,
+  Provider: DrawerProvider,
   Trigger: DrawerTrigger,
   Portal: DrawerPortal,
   Backdrop: DrawerBackdrop,
@@ -402,6 +425,7 @@ export const Drawer = {
   Provider: DrawerProvider,
 } as {
   Root: typeof DrawerRoot
+  Provider: typeof DrawerProvider
   Trigger: typeof DrawerTrigger
   Portal: typeof DrawerPortal
   Backdrop: typeof DrawerBackdrop
@@ -713,13 +737,17 @@ export const Rating = {
 export const ScrollArea = {
   Root: ScrollAreaRoot,
   Viewport: ScrollAreaViewport,
+  Virtualizer: ScrollAreaVirtualizer,
   Scrollbar: ScrollAreaScrollbar,
+  ScrollbarGlimpse: ScrollAreaScrollbarGlimpse,
   Thumb: ScrollAreaThumb,
   Corner: ScrollAreaCorner,
 } as {
   Root: typeof ScrollAreaRoot
   Viewport: typeof ScrollAreaViewport
+  Virtualizer: typeof ScrollAreaVirtualizer
   Scrollbar: typeof ScrollAreaScrollbar
+  ScrollbarGlimpse: typeof ScrollAreaScrollbarGlimpse
   Thumb: typeof ScrollAreaThumb
   Corner: typeof ScrollAreaCorner
 }
@@ -763,6 +791,18 @@ export const Select = {
 }
 
 export { Separator }
+
+export const SliderArea = {
+  Root: SliderAreaRoot,
+  Area: SliderAreaArea,
+  Region: SliderAreaRegion,
+  Thumb: SliderAreaThumb,
+} as {
+  Root: typeof SliderAreaRoot
+  Area: typeof SliderAreaArea
+  Region: typeof SliderAreaRegion
+  Thumb: typeof SliderAreaThumb
+}
 
 export const Slider = {
   Root: SliderRoot,

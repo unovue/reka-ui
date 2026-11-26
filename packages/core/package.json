@@ -2,7 +2,7 @@
   "name": "reka-ui",
   "type": "module",
   "version": "3.0.0-alpha.0",
-  "description": "Vue port for Radix UI Primitives.",
+  "description": "Craft accessible web apps with Vue. Unstyled, accessible Vue components and primitives.",
   "author": "UnoVue Contributors (https://github.com/unovue)",
   "license": "MIT",
   "funding": [
@@ -53,6 +53,9 @@
       "types": "./dist/elements/react.d.ts"
     },
     "./custom-elements.json": "./dist/custom-elements.json",
+    "./agent": {
+      "import": "./dist/agent.js"
+    },
     "./namespaced": {
       "import": "./dist/namespaced/index.mjs"
     },
@@ -61,6 +64,11 @@
     },
     "./resolver": {
       "import": "./dist/resolver/index.mjs"
+    },
+    "./vapor": {
+      "types": "./dist/vapor/index.d.ts",
+      "node": "./dist/vapor/ssr.cjs",
+      "import": "./dist/vapor/index.js"
     },
     "./accordion": {
       "import": {
@@ -96,6 +104,12 @@
       "import": {
         "types": "./dist/calendar.d.ts",
         "default": "./dist/calendar.js"
+      }
+    },
+    "./carousel": {
+      "import": {
+        "types": "./dist/carousel.d.ts",
+        "default": "./dist/carousel.js"
       }
     },
     "./checkbox": {
@@ -344,6 +358,12 @@
         "default": "./dist/slider.js"
       }
     },
+    "./slider-area": {
+      "import": {
+        "types": "./dist/slider-area.d.ts",
+        "default": "./dist/slider-area.js"
+      }
+    },
     "./splitter": {
       "import": {
         "types": "./dist/splitter.d.ts",
@@ -465,6 +485,9 @@
       "elements/react": [
         "./dist/elements/react.d.ts"
       ],
+      "agent": [
+        "./dist/agent.d.ts"
+      ],
       "namespaced": [
         "./dist/namespaced/index.d.mts"
       ],
@@ -473,6 +496,9 @@
       ],
       "resolver": [
         "./dist/resolver/index.d.mts"
+      ],
+      "vapor": [
+        "./dist/vapor/index.d.ts"
       ],
       "accordion": [
         "./dist/accordion.d.ts"
@@ -491,6 +517,9 @@
       ],
       "calendar": [
         "./dist/calendar.d.ts"
+      ],
+      "carousel": [
+        "./dist/carousel.d.ts"
       ],
       "checkbox": [
         "./dist/checkbox.d.ts"
@@ -615,6 +644,9 @@
       "slider": [
         "./dist/slider.d.ts"
       ],
+      "slider-area": [
+        "./dist/slider-area.d.ts"
+      ],
       "splitter": [
         "./dist/splitter.d.ts"
       ],
@@ -668,22 +700,27 @@
   "files": [
     "src",
     "dist",
+    "NOTICE",
     "!src/**/*.story.vue",
     "!src/**/*.test.*",
+    "!src/**/*.test-d.ts",
+    "!src/**/__test__",
+    "!src/test",
     "!src/**/_*.vue",
     "!src/**/__snapshots__",
     "!src/**/stories",
-    "!src/**/story"
+    "!src/**/story",
+    "!src/agent/test"
   ],
   "engines": {
     "node": ">=22"
   },
   "scripts": {
     "build": "pnpm type-check && pnpm build-only",
-    "build-only": "tsdown && tsx scripts/postbuild.ts && tsx scripts/elements-manifest.ts",
+    "build-only": "tsdown && vite build -c vapor/vite.config.mjs && tsx scripts/postbuild.ts && tsx scripts/elements-manifest.ts",
     "watch": "tsdown --watch",
     "gen:exports": "tsx scripts/sync-exports.ts",
-    "type-check": "vue-tsc -p tsconfig.check.json --noEmit",
+    "type-check": "vue-tsc -p tsconfig.check.json --noEmit && vue-tsc -p tsconfig.vapor.json --noEmit",
     "test:types": "vue-tsc -p test-types/strict-templates/tsconfig.json",
     "test:run": "vitest run",
     "test": "vitest",
@@ -693,7 +730,12 @@
     "test-update": "vitest -u",
     "bench": "vitest bench --run",
     "pub:release": "npm publish --access public --provenance --tag \"$(node scripts/npm-dist-tag.mjs)\"",
-    "size": "size-limit"
+    "size": "size-limit",
+    "package:check": "node package-check/run.mjs",
+    "test:vapor": "vitest run --config vitest.vapor.config.ts",
+    "test:vapor:node": "node --test vapor/tests/plugins.node.test.mjs",
+    "test:vapor:dist": "node vapor/tests/dist-node.mjs && vitest run --config vitest.vapor.config.ts --mode dist",
+    "vapor:expectations": "vite build -c vapor/vite.config.mjs --mode update-expectations"
   },
   "peerDependencies": {
     "vue": ">= 3.5.0"
@@ -713,21 +755,21 @@
     "@size-limit/esbuild": "^12.0.1",
     "@size-limit/file": "^12.0.1",
     "@testing-library/dom": "^10.4.2",
-    "@testing-library/jest-dom": "^7.0.1",
-    "@testing-library/user-event": "^14.6.7",
+    "@testing-library/jest-dom": "^8.0.0",
+    "@testing-library/user-event": "^14.6.13",
     "@testing-library/vue": "^8.1.0",
     "@tsconfig/node24": "^24.0.0",
     "@types/jsdom": "^30.0.0",
     "@types/node": "^26.6.6",
     "@types/react": "~19.1.17",
     "@types/react-dom": "~19.1.11",
-    "@vitejs/plugin-vue": "^6.0.10",
-    "@vitest/browser-playwright": "^5.0.3",
-    "@vitest/coverage-istanbul": "^5.0.3",
-    "@vue/server-renderer": "^3.5.44",
-    "@vue/test-utils": "^2.5.1",
+    "@vitejs/plugin-vue": "^6.0.11",
+    "@vitest/browser-playwright": "^5.1.1",
+    "@vitest/coverage-istanbul": "^5.1.1",
+    "@vue/server-renderer": "^3.5.46",
+    "@vue/test-utils": "^2.6.0",
     "@vue/tsconfig": "^0.9.1",
-    "jsdom": "^30.1.1",
+    "jsdom": "^31.0.1",
     "playwright": "^1.63.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -738,12 +780,13 @@
     "tsdown": "^0.12.9",
     "typescript": "6.0.3",
     "typescript-5": "npm:typescript@5.9.3",
-    "vite": "^8.3.5",
-    "vitest": "^5.0.3",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1",
     "vitest-axe": "0.1.0",
     "vitest-canvas-mock": "^1.2.0",
-    "vue": "3.5.44",
+    "vue": "3.5.46",
     "vue-component-type-helpers": "^3.3.11",
-    "vue-tsc": "3.3.11"
+    "vue-tsc": "3.3.14",
+    "vue-vapor": "npm:vue@3.6.0-rc.16"
   }
 }

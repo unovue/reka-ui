@@ -24,9 +24,11 @@ export const wheelAt: BrowserCommand<[x: number, y: number, deltaY: number]> = a
  * viewport: pressed on the first point and released on the second, so
  * `mousedown` and `mouseup` land on different elements and no `click` fires.
  * `userEvent` only offers whole clicks. `steps` splits the move into that many
- * `mousemove`s, for gestures that start after a few pixels (a toast swipe).
+ * `mousemove`s, for gestures that start after a few pixels (a toast swipe) or
+ * read their speed (a carousel drag). `holdMs` waits before releasing, for a
+ * release without speed.
  */
-export const mouseDrag: BrowserCommand<[fromX: number, fromY: number, toX: number, toY: number, steps?: number]> = async (context, fromX, fromY, toX, toY, steps = 1) => {
+export const mouseDrag: BrowserCommand<[fromX: number, fromY: number, toX: number, toY: number, steps?: number, holdMs?: number]> = async (context, fromX, fromY, toX, toY, steps = 1, holdMs = 0) => {
   if (context.provider.name !== 'playwright')
     throw new Error(`mouseDrag needs the playwright provider, not ${context.provider.name}`)
   const { page, iframe } = context
@@ -36,5 +38,14 @@ export const mouseDrag: BrowserCommand<[fromX: number, fromY: number, toX: numbe
   await page.mouse.move(box.x + fromX, box.y + fromY)
   await page.mouse.down()
   await page.mouse.move(box.x + toX, box.y + toY, { steps })
+  if (holdMs)
+    await page.waitForTimeout(holdMs)
   await page.mouse.up()
+}
+
+/** Emulates `prefers-reduced-motion` for the test page. */
+export const setReducedMotion: BrowserCommand<[value: 'reduce' | 'no-preference']> = async (context, value) => {
+  if (context.provider.name !== 'playwright')
+    throw new Error(`setReducedMotion needs the playwright provider, not ${context.provider.name}`)
+  await context.page.emulateMedia({ reducedMotion: value })
 }

@@ -167,7 +167,7 @@ rootContext.virtualKeydownHook.on((event) => {
     if (parentItem)
       scrollToIndexAndFocus(parentItem.index)
   }
-  else if (!intent && !isMetaKey) {
+  else if (!intent && !isMetaKey && event.key.length === 1) {
     search.value += event.key
     const currentIndex = Number(getActiveElement()?.getAttribute('data-index'))
     const currentMatch = optionsWithMetadata.value[currentIndex].textContent

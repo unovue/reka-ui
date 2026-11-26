@@ -1,3 +1,5 @@
+import type { SelectEvent } from './SelectItem.vue'
+
 export {
   default as SelectArrow,
   type SelectArrowProps,
@@ -22,8 +24,8 @@ export {
   type SelectItemContext,
   type SelectItemEmits,
   type SelectItemProps,
-  type SelectEvent as SelectItemSelectEvent,
 } from './SelectItem.vue'
+export type SelectItemSelectEvent<T> = SelectEvent<T>
 export {
   default as SelectItemIndicator,
   type SelectItemIndicatorProps,

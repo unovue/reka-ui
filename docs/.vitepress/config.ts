@@ -138,6 +138,10 @@ export default defineConfig({
             link: '/docs/guides/shadow-dom',
           },
           {
+            text: `Vapor Mode ${BadgeHTML('Experimental')}`,
+            link: '/docs/guides/vapor',
+          },
+          {
             text: `Migration ${BadgeHTML('New')}`,
             link: '/docs/guides/migration',
           },
@@ -148,6 +152,10 @@ export default defineConfig({
           {
             text: `Migrate with an AI agent ${BadgeHTML('New')}`,
             link: '/docs/guides/migration-v3-agent',
+          },
+          {
+            text: `Agents & WebMCP ${BadgeHTML('New')}`,
+            link: '/docs/guides/agents',
           },
 
           { text: `llms.txt ${BadgeHTML('New')}`, link: '/llms.txt' },
@@ -173,6 +181,7 @@ export default defineConfig({
               { text: 'Radio Group', link: '/docs/components/radio-group' },
               { text: `Rating ${BadgeHTML('Alpha', true)}`, link: '/docs/components/rating' },
               { text: 'Select', link: '/docs/components/select' },
+              { text: 'Slider Area', link: '/docs/components/slider-area' },
               { text: 'Slider', link: '/docs/components/slider' },
               { text: 'Switch', link: '/docs/components/switch' },
               { text: `Tag Group ${BadgeHTML('Alpha', true)}`, link: '/docs/components/tag-group' },
@@ -211,6 +220,7 @@ export default defineConfig({
               { text: 'Alert Dialog', link: '/docs/components/alert-dialog' },
               { text: 'Aspect Ratio', link: '/docs/components/aspect-ratio' },
               { text: 'Avatar', link: '/docs/components/avatar' },
+              { text: `Carousel ${BadgeHTML('Alpha', true)}`, link: '/docs/components/carousel' },
               { text: 'Collapsible', link: '/docs/components/collapsible' },
               { text: 'Context Menu', link: '/docs/components/context-menu' },
               { text: 'Dialog', link: '/docs/components/dialog' },

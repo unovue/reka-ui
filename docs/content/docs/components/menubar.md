@@ -816,6 +816,31 @@ import { MenubarContent, MenubarMenu, MenubarPortal, MenubarRoot, MenubarTrigger
 }
 ```
 
+### Keep the content mounted when closed
+
+By default the content is removed when the menu closes. Use `:unmount-on-hide="false"` on `MenubarRoot` to keep the content of every menu and its submenus mounted and only hide it, for example to preserve the state of the elements inside them between openings.
+
+While closed, the hidden content does not act as an open menu: it does not take focus, take part in keyboard navigation or typeahead, or react to Escape and outside clicks. Arrow keys still move between the menus, and focus still returns to the trigger when the menubar closes.
+
+```vue line=6
+<script setup>
+import { MenubarContent, MenubarMenu, MenubarPortal, MenubarRoot, MenubarTrigger } from 'reka-ui'
+</script>
+
+<template>
+  <MenubarRoot :unmount-on-hide="false">
+    <MenubarMenu>
+      <MenubarTrigger>File</MenubarTrigger>
+      <MenubarPortal>
+        <MenubarContent>
+          …
+        </MenubarContent>
+      </MenubarPortal>
+    </MenubarMenu>
+  </MenubarRoot>
+</template>
+```
+
 ## Accessibility
 
 Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubutton) and uses [roving tabindex](https://www.w3.org/WAI/ARIA/apg/patterns/kbd_roving_tabindex) to manage focus movement among menu items.
