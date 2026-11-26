@@ -1,7 +1,8 @@
 import type { VNodeChild } from 'vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { createSSRApp, defineComponent, h, nextTick } from 'vue'
+import { renderToString } from 'vue/server-renderer'
 import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger } from '@/Accordion'
 import { AspectRatio } from '@/AspectRatio'
 import { AvatarFallback, AvatarImage, AvatarRoot } from '@/Avatar'
@@ -154,20 +155,24 @@ describe('one component per part', () => {
     expect(list.attributes('role')).toBe('tablist')
   })
 
-  it('a checkbox in a roving group is a roving item without a wrapper', () => {
-    const wrapper = mount(defineComponent({
+  it('a checkbox in a roving group is a roving item without a wrapper', async () => {
+    const App = defineComponent({
       setup: () => () => h(CheckboxGroupRoot, { defaultValue: ['a'] }, () => [
         h(CheckboxRoot, { value: 'a' }),
         h(CheckboxRoot, { value: 'b', disabled: true }),
       ]),
-    }))
+    })
+    const wrapper = mount(App)
     const names = componentNames(wrapper.vm.$)
     expect(names).not.toContain('RovingFocusItem')
     const [a, b] = wrapper.findAll('button')
-    // The roving bindings land on the checkbox's own button (the first focusable item is the tab
-    // stop before the group has one, #3362).
-    expect(a.attributes('tabindex')).toBe('0')
+    // The roving bindings land on the checkbox's own button.
+    expect(a.attributes('tabindex')).toBe('-1')
     expect(a.attributes('data-reka-collection-item')).toBe('')
     expect(b.attributes('data-disabled')).toBe('')
+    // In server-rendered HTML, before the group has a tab stop, the first focusable item is
+    // the stop (#3362). A client-side mount sets the group's own stop as it mounts.
+    const html = await renderToString(createSSRApp(App))
+    expect(html).toMatch(/<button[^>]*aria-checked="true"[^>]*tabindex="0"/)
   })
 })
