@@ -164,8 +164,7 @@ describe('measuring the content size', () => {
     vi.restoreAllMocks()
   })
 
-  // TODO(v3-port): #3299 v3 measures panels mounted closed
-  it.skip.each([true, false])('does not measure panels mounted closed (unmountOnHide: %s)', async (unmountOnHide) => {
+  it.each([true, false])('does not measure panels mounted closed (unmountOnHide: %s)', async (unmountOnHide) => {
     const measured = contentRects()
     wrapper = mountList(20, { unmountOnHide })
     await settle()
@@ -173,8 +172,7 @@ describe('measuring the content size', () => {
     expect(measured()).toBe(0)
   })
 
-  // TODO(v3-port): #3299 v3 measures panels mounted closed
-  it.skip.each([true, false])('measures a panel mounted closed when it opens (unmountOnHide: %s)', async (unmountOnHide) => {
+  it.each([true, false])('measures a panel mounted closed when it opens (unmountOnHide: %s)', async (unmountOnHide) => {
     const measured = contentRects()
     wrapper = mountList(3, { unmountOnHide })
     await settle()

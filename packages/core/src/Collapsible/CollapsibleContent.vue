@@ -91,6 +91,9 @@ const surface = getCollapsibleContentSurface(rootContext, {
 const isOpen = computed(() => rootContext.open.value)
 const isMountAnimationPrevented = ref(isOpen.value)
 const currentStyle = ref<Record<string, string>>()
+// A panel mounted closed is hidden, so measuring it would only force a layout for a size the
+// animations never read: the next run, once it is shown, measures it before it animates.
+let hasBeenPresent = false
 
 /**
  * A size transition is still running: the toggle interrupted an open or a
@@ -123,10 +126,16 @@ watch(
       node.style.setProperty(WIDTH_VAR, `${node.scrollWidth}px`)
       return
     }
+    // Taken on mount, before `blockReplayedAnimation` can write `none` over the author's inline
+    // style (a closed-state animation can end before the first open). Reading it forces no layout.
     currentStyle.value = currentStyle.value || {
       transitionDuration: node.style.transitionDuration,
       animationName: node.style.animationName,
     }
+    // A force-mounted panel is shown while closed, so it is measured like an open one.
+    if (!hasBeenPresent && !props.forceMount && !presentRef.value?.present)
+      return
+    hasBeenPresent = true
     // block any animations/transitions so the element renders at its full dimensions
     node.style.transitionDuration = '0s'
     node.style.animationName = 'none'
