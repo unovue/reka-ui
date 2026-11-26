@@ -12,6 +12,8 @@ export interface ToastProviderContext {
   disableSwipe: Readonly<Ref<boolean>>
   swipeDirection: Readonly<Ref<SwipeDirection>>
   swipeThreshold: Readonly<Ref<number>>
+  disableHoverPause: Readonly<Ref<boolean>>
+  disableWindowBlurPause: Readonly<Ref<boolean>>
   toastCount: Ref<number>
   viewport: Ref<HTMLElement | undefined>
   onViewportChange: (viewport: HTMLElement) => void
@@ -74,6 +76,21 @@ export interface ToastProviderProps {
    */
   swipeThreshold?: number
   /**
+   * When `true`, toasts keep counting down while the pointer is over the viewport, so a toast
+   * can close while a pointer user is still reading it. Best kept to short status toasts
+   * without actions. Keyboard focus inside the viewport and a press or swipe on a toast
+   * always pause the toasts.
+   * @defaultValue false
+   */
+  disableHoverPause?: boolean
+  /**
+   * When `true`, toasts keep counting down while the window is not focused, so a toast can
+   * close before the user comes back to the page. Keyboard focus inside the viewport still
+   * pauses the toasts until the window is focused again.
+   * @defaultValue false
+   */
+  disableWindowBlurPause?: boolean
+  /**
    * The maximum number of toasts shown at once. Older toasts beyond the limit get
    * `data-limited` and `inert` rather than being removed, so they can be hidden or animated.
    * No limit is applied when unset.
@@ -118,6 +135,8 @@ const { context } = useToastProvider({
   disableSwipe: () => props.disableSwipe,
   swipeDirection: () => props.swipeDirection,
   swipeThreshold: () => props.swipeThreshold,
+  disableHoverPause: () => props.disableHoverPause,
+  disableWindowBlurPause: () => props.disableWindowBlurPause,
   limit: () => props.limit,
   toastManager: () => props.toastManager,
 })
