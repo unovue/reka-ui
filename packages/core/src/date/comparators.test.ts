@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { areAllDaysBetweenValid } from './comparators'
+import { areAllDaysBetweenValid, getMonthsBetween } from './comparators'
 import { isSameDateValue, toCalendar } from './temporal'
 
 describe('isSameDateValue', () => {
@@ -58,5 +58,31 @@ describe('areAllDaysBetweenValid', () => {
 
   it('lets highlightable days through', () => {
     expect(areAllDaysBetweenValid(d20, d22, (d: any) => d.day === 21, undefined, (d: any) => d.day === 21)).toBe(true)
+  })
+})
+
+describe('getMonthsBetween', () => {
+  const hebrew = (year: number, month: number) => Temporal.PlainDate.from({ calendar: 'hebrew', year, month, day: 1 })
+  const japanese = (era: string, eraYear: number, month: number) => Temporal.PlainDate.from({ calendar: 'japanese', era, eraYear, month, day: 1 })
+
+  it('counts the months inclusively across Gregorian years', () => {
+    expect(getMonthsBetween(new Temporal.PlainDate(2024, 11, 1), new Temporal.PlainDate(2025, 2, 1))).toBe(4)
+    expect(getMonthsBetween(new Temporal.PlainDate(2024, 3, 1), new Temporal.PlainDate(2024, 3, 31))).toBe(1)
+    expect(getMonthsBetween(new Temporal.PlainDate(2025, 2, 1), new Temporal.PlainDate(2024, 11, 1))).toBe(-2)
+  })
+
+  it('counts the thirteenth month of a Hebrew leap year', () => {
+    const start = hebrew(5784, 12)
+    const end = hebrew(5785, 1)
+    expect(getMonthsBetween(start, end)).toBe(3)
+    expect(getMonthsBetween(end, start)).toBe(-1)
+  })
+
+  it('counts across the first year of a Japanese era', () => {
+    const start = japanese('reiwa', 1, 12)
+    const end = japanese('reiwa', 2, 1)
+    expect(getMonthsBetween(start, end)).toBe(2)
+    expect(getMonthsBetween(end, start)).toBe(0)
+    expect(getMonthsBetween(japanese('heisei', 31, 4), japanese('reiwa', 1, 5))).toBe(2)
   })
 })

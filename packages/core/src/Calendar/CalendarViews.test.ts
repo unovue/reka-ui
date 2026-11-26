@@ -195,6 +195,42 @@ describe('calendar — granularity="month" (replaces MonthPicker)', () => {
     expect(onKeydown).not.toHaveBeenCalled()
   })
 
+  it('focuses and selects the thirteenth month of a Hebrew leap year', async () => {
+    const date = Temporal.PlainDate.from({ calendar: 'hebrew', year: 5784, month: 12, day: 1 })
+    const onUpdate = vi.fn()
+    const { user, calendar } = setupUnit({ granularity: 'month', defaultPlaceholder: date, locale: 'en-US-u-ca-hebrew' }, { 'onUpdate:modelValue': onUpdate })
+    const cells = calendar.querySelectorAll<HTMLElement>('[data-reka-calendar-cell-trigger]')
+    expect(cells).toHaveLength(13)
+
+    cells[11].focus()
+    await user.keyboard(kbd.ARROW_RIGHT)
+    expect(cells[12]).toHaveFocus()
+    await user.keyboard(kbd.ENTER)
+    expect(cells[12]).toHaveAttribute('data-selected')
+    expect((onUpdate.mock.calls[0][0] as Temporal.PlainDate).month).toBe(13)
+  })
+
+  it.each([
+    { navigation: 'default', prevPage: undefined },
+    { navigation: 'custom', prevPage: (date: DateValue) => date.subtract({ years: 1 }) },
+  ])('can return to a year whose last month contains minValue with $navigation navigation', async ({ prevPage }) => {
+    const hebrew = (year: number, month: number, day: number) => Temporal.PlainDate.from({ calendar: 'hebrew', year, month, day })
+    const { user, calendar, getByTestId } = setupUnit({
+      granularity: 'month',
+      defaultPlaceholder: hebrew(5785, 1, 1),
+      minValue: hebrew(5784, 13, 15),
+      prevPage,
+    })
+    const cells = () => calendar.querySelectorAll<HTMLElement>('[data-reka-calendar-cell-trigger]')
+    expect(cells()).toHaveLength(12)
+    const prev = getByTestId('prev-button')
+    expect(prev).not.toHaveAttribute('data-disabled')
+    await user.click(prev)
+    expect(cells()).toHaveLength(13)
+    expect(cells()[12]).not.toHaveAttribute('data-disabled')
+    expect(prev).toHaveAttribute('data-disabled')
+  })
+
   it('passes the unit to matchers', () => {
     const units = new Set<CalendarUnit | undefined>()
     setupUnit({ granularity: 'month', defaultPlaceholder: sep5, isDateDisabled: (_d, unit) => {
