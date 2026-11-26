@@ -1015,7 +1015,6 @@
       "sfcs": 1
     },
     "Menu/MenuItemImpl.vue": {
-      "chains": 1,
       "exposeElement": 1,
       "sfcs": 1,
       "slotProps": 1
@@ -2275,7 +2274,7 @@
   },
   "totals": {
     "asyncComponents": 3,
-    "chains": 62,
+    "chains": 61,
     "exposeElement": 476,
     "getCurrentInstance": 5,
     "patches": 11,
