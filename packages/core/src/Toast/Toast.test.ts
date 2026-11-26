@@ -5,6 +5,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
+import { ConfigProvider } from '@/ConfigProvider'
 import { DialogContent, DialogRoot, DialogTitle } from '@/Dialog'
 import { PopoverContent, PopoverRoot, PopoverTrigger } from '@/Popover'
 import { ToastAction, ToastClose, ToastDescription, ToastProvider, ToastRoot, ToastTitle, ToastViewport } from '.'
@@ -1126,5 +1127,53 @@ describe('given a ToastViewport hotkey', () => {
 
     await fireEvent.keyDown(window, { key: '†', code: 'KeyT', altKey: true })
     expect(document.activeElement).toBe(viewport)
+  })
+})
+
+// The label defaults are messages of `ConfigProvider` (#3418).
+describe('given translations on ConfigProvider', () => {
+  function mountTranslated(translations: Record<string, unknown> | undefined, labels: { provider?: string, viewport?: string } = {}) {
+    document.body.innerHTML = ''
+    return mount(defineComponent({
+      render: () => h(ConfigProvider, { translations }, () => h(ToastProvider, { label: labels.provider }, () => [
+        h(ToastRoot, { open: true }, () => h(ToastTitle, () => 'Saved')),
+        h(ToastViewport, { label: labels.viewport }),
+      ])),
+    }), { attachTo: document.body })
+  }
+
+  async function read() {
+    await nextTick()
+    await nextTick()
+    // The toast announces its label after a short delay.
+    await new Promise(resolve => setTimeout(resolve, 60))
+    return {
+      region: document.querySelector('[role="region"]')?.getAttribute('aria-label'),
+      alert: document.querySelector('[role="alert"]')?.textContent?.replace(/\s+/g, ' ').trim(),
+    }
+  }
+
+  let wrapper: VueWrapper | undefined
+  afterEach(() => {
+    wrapper?.unmount()
+    wrapper = undefined
+  })
+
+  it('should keep the English labels when nothing is configured', async () => {
+    wrapper = mountTranslated(undefined)
+    expect(await read()).toEqual({ region: 'Notifications (F8)', alert: 'Notification Saved' })
+  })
+
+  it('should announce the messages it is given', async () => {
+    wrapper = mountTranslated({ toastLabel: 'Hinweis', toastViewportLabel: 'Hinweise ({hotkey})' })
+    expect(await read()).toEqual({ region: 'Hinweise (F8)', alert: 'Hinweis Saved' })
+  })
+
+  it('should let a consumer label win over the messages', async () => {
+    wrapper = mountTranslated(
+      { toastLabel: 'Hinweis', toastViewportLabel: 'Hinweise ({hotkey})' },
+      { provider: 'Alert', viewport: 'Alerts, press {hotkey}' },
+    )
+    expect(await read()).toEqual({ region: 'Alerts, press F8', alert: 'Alert Saved' })
   })
 })

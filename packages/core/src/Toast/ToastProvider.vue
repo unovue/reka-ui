@@ -4,7 +4,7 @@ import type { GlobalToastManager } from './createToastManager'
 import type { ToastStore } from './useToastStore'
 import type { SwipeDirection } from './utils'
 import { useCollection } from '@/Collection'
-import { createContext } from '@/shared'
+import { createContext, useTranslations } from '@/shared'
 
 export interface ToastProviderContext {
   label: Readonly<Ref<string>>
@@ -52,7 +52,8 @@ export interface ToastProviderProps {
   /**
    * An author-localized label for each toast. Used to help screen reader users
    * associate the interruption with a toast.
-   * @defaultValue 'Notification'
+   * Defaults to the `toastLabel` message of `ConfigProvider`.
+   * @default 'Notification'
    */
   label?: string
   /**
@@ -115,12 +116,12 @@ defineOptions({
 })
 
 const props = withDefaults(defineProps<ToastProviderProps>(), {
-  label: 'Notification',
   duration: 5000,
   swipeDirection: 'right',
   swipeThreshold: 50,
 })
 useCollection({ isProvider: true })
+const t = useTranslations()
 
 if (props.label && typeof props.label === 'string' && !props.label.trim()) {
   const error = 'Invalid prop `label` supplied to `ToastProvider`. Expected non-empty `string`.'
@@ -130,7 +131,7 @@ if (props.label && typeof props.label === 'string' && !props.label.trim()) {
 // The provider is a thin bridge: shared settings, stacking and the
 // `createToastManager()` subscription live in the composable.
 const { context } = useToastProvider({
-  label: () => props.label,
+  label: () => props.label ?? t('toastLabel'),
   duration: () => props.duration,
   disableSwipe: () => props.disableSwipe,
   swipeDirection: () => props.swipeDirection,
