@@ -36,7 +36,7 @@ const viewport = useCarouselViewport(rootContext, currentElement)
     :as="as"
     :as-child="asChild"
     v-bind="mergeProps($attrs, viewport.attrs.value)"
-    :tabindex="$attrs.tabindex ?? viewport.attrs.value.tabindex"
+    :tabindex="($attrs.tabindex as number | string | undefined) ?? viewport.attrs.value.tabindex"
     :data-orientation="rootContext.orientation.value"
     :data-dragging="rootContext.dragging.value ? '' : undefined"
   >
