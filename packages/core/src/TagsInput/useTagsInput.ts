@@ -500,7 +500,8 @@ export function createTagsInputInputSurface(
     if (controlledId && relatedTarget?.closest(`#${CSS.escape(controlledId)}`))
       return
 
-    if (!target.value)
+    // A blank draft is not a tag.
+    if (!target.value.trim())
       return
 
     addTypedText(target, 'blur', event)
@@ -587,12 +588,12 @@ export function createTagsInputInputSurface(
       return
 
     const value = clipboardData.getData('text')
-    // Blank pieces (a trailing delimiter, a paste of only spaces) are not tags,
-    // and a tag does not keep the spaces around it.
+    // Blank pieces (a trailing delimiter, a paste of only spaces) are not tags.
+    // Other pieces are added as pasted, like a typed draft.
     const delimiter = context.delimiter.value
     const texts = (delimiter ? value.split(delimiter) : [value])
-      .map(text => text.trim())
-      .filter(Boolean)
+      // A RegExp delimiter's unmatched capture group splits out `undefined`.
+      .filter((text): text is string => typeof text === 'string' && text.trim() !== '')
     if (!texts.length)
       return
     // A paste commits every tag it adds as one change.
