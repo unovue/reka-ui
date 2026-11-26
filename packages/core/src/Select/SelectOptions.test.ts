@@ -68,13 +68,15 @@ describe('given a Select with many options', () => {
   })
 })
 
+// v2 (#3391) ordered the native options by registration, a re-registered value moving last. v3
+// orders them as the items render: one option per value, where its first item renders, with
+// the text of the last one.
 describe('given Select items that share a value', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
   })
 
-  // TODO(v3-port): #3391 native options keyed by value, one per value in registration order (Select option registry resolved to v3)
-  it.skip('should keep one option per value, the last one registered', async () => {
+  it('should keep one option per value, with the last one\'s text', async () => {
     const wrapper = mountSelect(
       () => ({}),
       `<SelectItem value="a"><SelectItemText>First</SelectItemText></SelectItem>
@@ -85,14 +87,13 @@ describe('given Select items that share a value', () => {
     await nextTick()
     await nextTick()
 
-    expect(nativeOptions()).toEqual([['b', 'Other'], ['a', 'Second']])
+    expect(nativeOptions()).toEqual([['a', 'Second'], ['b', 'Other']])
     expect(wrapper.find('[role=combobox]').text()).toBe('Second')
   })
 
-  // TODO(v3-port): #3391 native options keyed by value, one per value in registration order (Select option registry resolved to v3)
-  it.skip.each([
-    ['numbers', [1, 2, 1], [['2', 'Item 2'], ['1', 'Item 1']]],
-    ['booleans', [true, false, true], [['false', 'Item false'], ['true', 'Item true']]],
+  it.each([
+    ['numbers', [1, 2, 1], [['1', 'Item 1'], ['2', 'Item 2']]],
+    ['booleans', [true, false, true], [['true', 'Item true'], ['false', 'Item false']]],
     ['a number and its string form', [1, '1'], [['1', 'Item 1'], ['1', 'Item 1']]],
   ])('should tell %s apart as the comparator does', async (_, values, expected) => {
     mountSelect(
@@ -105,8 +106,7 @@ describe('given Select items that share a value', () => {
     expect(nativeOptions().slice(1)).toEqual(expected)
   })
 
-  // TODO(v3-port): #3391 native options keyed by value, one per value in registration order (Select option registry resolved to v3)
-  it.skip('should match object values through `by`', async () => {
+  it('should match object values through `by`', async () => {
     mountSelect(
       () => ({ values: [{ id: 1, name: 'One' }, { id: 2, name: 'Two' }, { id: 1, name: 'Uno' }] }),
       `<SelectItem v-for="(value, index) in values" :key="index" :value="value"><SelectItemText>{{ value.name }}</SelectItemText></SelectItem>`,
@@ -115,7 +115,7 @@ describe('given Select items that share a value', () => {
     await nextTick()
     await nextTick()
 
-    expect(nativeOptions().slice(1).map(option => option[1])).toEqual(['Two', 'Uno'])
+    expect(nativeOptions().slice(1).map(option => option[1])).toEqual(['Uno', 'Two'])
   })
 })
 
@@ -124,8 +124,7 @@ describe('given Select items that mount and unmount', () => {
     document.body.innerHTML = ''
   })
 
-  // TODO(v3-port): #3391 native options keyed by value, one per value in registration order (Select option registry resolved to v3)
-  it.skip('should add and remove their options', async () => {
+  it('should add and remove their options', async () => {
     const values = ref(['a', 'b', 'c'])
     const wrapper = mountSelect(
       () => ({ values }),
@@ -140,13 +139,16 @@ describe('given Select items that mount and unmount', () => {
     values.value = ['a', 'c', 'd']
     await nextTick()
     await nextTick()
-    expect(nativeOptions()).toEqual([['a', 'Item a'], ['c', 'Item c'], ['d', 'Item d']])
-    expect(wrapper.find('[role=combobox]').text()).toBe('Pick')
+    // The selected value keeps its option and its label (v3's sticky label registry), so the
+    // form still submits it.
+    expect(nativeOptions()).toEqual([['a', 'Item a'], ['c', 'Item c'], ['d', 'Item d'], ['b', 'Item b']])
+    expect(wrapper.find('[role=combobox]').text()).toBe('Item b')
 
     values.value = ['d', 'b']
     await nextTick()
     await nextTick()
-    expect(nativeOptions()).toEqual([['d', 'Item d'], ['b', 'Item b']])
+    // The rendered items first, in their order, then the registered labels no item renders (sticky).
+    expect(nativeOptions()).toEqual([['d', 'Item d'], ['b', 'Item b'], ['a', 'Item a'], ['c', 'Item c']])
     expect(wrapper.find('[role=combobox]').text()).toBe('Item b')
   })
 })
