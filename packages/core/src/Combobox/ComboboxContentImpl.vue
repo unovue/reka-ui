@@ -84,9 +84,17 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<ComboboxContentImplProps & { present?: boolean }>(), {
+const props = withDefaults(defineProps<ComboboxContentImplProps & {
+  present?: boolean
+  /**
+   * Internal: whether the dismissal layer and the modal hiding of the page apply. A content
+   * that is only still mounted for its exit animation hands them back at once.
+   */
+  layerPresent?: boolean
+}>(), {
   position: 'inline',
   present: true,
+  layerPresent: undefined,
   // Not cast to `false` when absent: `undefined` picks the default.
   initialFocus: undefined,
   finalFocus: undefined,
@@ -122,12 +130,12 @@ defineExpose(expose)
 const scrollLocked = useBodyScrollLock(props.present && props.bodyLock)
 watch([() => props.present, () => props.bodyLock], ([present, bodyLock]) => scrollLocked.value = present && bodyLock)
 useFocusGuards(currentElement)
-const ariaHiddenTarget = computed(() => props.present ? rootContext.parentElement.value : undefined)
+const ariaHiddenTarget = computed(() => (props.layerPresent ?? props.present) ? rootContext.parentElement.value : undefined)
 useHideOthers(ariaHiddenTarget)
 
 const pickedProps = computed(() => {
   if (props.position === 'popper') {
-    const { present: _, initialFocus: _initialFocus, finalFocus: _finalFocus, ...forwardedProps } = props
+    const { present: _, layerPresent: _layerPresent, initialFocus: _initialFocus, finalFocus: _finalFocus, ...forwardedProps } = props
     return forwardedProps
   }
   // Inline, the content renders its own element (`as` / `asChild`).
@@ -296,7 +304,7 @@ const focusScopeWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeProps
 const scope = useFocusScope(focusScopeOptions(currentElement, () => focusScopeWrapper.value))
 const layerWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeProps(scope.attrs(), focusScopeWrapper.value.rest), {
   asChild: true,
-  present: props.present,
+  present: props.layerPresent ?? props.present,
   disableOutsidePointerEvents: props.disableOutsidePointerEvents,
   backdropCutout: rootContext.parentElement.value,
   onDismiss: ({ reason, event }: DismissableLayerDismissDetails) => rootContext.onOpenChange(false, reason, event),
