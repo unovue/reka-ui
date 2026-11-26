@@ -808,7 +808,7 @@ describe('update:openComplete', () => {
     await fireEvent.click(getByText('Close'))
     await nextFrame()
     await nextTick()
-    // v3, like Base UI, also waits for the running animation before it reports the close.
+    // v3 waits for the running animation before it reports the close.
     expect(onOpenComplete).not.toHaveBeenCalled()
 
     animation.finish()
@@ -843,7 +843,7 @@ describe('update:openComplete', () => {
 
 describe('given a Drawer root that stays mounted', () => {
   function renderDrawer(contentProps: Record<string, unknown> = {}) {
-    let rootContext!: ReturnType<typeof injectDrawerRootContext>
+    let rootContext!: NonNullable<ReturnType<typeof injectDrawerRootContext>>
     const ContextProbe = defineComponent({
       setup() {
         rootContext = injectDrawerRootContext()

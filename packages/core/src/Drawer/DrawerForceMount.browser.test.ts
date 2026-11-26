@@ -172,8 +172,8 @@ describe.each(CASES)('given a force-mounted Drawer with modal $modal (overlay: $
     if (exit) {
       await settle()
       expect(get('content')!.getAnimations()).toHaveLength(1)
-      // v3 (like Base UI, whose internal backdrop goes inert on close) stops blocking the page as it
-      // starts closing, not once it has finished leaving.
+      // v3's internal backdrop goes inert on close, so it stops blocking the page as it starts
+      // closing, not once it has finished leaving.
       expect(pagePointerEvents()).toBe('')
       finishExit()
     }
