@@ -7,7 +7,7 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { Direction } from '@/shared/types'
 import { computed, nextTick, ref, toValue, watch } from 'vue'
 import { useMenuRoot } from '@/Menu/useMenu'
-import { createPartSurface, useControllableState } from '@/shared'
+import { createPartSurface, defineReactiveIds, useControllableState } from '@/shared'
 import { isDisabledItem } from '@/shared/isDisabledItem'
 import { resolveDirection } from '@/shared/useDirection'
 import { wrapArray } from '@/shared/useTypeahead'
@@ -239,13 +239,14 @@ export function useMenubarMenu(rootContext: MenubarRootContext, options: UseMenu
     onOpenComplete: options.onOpenComplete,
   })
 
-  const context: MenubarMenuContext = {
+  // Reactive ids: the trigger and the content adopt a consumer `id`, which the other one references.
+  const context = defineReactiveIds<MenubarMenuContext, 'triggerId' | 'contentId'>({
     value,
     triggerElement: ref<HTMLElement>(),
     triggerId: value,
     contentId: options.contentId ?? `${value}-content`,
     wasKeyboardTriggerOpenRef,
-  }
+  }, ['triggerId', 'contentId'])
 
   return {
     open,

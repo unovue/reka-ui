@@ -10,7 +10,7 @@ export interface MenubarContentProps extends MenuContentProps {}
 <script setup lang="ts">
 import { injectMenuContext, MenuContent } from '@/Menu'
 import { omitEntryFocusListener } from '@/Menu/utils'
-import { useForwardElement, useForwardPropsEmits } from '@/shared'
+import { useContentId, useForwardElement, useForwardPropsEmits } from '@/shared'
 import { injectMenubarMenuContext } from './MenubarMenu.vue'
 import { injectMenubarRootContext } from './MenubarRoot.vue'
 import { createMenubarContentSurface } from './useMenubar'
@@ -24,11 +24,13 @@ const props = withDefaults(defineProps<MenubarContentProps>(), {
 })
 const emits = defineEmits<MenubarContentEmits>()
 const forwarded = useForwardPropsEmits(props, emits)
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
 const rootContext = injectMenubarRootContext()
 const menuContext = injectMenubarMenuContext()
+// A consumer `id` is the content's id, which the trigger's `aria-controls` references.
+useContentId(menuContext, currentElement)
 
 const { getItems } = useCollection({ key: 'Menubar' })
 

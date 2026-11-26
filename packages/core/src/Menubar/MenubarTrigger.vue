@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { disabledAttr, useForwardElement } from '@/shared'
+import { disabledAttr, useForwardElement, useRenderedContentId, useTriggerId } from '@/shared'
 
 export interface MenubarTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -11,6 +11,7 @@ export interface MenubarTriggerProps extends PrimitiveProps {
 <script setup lang="ts">
 import { mergeProps, onMounted } from 'vue'
 import { useCollectionItem } from '@/Collection'
+import { injectMenuContext } from '@/Menu'
 import { usePopperAnchor } from '@/Popper/usePopperAnchor'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
@@ -43,6 +44,11 @@ const trigger = createMenubarTriggerSurface(rootContext, menuContext, {
   triggerElement,
 })
 
+// A consumer `id` (or an `id` on the asChild child) is the trigger's id, which the content's
+// `aria-labelledby` follows; `aria-controls` references the content only while it is rendered.
+useTriggerId(menuContext, triggerElement)
+const contentId = useRenderedContentId(menuContext, injectMenuContext())
+
 onMounted(() => {
   menuContext.triggerElement = triggerElement
 })
@@ -60,7 +66,7 @@ const roving = useRovingFocusItem({
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps(anchor.consumerAttrs($attrs), roving.attrs(), { type: as === 'button' ? 'button' : undefined }, trigger.attrs.value, { disabled: disabledAttr(trigger.attrs.value.disabled as boolean | undefined, as, asChild) })"
+    v-bind="mergeProps(anchor.consumerAttrs($attrs), roving.attrs(), { type: as === 'button' ? 'button' : undefined }, trigger.attrs.value, { 'disabled': disabledAttr(trigger.attrs.value.disabled as boolean | undefined, as, asChild), 'aria-controls': trigger.attrs.value['aria-controls'] ? contentId : undefined })"
   >
     <slot />
   </component>
