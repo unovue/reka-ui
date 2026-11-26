@@ -134,7 +134,7 @@ The part that reflects the selected value. By default the selected item's text w
 
 A small icon often displayed next to the value as a visual affordance for the fact it can be open. By default renders ▼ but you can use your own icon via `asChild` or use `children`.
 
-<!-- @include: @/meta/SelectItem.md -->
+<!-- @include: @/meta/SelectIcon.md -->
 
 ### Portal
 

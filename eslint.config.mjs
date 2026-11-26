@@ -70,6 +70,20 @@ export default antfu(
     ),
   },
   {
+    files: ['packages/core/src/**/*.{ts,vue}'],
+    ignores: ['**/*.test.ts'],
+    rules: {
+      // Dev-only warnings are guarded with `process.env.NODE_ENV !== 'production'`: it survives the
+      // published build and the consumer's bundler drops it. The build has no `import.meta.env`.
+      'node/prefer-global/process': 'off',
+      // The two strings are the preset's own entries, which setting this rule would otherwise drop.
+      'no-restricted-syntax': ['error', 'TSEnumDeclaration[const=true]', 'TSExportAssignment', {
+        selector: 'MemberExpression[property.name=\'DEV\'][object.property.name=\'env\'][object.object.type=\'MetaProperty\']',
+        message: 'Use `process.env.NODE_ENV !== \'production\'`: `import.meta.env.DEV` does not exist in the published build, so the code behind it never runs.',
+      }],
+    },
+  },
+  {
     files: ['**/package.json'],
     rules: {
       // Wrecks the order of `files` otherwise, and breaks the exclusion patterns

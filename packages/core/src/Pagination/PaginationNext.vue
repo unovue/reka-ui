@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { disabledAttr, useForwardExpose } from '@/shared'
+import { disabledAttr, useForwardExpose, useTranslations } from '@/shared'
 
 export interface PaginationNextProps extends PrimitiveProps {}
 </script>
@@ -12,6 +12,8 @@ import { injectPaginationRootContext } from './PaginationRoot.vue'
 
 const props = withDefaults(defineProps<PaginationNextProps>(), { as: 'button' })
 
+const t = useTranslations()
+
 useForwardExpose()
 const rootContext = injectPaginationRootContext()
 
@@ -21,7 +23,7 @@ const disabled = computed((): boolean => rootContext.page.value >= rootContext.p
 <template>
   <Primitive
     v-bind="props"
-    aria-label="Next Page"
+    :aria-label="t('paginationNext')"
     :type="as === 'button' ? 'button' : undefined"
     :disabled="disabledAttr(disabled, props.as, props.asChild)"
     @click="!disabled && rootContext.onPageChange(rootContext.page.value + 1)"

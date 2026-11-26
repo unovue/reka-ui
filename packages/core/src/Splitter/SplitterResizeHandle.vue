@@ -170,6 +170,8 @@ onUnmounted(bumpResizeHandleRegistration)
     :as="as"
     :as-child="asChild"
     role="separator"
+    :aria-orientation="direction === 'horizontal' ? 'vertical' : 'horizontal'"
+    :aria-disabled="disabled ? true : undefined"
     data-resize-handle=""
     :tabindex="tabindex"
     :data-state="state"

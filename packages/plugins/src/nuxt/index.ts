@@ -1,11 +1,36 @@
 import type { } from '@nuxt/schema' // workaround for TS bug with "phantom" deps
 
 import type { Components } from 'reka-ui/constant'
-import { addComponent, defineNuxtModule } from '@nuxt/kit'
-import { components as allComponents } from 'reka-ui/constant'
+import { addComponent, addImports, defineNuxtModule } from '@nuxt/kit'
+import { components as allComponents, utilities as allUtilities } from 'reka-ui/constant'
+
+/**
+ * Utilities that are not auto-imported because their name clashes with a
+ * function Nuxt can auto-import itself. Import these from `reka-ui` explicitly.
+ */
+const excludedComposables: string[] = [
+  // Recent Nuxt versions auto-import a `useId` of their own or Vue's.
+  'useId',
+]
+
+/** Below anything Nuxt assigns to scanned composables, including those of extended layers. */
+const COMPOSABLE_PRIORITY = -1000
 
 export interface ModuleOptions {
+  /**
+   * Auto-import components. Pass an object to enable only some component groups.
+   * @defaultValue true
+   */
   components: Partial<Record<keyof Components, boolean>> | boolean
+  /**
+   * Auto-import composables and utilities such as `useFilter` or `useForwardPropsEmits`.
+   * @defaultValue true
+   */
+  composables: boolean
+  /**
+   * Prefix added to the name of every auto-imported component. Composables are not prefixed.
+   * @defaultValue ''
+   */
   prefix: string
 }
 
@@ -20,23 +45,36 @@ export default defineNuxtModule<ModuleOptions>({
   defaults: {
     prefix: '',
     components: true,
+    composables: true,
   },
-  setup({ prefix, components }) {
-    if (components === false) {
-      return
-    }
-
-    let groupName: keyof Components
-    for (groupName in allComponents) {
-      if (components === true || components[groupName]) {
-        for (const component of allComponents[groupName]) {
-          addComponent({
-            name: `${prefix}${component}`,
-            export: component,
-            filePath: 'reka-ui',
-          })
+  setup({ prefix, components, composables }) {
+    if (components !== false) {
+      let groupName: keyof Components
+      for (groupName in allComponents) {
+        if (components === true || components[groupName]) {
+          for (const component of allComponents[groupName]) {
+            addComponent({
+              name: `${prefix}${component}`,
+              export: component,
+              filePath: 'reka-ui',
+            })
+          }
         }
       }
+    }
+
+    if (composables !== false) {
+      addImports(
+        allUtilities.utilities
+          .filter(name => !excludedComposables.includes(name))
+          .map(name => ({
+            name,
+            from: 'reka-ui',
+            // Lowest priority: the app's own composables, those of its layers (which Nuxt
+            // registers at -1, -2, ...) and those of other modules win a name clash.
+            priority: COMPOSABLE_PRIORITY,
+          })),
+      )
     }
   },
 })

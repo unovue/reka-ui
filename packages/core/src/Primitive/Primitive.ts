@@ -125,7 +125,6 @@ export const Primitive = defineComponent({
     if (asTag !== 'template') {
       return () => {
         const unsafe = isUnsafeAs(props.as)
-        // eslint-disable-next-line node/prefer-global/process -- bundlers replace it, the warning drops in production
         if (process.env.NODE_ENV !== 'production' && unsafe)
           warnUnsafeAs(props.as)
         const tag = unsafe ? 'div' : props.as

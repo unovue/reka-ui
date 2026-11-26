@@ -105,7 +105,7 @@ export function validatePanelConstraints({
   panelId: string | undefined
   panelIndex: number
 }): boolean {
-  if (import.meta.env.DEV) {
+  if (process.env.NODE_ENV !== 'production') {
     const warnings = []
 
     const panelConstraints = panelConstraintsArray[panelIndex]
