@@ -80,15 +80,16 @@ provideMenuContext({
 
 // Reactive: the trigger and the content adopt a consumer `id`, which the other one references.
 provideMenuSubContext(defineReactiveIds<MenuSubContext, 'triggerId' | 'contentId'>({
-  triggerId: '',
-  // Allocated here, not by the content: a closed submenu's portal mounts no
-  // content, and the trigger's `aria-controls` must name it on the first open.
-  contentId: useId(undefined, 'reka-menu-sub-content'),
   trigger,
   onTriggerChange: (element) => {
     trigger.value = element
   },
-}, ['triggerId', 'contentId']))
+}, {
+  triggerId: '',
+  // Allocated here, not by the content: a closed submenu's portal mounts no
+  // content, and the trigger's `aria-controls` must name it on the first open.
+  contentId: useId(undefined, 'reka-menu-sub-content'),
+}))
 </script>
 
 <template>

@@ -373,9 +373,9 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
   const triggerElement = ref<HTMLElement>()
   const valueElement = ref<HTMLElement>()
 
-  const context: SelectRootContext<T> = {
+  // `contentId` follows a consumer `id` on the content (`useContentId`).
+  const context = defineReactiveIds<SelectRootContext<T>, 'contentId'>({
     baseId,
-    contentId: `${baseId}-content`,
     triggerElement,
     onTriggerChange: (node) => {
       triggerElement.value = node
@@ -410,9 +410,7 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
     getNavigationIntent,
     virtualTypeaheadItems,
     notifyOpenComplete: value => props.onOpenComplete?.(value),
-  }
-  // `contentId` follows a consumer `id` on the content (`useContentId`).
-  defineReactiveIds(context, ['contentId'])
+  }, { contentId: `${baseId}-content` })
 
   return {
     modelValue,

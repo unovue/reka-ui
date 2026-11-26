@@ -531,8 +531,6 @@ export function useNavigationMenuItem(options: UseNavigationMenuItemOptions): Us
   // Reactive ids: the trigger and the content adopt a consumer `id`, which the other one references.
   const itemContext = defineReactiveIds<NavigationMenuItemContext, 'triggerId' | 'contentId'>({
     value,
-    contentId: makeContentId(context.baseId, value),
-    triggerId: makeTriggerId(context.baseId, value),
     triggerRef,
     focusProxyRef,
     wasEscapeCloseRef,
@@ -540,7 +538,7 @@ export function useNavigationMenuItem(options: UseNavigationMenuItemOptions): Us
     onFocusProxyEnter: handleContentEntry,
     onContentFocusOutside: handleContentExit,
     onRootContentClose: handleContentExit,
-  }, ['triggerId', 'contentId'])
+  }, { contentId: makeContentId(context.baseId, value), triggerId: makeTriggerId(context.baseId, value) })
 
   async function handleContentEntry(side = 'start') {
     const el = getElementByIdFrom(itemContext.triggerRef.value, itemContext.contentId)

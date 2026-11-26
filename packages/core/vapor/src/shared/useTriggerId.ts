@@ -1,12 +1,11 @@
 // Copy of src/shared/useTriggerId.ts with the three VDOM-instance reads swapped for Vapor-safe ones
 // (generic instance, root node from `instance.block`, no `$forceUpdate` in Vapor).
-import type { Ref } from 'vue'
-import { computed, onActivated, onBeforeMount, onBeforeUnmount, onBeforeUpdate, onDeactivated, onMounted, onUpdated, ref, useAttrs, watch } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
+import { onActivated, onBeforeMount, onBeforeUnmount, onBeforeUpdate, onDeactivated, onMounted, onUpdated, ref, shallowRef, toRaw, useAttrs, watch } from 'vue'
+import { forceUpdate, getGenericInstance, hasDeactivatedAncestor, instanceElement } from './internals'
 
 // How many content elements are rendered for a context. Kept beside the context rather
 // than on it, so the context types stay as they are.
-import { forceUpdate, getGenericInstance, hasDeactivatedAncestor, instanceElement } from './internals'
-
 const mountedContents = new WeakMap<object, Ref<number>>()
 
 function useMountedContents(context: object) {
@@ -18,21 +17,49 @@ function useMountedContents(context: object) {
   return count
 }
 
-/**
- * Backs the given string properties of a context object with refs, so the context
- * keeps its plain `string` types while templates that read those properties
- * re-render when they change.
- */
-export function defineReactiveIds<T extends object, K extends keyof T>(context: T, keys: K[]) {
-  for (const key of keys) {
-    const id = ref(context[key])
-    Object.defineProperty(context, key, {
-      enumerable: true,
-      get: () => id.value,
-      set: (value) => { id.value = value },
-    })
+// One symbol and one accessor pair per id name, shared by every context: an accessor added
+// as a new property keeps the object's fast properties, and contexts built alike share one
+// hidden class. A per-context closure as accessor, an accessor in the object literal, or
+// turning an existing data property into an accessor all switch the whole context to slow
+// (dictionary) properties, which costs a few hundred bytes per context.
+const idProperties = new Map<string, { key: symbol, descriptor: PropertyDescriptor }>()
+
+function idProperty(name: string) {
+  let property = idProperties.get(name)
+  if (!property) {
+    const key = Symbol(name)
+    property = {
+      key,
+      descriptor: {
+        enumerable: true,
+        configurable: true,
+        // `toRaw`: read through a reactive proxy of the context, `this[key]` would be unwrapped.
+        get(this: object) {
+          return (toRaw(this) as Record<symbol, Ref<string>>)[key]!.value
+        },
+        set(this: object, value: string) {
+          (toRaw(this) as Record<symbol, Ref<string>>)[key]!.value = value
+        },
+      },
+    }
+    idProperties.set(name, property)
   }
-  return context
+  return property
+}
+
+/**
+ * Adds the given string properties to a context object, backed by refs, so the context
+ * keeps its plain `string` types while templates that read those properties re-render
+ * when they change. The properties must not be in `context` yet: pass the context
+ * without them and their initial values in `ids`.
+ */
+export function defineReactiveIds<T extends object, K extends keyof T & string>(context: Omit<T, K>, ids: Pick<T, K>): T {
+  for (const name in ids) {
+    const { key, descriptor } = idProperty(name)
+    ;(context as Record<symbol, unknown>)[key] = shallowRef(ids[name])
+    Object.defineProperty(context, name, descriptor)
+  }
+  return context as T
 }
 
 /**
@@ -215,7 +242,21 @@ export function useContentMounted(key: object, element: Readonly<Ref<HTMLElement
  * reference is patched onto the trigger once the content exists instead of being left
  * as the server wrote it. Needs `useContentMounted` on the content side.
  */
-export function useRenderedContentId(context: { contentId: string }, key: object = context) {
-  const count = useMountedContents(key)
-  return computed(() => (count.value > 0 && context.contentId) || undefined)
+export function useRenderedContentId(context: { contentId: string }, key: object = context): ComputedRef<string | undefined> {
+  return new RenderedContentIdRef(context, key) as unknown as ComputedRef<string | undefined>
+}
+
+/**
+ * The ref `useRenderedContentId` returns: a getter, without a computed or a closure. The
+ * count is looked up (and created) on the first read, so a trigger that reads it only
+ * while open (a tooltip) allocates nothing until then.
+ */
+class RenderedContentIdRef {
+  // Ref markers as prototype getters: no per-instance slots.
+  get __v_isRef(): true { return true }
+  get __v_isReadonly(): true { return true }
+  constructor(readonly context: { contentId: string }, readonly key: object) {}
+  get value(): string | undefined {
+    return (useMountedContents(this.key).value > 0 && this.context.contentId) || undefined
+  }
 }

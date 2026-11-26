@@ -715,10 +715,10 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     return clearValue ? clearValue() : props.emptyValue ?? null
   }
 
-  const context: ComboboxRootContext<T> = {
+  // `contentId` follows a consumer `id` on the content (`useContentId`).
+  const context = defineReactiveIds<ComboboxRootContext<T>, 'contentId'>({
     ...listbox.context,
     baseId,
-    contentId: `${baseId}-content`,
     open,
     onOpenChange,
     setModelValue,
@@ -760,9 +760,7 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     displayValue: props.displayValue,
     items: props.items,
     notifyOpenComplete: value => props.onOpenComplete?.(value),
-  }
-  // `contentId` follows a consumer `id` on the content (`useContentId`).
-  defineReactiveIds(context, ['contentId'])
+  }, { contentId: `${baseId}-content` })
 
   const root = createPartSurface<ComboboxState>(
     () => listbox.root.props.value,

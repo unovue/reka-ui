@@ -372,7 +372,6 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
 
   // `contentId` follows the id the content rendered (`useContentElement`).
   const context = defineReactiveIds<TooltipContext, 'contentId'>({
-    contentId: `${baseId}-content`,
     open,
     stateAttribute,
     isDelayed,
@@ -390,7 +389,7 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
     disabled,
     ignoreNonKeyboardFocus,
     notifyOpenComplete: value => props.onOpenComplete?.(value),
-  }, ['contentId'])
+  }, { contentId: `${baseId}-content` })
 
   return {
     open,

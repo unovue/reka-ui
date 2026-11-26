@@ -244,10 +244,8 @@ export function useMenubarMenu(rootContext: MenubarRootContext, options: UseMenu
   const context = defineReactiveIds<MenubarMenuContext, 'triggerId' | 'contentId'>({
     value,
     triggerElement: ref<HTMLElement>(),
-    triggerId: value,
-    contentId: options.contentId ?? `${value}-content`,
     wasKeyboardTriggerOpenRef,
-  }, ['triggerId', 'contentId'])
+  }, { triggerId: value, contentId: options.contentId ?? `${value}-content` })
 
   return {
     open,
