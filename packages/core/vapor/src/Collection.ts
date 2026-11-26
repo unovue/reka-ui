@@ -4,16 +4,14 @@
 // item marker. Here they render the slot and take its first element, the same way the Vapor
 // `Primitive` handles `asChild` (attrs adopted onto that element, the child's own attributes win).
 import type { Ref, ShallowRef } from 'vue'
-import { computed, inject, markRaw, provide, ref, watchEffect } from 'vue'
+import { computed, inject, markRaw, onScopeDispose, provide, ref, watchEffect } from 'vue'
+import { createCollectionOrder, ITEM_DATA_ATTR } from '@/Collection/collectionOrder'
 import { renderAsChildSlot } from './Primitive'
 import { defineVaporComponent } from './shared/internals'
 
-interface CollectionContext<ItemData = {}> {
-  collectionRef: Ref<HTMLElement | undefined>
-  itemMap: Ref<Map<HTMLElement, { ref: HTMLElement, value?: any } & ItemData>>
-}
+type CollectionItemData<ItemData = {}> = { ref: HTMLElement, value?: any } & ItemData
 
-const ITEM_DATA_ATTR = 'data-reka-collection-item'
+type CollectionContext<ItemData = {}> = ReturnType<typeof createCollectionContext<ItemData>>
 
 /**
  * Renders the default slot as `asChild` (slot `props` or DOM adoption). `root` follows its first
@@ -24,38 +22,17 @@ function renderSlotElement(attrs: Record<string, any>, extra: Record<string, any
   return { block, root: root as ShallowRef<HTMLElement | null> }
 }
 
-export function useCollection<ItemData = {}>(options: { key?: string, isProvider?: boolean } = {}) {
-  const { key = '', isProvider = false } = options
-  const injectionKey = `${key}CollectionProvider`
-  let context: CollectionContext<ItemData>
-
-  if (isProvider) {
-    context = {
-      collectionRef: ref<HTMLElement>(),
-      itemMap: ref(new Map()),
-    } as CollectionContext<ItemData>
-    provide(injectionKey, context)
-  }
-  else {
-    context = inject(injectionKey) as CollectionContext<ItemData>
-  }
+function createCollectionContext<ItemData>() {
+  const itemMap = ref(new Map()) as Ref<Map<HTMLElement, CollectionItemData<ItemData>>>
+  const collectionRef = ref<HTMLElement>()
+  // The ordered list `getItems()` returns is cached there (shared with the VDOM `useCollection`).
+  const order = createCollectionOrder(itemMap, collectionRef)
 
   const getItem = (element: HTMLElement, includeDisabledItem = false) => {
-    if (!context.collectionRef.value)
+    if (!collectionRef.value)
       return undefined
-    const item = context.itemMap.value.get(element)
+    const item = itemMap.value.get(element)
     return item && (includeDisabledItem || item.ref.dataset.disabled !== '') ? item : undefined
-  }
-
-  const getItems = (includeDisabledItem = false) => {
-    const collectionNode = context.collectionRef.value
-    if (!collectionNode)
-      return []
-    const orderedNodes = Array.from(collectionNode.querySelectorAll(`[${ITEM_DATA_ATTR}]`))
-    const orderMap = new Map(orderedNodes.map((node, index) => [node, index]))
-    const orderedItems = Array.from(context.itemMap.value.values())
-      .sort((a, b) => (orderMap.get(a.ref) ?? -1) - (orderMap.get(b.ref) ?? -1))
-    return includeDisabledItem ? orderedItems : orderedItems.filter(i => i.ref.dataset.disabled !== '')
   }
 
   const CollectionSlot = defineVaporComponent({
@@ -72,10 +49,13 @@ export function useCollection<ItemData = {}>(options: { key?: string, isProvider
         const el = root.value
         if (!el)
           return
-        context.collectionRef.value = el
+        collectionRef.value = el
+        order.reset()
         cleanup(() => {
-          if (context.collectionRef.value === el)
-            context.collectionRef.value = undefined
+          if (collectionRef.value === el) {
+            collectionRef.value = undefined
+            order.reset()
+          }
         })
       }, { flush: 'sync' })
       return block
@@ -98,16 +78,46 @@ export function useCollection<ItemData = {}>(options: { key?: string, isProvider
         if (node) {
           const k = markRaw(node)
           // @ts-expect-error item data is filled by the caller's ItemData
-          context.itemMap.value.set(k, { ref: node, value: props.value })
-          cleanup(() => context.itemMap.value.delete(k))
+          itemMap.value.set(k, { ref: node, value: props.value })
+          order.invalidate()
+          cleanup(() => {
+            itemMap.value.delete(k)
+            order.invalidate()
+          })
         }
       })
       return block
     },
   })
 
-  const reactiveItems = computed(() => Array.from(context.itemMap.value.values()))
-  const itemMapSize = computed(() => context.itemMap.value.size)
+  const reactiveItems = computed(() => Array.from(itemMap.value.values()))
+  const itemMapSize = computed(() => itemMap.value.size)
 
+  return {
+    collectionRef,
+    itemMap,
+    order,
+    /** What `useCollection()` returns. Built once per provider and shared by every caller under it. */
+    api: { getItems: order.getItems, getItem, reactiveItems, itemMapSize, CollectionSlot, CollectionItem },
+  }
+}
+
+export function useCollection<ItemData = {}>(options: { key?: string, isProvider?: boolean } = {}) {
+  const { key = '', isProvider = false } = options
+  const injectionKey = `${key}CollectionProvider`
+  let context: CollectionContext<ItemData>
+
+  if (isProvider) {
+    context = createCollectionContext<ItemData>()
+    provide(injectionKey, context)
+    const { order } = context
+    onScopeDispose(order.reset)
+  }
+  else {
+    // Without a provider the collection is empty and stays local to this caller.
+    context = inject<CollectionContext<ItemData>>(injectionKey) ?? createCollectionContext<ItemData>()
+  }
+
+  const { getItems, getItem, reactiveItems, itemMapSize, CollectionSlot, CollectionItem } = context.api
   return { getItems, getItem, reactiveItems, itemMapSize, CollectionSlot, CollectionItem }
 }
