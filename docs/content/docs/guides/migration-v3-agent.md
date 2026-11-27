@@ -1172,7 +1172,7 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 - `CheckboxRoot` and `SelectRoot` / `SelectTrigger` inside a `FieldRoot` that can be disabled, together with CSS selectors (`[aria-invalid]`, `aria-invalid:` variants) and tests that read `aria-invalid` on them.
 
 **Rewrite rules.**
-- A style keyed on `[aria-invalid="true"]` that must still apply while the control is disabled: keep that selector and add `[data-invalid]` next to it (the `aria-invalid` selector still matches an `aria-invalid` the app sets itself).
+- A style keyed on `[aria-invalid="true"]` that must still apply while the control is disabled: keep that selector and add `[data-invalid]:not([aria-invalid])` next to it, so an `aria-invalid` the app sets itself (`"true"` or `"false"`) still decides.
 - A test that expects `aria-invalid="true"` on a disabled checkbox or select trigger that does not set `aria-invalid` itself: expect it to be absent, or assert `data-invalid`.
 - Everything else: leave unchanged.
 
