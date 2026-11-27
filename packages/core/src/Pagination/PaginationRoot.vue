@@ -102,26 +102,13 @@ const { page, modelPage, pageCount, setPage, context } = usePagination({
 })
 
 // With `clampPage` (the default), move a model page past the page count back into range (on mount
-// too). The watcher starts once `clampPage` is on: at setup, or from a watcher on `clampPage` alone
-// that stops once it has started it. A watcher rather than `onBeforeUpdate`: a Vapor component's
-// props change without an update. With `:clamp-page="false"` a pagination pays one small watcher.
-function watchClampPage() {
-  watch(() => props.clampPage && modelPage.value !== clamp(modelPage.value, 1, pageCount.value), (outOfRange) => {
-    if (outOfRange)
-      setPage(modelPage.value)
-  }, { immediate: true })
-}
-if (props.clampPage) {
-  watchClampPage()
-}
-else {
-  const stop = watch(() => props.clampPage, (on) => {
-    if (!on)
-      return
-    stop()
-    watchClampPage()
-  })
-}
+// too). One watcher, set up in setup so it stops with the component: while `clampPage` is off its
+// getter reads `clampPage` alone, not the page or the page count. A watcher rather than
+// `onBeforeUpdate`: a Vapor component's props change without an update.
+watch(() => props.clampPage && modelPage.value !== clamp(modelPage.value, 1, pageCount.value), (outOfRange) => {
+  if (outOfRange)
+    setPage(modelPage.value)
+}, { immediate: true })
 
 // A `<nav>` is a landmark, and landmarks need a name to be told apart. The default steps aside for a
 // consumer `aria-label` (it falls through and wins) or `aria-labelledby`, and is only set on the `<nav>` itself.
