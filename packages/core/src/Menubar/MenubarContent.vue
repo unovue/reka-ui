@@ -9,7 +9,7 @@ export interface MenubarContentProps extends MenuContentProps {}
 
 <script setup lang="ts">
 import { injectMenuContext, MenuContent } from '@/Menu'
-import { omitEntryFocusListener } from '@/Menu/utils'
+import { omitEntryFocusListener, onContentHide } from '@/Menu/utils'
 import { useContentId, useForwardElement, useForwardPropsEmits } from '@/shared'
 import { injectMenubarMenuContext } from './MenubarMenu.vue'
 import { injectMenubarRootContext } from './MenubarRoot.vue'
@@ -39,7 +39,7 @@ const { getItems } = useCollection({ key: 'Menubar' })
 // (no handlers) spread BEFORE the forwarded props and `$attrs`, so a consumer
 // `id` still wins; its handlers bind AFTER the forwarded emits, as before.
 const content = createMenubarContentSurface(rootContext, menuContext, { getItems })
-injectMenuContext().onContentHide(content.onContentHide)
+onContentHide(injectMenuContext(), content.onContentHide)
 </script>
 
 <template>

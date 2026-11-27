@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Ref, WatchHandle } from 'vue'
+import type { Ref } from 'vue'
 import type { PaginationChangeReason } from './usePagination'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails, Translate } from '@/shared'
@@ -59,7 +59,7 @@ export const [injectPaginationRootContext, providePaginationRootContext]
 </script>
 
 <script setup lang="ts">
-import { onBeforeUpdate, watch } from 'vue'
+import { watch } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { useUntrackedAttrs } from '@/shared/splitWrapperAttrs'
 import { usePagination } from './usePagination'
@@ -102,19 +102,13 @@ const { page, modelPage, pageCount, setPage, context } = usePagination({
 })
 
 // With `clampPage` (the default), move a model page past the page count back into range (on mount
-// too). The watcher starts once `clampPage` is on: at setup, or before the update a prop change
-// makes. With `:clamp-page="false"` a pagination pays one hook for it.
-let clampWatch: WatchHandle | undefined
-function watchClampPage() {
-  if (!props.clampPage || clampWatch)
-    return
-  clampWatch = watch(() => props.clampPage && modelPage.value !== clamp(modelPage.value, 1, pageCount.value), (outOfRange) => {
-    if (outOfRange)
-      setPage(modelPage.value)
-  }, { immediate: true })
-}
-watchClampPage()
-onBeforeUpdate(watchClampPage)
+// too). One watcher, set up in setup so it stops with the component: while `clampPage` is off its
+// getter reads `clampPage` alone, not the page or the page count. A watcher rather than
+// `onBeforeUpdate`: a Vapor component's props change without an update.
+watch(() => props.clampPage && modelPage.value !== clamp(modelPage.value, 1, pageCount.value), (outOfRange) => {
+  if (outOfRange)
+    setPage(modelPage.value)
+}, { immediate: true })
 
 // A `<nav>` is a landmark, and landmarks need a name to be told apart. The default steps aside for a
 // consumer `aria-label` (it falls through and wins) or `aria-labelledby`, and is only set on the `<nav>` itself.

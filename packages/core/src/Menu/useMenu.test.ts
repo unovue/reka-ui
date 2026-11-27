@@ -76,6 +76,27 @@ describe('useMenuRoot — state-only overlay root', () => {
     expect(api.open.value).toBe(false)
   })
 
+  it('the content-hide hooks work destructured as well as called on the context', () => {
+    const api = harness()
+    const { onContentHide, contentHidden } = api.menuContext
+    const destructured = vi.fn()
+    const method = vi.fn()
+    onContentHide(destructured)
+    api.menuContext.onContentHide(method)
+
+    const event = { container: undefined, focusLeft: false, focusedBeforeShow: null }
+    contentHidden(event)
+    expect(destructured).toHaveBeenCalledWith(event)
+    expect(method).toHaveBeenCalledWith(event)
+
+    api.menuContext.contentHidden(event)
+    expect(destructured).toHaveBeenCalledTimes(2)
+    expect(method).toHaveBeenCalledTimes(2)
+    // Another menu's hooks stay separate.
+    harness().menuContext.contentHidden(event)
+    expect(method).toHaveBeenCalledTimes(2)
+  })
+
   it('defaultOpen seeds the uncontrolled state', () => {
     expect(harness({ defaultOpen: true }).open.value).toBe(true)
   })

@@ -22,7 +22,7 @@ export interface ContextMenuContentProps
 import { useEventListener } from '@vueuse/core'
 import { getInternalBackdrop } from '@/DismissableLayer/internalBackdrop'
 import { injectMenuContext, MenuContent } from '@/Menu'
-import { omitEntryFocusListener } from '@/Menu/utils'
+import { omitEntryFocusListener, onContentHide as registerContentHide } from '@/Menu/utils'
 import { injectContextMenuRootContext } from './ContextMenuRoot.vue'
 import { createContextMenuContentHandlers } from './useContextMenu'
 
@@ -67,7 +67,7 @@ useEventListener(() => {
 })
 // Bound after the forwarded emits, so they still see a consumer's `preventDefault()`.
 const { onCloseAutoFocus, onInteractOutside, onContentHide } = createContextMenuContentHandlers(rootContext)
-injectMenuContext().onContentHide(onContentHide)
+registerContentHide(injectMenuContext(), onContentHide)
 </script>
 
 <template>

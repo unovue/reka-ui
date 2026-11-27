@@ -38,7 +38,7 @@ import {
 } from 'vue'
 import { PopperRoot } from '@/Popper'
 import { injectMenuContext, provideMenuContext } from './MenuRoot.vue'
-import { contentHidden, onContentHide } from './utils'
+import { createMenuContext } from './utils'
 
 const props = withDefaults(defineProps<MenuSubProps>(), {
   open: undefined,
@@ -65,7 +65,7 @@ watch(() => parentMenuContext?.open.value, (parentOpen, _, onCleanup) => {
   onCleanup(() => setState(false))
 }, { immediate: true })
 
-provideMenuContext({
+provideMenuContext(createMenuContext({
   open,
   onOpenChange: (value, reason, event) => setState(value, reason, event),
   content,
@@ -73,10 +73,7 @@ provideMenuContext({
     content.value = element
   },
   notifyOpenComplete: value => emits('update:openComplete', value),
-  // Shared methods, called on the context.
-  onContentHide,
-  contentHidden,
-})
+}))
 
 // Reactive: the trigger and the content adopt a consumer `id`, which the other one references.
 provideMenuSubContext(defineReactiveIds<MenuSubContext, 'triggerId' | 'contentId'>({
