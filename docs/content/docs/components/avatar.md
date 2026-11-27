@@ -90,3 +90,11 @@ import { AvatarImage, AvatarRoot, TooltipArrow, TooltipRoot, TooltipTrigger } fr
   </TooltipRoot>
 </template>
 ```
+
+## Accessibility
+
+`AvatarImage` renders an `img` element by default. Pass an `alt` attribute describing the person or entity, or an empty `alt` when the avatar is decorative. While the image is loading, or when it fails to load, the image is hidden and `AvatarFallback` is rendered instead, so give the fallback meaningful content such as initials. If the avatar is decorative, hide the fallback from assistive technology as well, for example with `aria-hidden="true"`.
+
+### Keyboard Interactions
+
+Avatar is a static element. It is not focusable and has no keyboard interaction. To make it interactive, compose it with an interactive element such as a button or a [Tooltip](/docs/components/tooltip) trigger.

@@ -8,6 +8,7 @@ export interface SelectLabelProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
+import { claimReferencedId } from '@/shared'
 import { injectSelectGroupContext } from './SelectGroup.vue'
 
 const props = withDefaults(defineProps<SelectLabelProps>(), {
@@ -15,6 +16,7 @@ const props = withDefaults(defineProps<SelectLabelProps>(), {
 })
 
 const groupContext = injectSelectGroupContext({ id: '' })
+claimReferencedId(groupContext, 'id')
 </script>
 
 <template>

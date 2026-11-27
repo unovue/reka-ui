@@ -8,17 +8,41 @@ A quick tutorial to walk through installing the packages, as well as the support
 
 <InstallationTabs value="reka-ui" />
 
+Reka UI requires Vue 3.5 or later.
+
 ## Nuxt modules
 
 Reka UI offers Nuxt modules support.
 
-In `nuxt.config.ts`, simply add `reka-ui/nuxt` into the modules, and it will auto-import all the components for you.
+In `nuxt.config.ts`, simply add `reka-ui/nuxt` into the modules, and it will auto-import all the components and composables (such as `useFilter` or `useForwardPropsEmits`) for you.
 
 ```ts
 export default defineNuxtConfig({
   modules: ['reka-ui/nuxt'],
 })
 ```
+
+The module can be configured through the `reka` key.
+
+```ts
+export default defineNuxtConfig({
+  modules: ['reka-ui/nuxt'],
+  reka: {
+    // Prefix added to every auto-imported component, e.g. `RekaAccordionRoot`. Composables are not prefixed.
+    prefix: '',
+    // Set to `false` to disable component auto-import, or pass an object to enable only some component groups.
+    components: true,
+    // Set to `false` to disable composable auto-import.
+    composables: true,
+  },
+})
+```
+
+<Callout type="tip">
+
+`useId` is not auto-imported, so it never clashes with the `useId` that Nuxt or Vue provides. Import it from `reka-ui` explicitly when you need Reka UI's version. If your app or another module provides a composable with the same name as one from Reka UI, that one is used.
+
+</Callout>
 
 ## unplugin-vue-components
 

@@ -4,6 +4,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
 import { createRekaContext, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 
 interface SelectItemContext<T = AcceptableValue> {
   value: T
@@ -64,12 +65,12 @@ const rootContext = injectSelectRootContext()
 const disabled = computed(() => Boolean(props.disabled || rootContext.disabled?.value))
 const contentContext = injectSelectContentContext()
 const { forwardRef, currentElement } = useForwardExpose()
+useAgentItem(rootContext, props, currentElement)
 const { CollectionItem } = useCollection()
 
 const isSelected = computed(() => valueComparator(rootContext.modelValue?.value, props.value, rootContext.by))
 const isFocused = ref(false)
-const textValue = ref(props.textValue ?? '')
-const textId = useId(undefined, 'reka-select-item-text')
+let textValue = props.textValue ?? ''
 
 const SELECT_SELECT = 'select.select'
 
@@ -209,6 +210,19 @@ if (props.value === '') {
   )
 }
 
+// What the collection knows about this item. It is one object for the item's whole life, read
+// when a key is typed: a new object per render would register the item again, and a reactive
+// `textValue` would render every item a second time right after it mounts.
+const collectionValue = {
+  get textValue() {
+    return textValue
+  },
+  get value() {
+    return props.value
+  },
+  typeaheadSelect: handleTypeaheadSelect,
+}
+
 onMounted(() => {
   if (!currentElement.value)
     return
@@ -219,25 +233,26 @@ onMounted(() => {
   )
 })
 
-provideSelectItemContext({
+// The template reads `textId` through the context, which follows a consumer `id` on `SelectItemText`.
+const itemContext = provideSelectItemContext({
   value: props.value,
   // The item's own state only: `SelectItemText` registers the native `<option>` once on mount,
   // so the root's `disabled` must not leak in (the native `<select>` already carries it).
   disabled: computed(() => Boolean(props.disabled)),
-  textId,
+  textId: useId(undefined, 'reka-select-item-text'),
   isSelected,
   onItemTextChange: (node) => {
-    textValue.value = ((textValue.value || node?.textContent) ?? '').trim()
+    textValue = ((textValue || node?.textContent) ?? '').trim()
   },
 })
 </script>
 
 <template>
-  <CollectionItem :value="{ textValue, value, typeaheadSelect: handleTypeaheadSelect }">
+  <CollectionItem :value="collectionValue">
     <Primitive
       :ref="forwardRef"
       role="option"
-      :aria-labelledby="textId"
+      :aria-labelledby="itemContext.textId"
       :data-highlighted="isFocused ? '' : undefined"
       :aria-selected="isSelected"
       :data-state="isSelected ? 'checked' : 'unchecked'"

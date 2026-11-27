@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { computed } from 'vue'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { injectNumberFieldRootContext } from './NumberFieldRoot.vue'
 import { usePressedHold } from './utils'
 
@@ -11,15 +12,19 @@ export interface NumberFieldDecrementProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { useTranslations } from '@/shared'
 
 const props = withDefaults(defineProps<NumberFieldDecrementProps>(), {
   as: 'button',
 })
 
+const t = useTranslations()
+
 const rootContext = injectNumberFieldRootContext()
 const isDisabled = computed(() => rootContext.disabled?.value || rootContext.readonly.value || props.disabled || rootContext.isDecreaseDisabled.value)
 
 const { primitiveElement, currentElement } = usePrimitiveElement()
+useAgentItem(rootContext, props, currentElement, 'decrement')
 const { isPressed, onTrigger } = usePressedHold({ target: currentElement, disabled: isDisabled })
 
 onTrigger(() => {
@@ -32,7 +37,7 @@ onTrigger(() => {
     v-bind="props"
     ref="primitiveElement"
     tabindex="-1"
-    aria-label="Decrease"
+    :aria-label="t('numberFieldDecrement')"
     :type="as === 'button' ? 'button' : undefined"
     :style="{
       userSelect: isPressed ? 'none' : undefined,

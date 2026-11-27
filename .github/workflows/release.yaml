@@ -20,25 +20,33 @@ concurrency:
   queue: max
 
 jobs:
+  # The whole Build workflow (build, unit, browser, Vapor and size jobs) runs on
+  # the tagged commit first. `release` and `npm` both need it, so a failure
+  # leaves the tag with no GitHub release and nothing on npm.
+  verify:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/build.yaml
+
   release:
+    needs: verify
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
-
-      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 18.x
+          node-version: 22
 
       - run: npx changelogithub
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
   npm:
+    needs: verify
     runs-on: ubuntu-latest
     environment: npm
     permissions:

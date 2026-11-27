@@ -91,7 +91,7 @@ onUnmounted(() => {
     :id="id"
     ref="primitiveElement"
     v-slot="slotProps"
-    v-memo="[isRender, rootContext.filterSearch.value, rootContext.disabled.value, disabled, props.value, props.as, props.asChild, ...Object.values($attrs)]"
+    v-memo="[isRender, rootContext.disabled.value, disabled, props.value, props.as, props.asChild, ...Object.values($attrs)]"
     :disabled="rootContext.disabled.value || disabled"
     @select="(event) => {
       emits('select', event as any)

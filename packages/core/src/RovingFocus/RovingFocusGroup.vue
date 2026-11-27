@@ -5,6 +5,7 @@ import type {
   Orientation,
 } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
+import type { KeyedSelector } from '@/shared/createKeyedSelector'
 import { inject, provide, ref, toRefs } from 'vue'
 import { createRekaContext, useDirection } from '@/shared'
 
@@ -47,6 +48,13 @@ interface RovingContext {
   dir: Ref<Direction>
   loop: Ref<boolean>
   currentTabStopId: Ref<string | null | undefined>
+  /**
+   * Whether an id is the current tab stop. An item that reads it re-renders only when it becomes or
+   * stops being the tab stop, where reading `currentTabStopId` re-evaluates in every item.
+   */
+  tabStop: KeyedSelector<string>
+  /** The group's enabled items, in DOM order. */
+  getItems: () => { ref: HTMLElement, value?: any }[]
   onItemFocus: (tabStopId: string) => void
   onItemShiftTab: () => void
   onFocusableItemAdd: () => void
@@ -74,6 +82,7 @@ export function provideRovingFocusNoActiveItem(getter: () => boolean) {
 import { useVModel } from '@vueuse/core'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
+import { createKeyedSelector } from '@/shared/createKeyedSelector'
 import { ENTRY_FOCUS, EVENT_OPTIONS, focusFirst } from './utils'
 
 const props = withDefaults(defineProps<RovingFocusGroupProps>(), {
@@ -149,6 +158,8 @@ provideRovingFocusGroupContext({
   dir,
   orientation,
   currentTabStopId,
+  tabStop: createKeyedSelector<string>(() => currentTabStopId.value),
+  getItems,
   onItemFocus: (tabStopId) => {
     currentTabStopId.value = tabStopId
   },

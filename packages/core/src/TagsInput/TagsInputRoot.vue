@@ -74,6 +74,7 @@ import { useFocusWithin, useVModel } from '@vueuse/core'
 import { isEqual } from 'ohash'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
 const props = withDefaults(defineProps<TagsInputRootProps<T>>(), {
@@ -137,7 +138,7 @@ function handleRemoveItem(element: HTMLElement) {
   handleRemoveTag(values.findIndex(value => isEqual(value, tag) && match++ === occurrence))
 }
 
-provideTagsInputRootContext({
+const agentContext = provideTagsInputRootContext({
   modelValue,
   onAddValue: (_payload) => {
     const array = [...currentModelValue.value]
@@ -203,8 +204,16 @@ provideTagsInputRootContext({
         }
         break
       }
+      // With a tag selected, Home and End go to the first and last tag.
+      // With none, they stay the input's own caret keys.
       case 'Home':
-      case 'End':
+      case 'End': {
+        if (selectedElement.value) {
+          selectedElement.value = event.key === 'Home' ? collection[0] : lastTag
+          event.preventDefault()
+        }
+        break
+      }
       case 'ArrowRight':
       case 'ArrowLeft': {
         const isArrowRight = (event.key === 'ArrowRight' && dir.value === 'ltr') || (event.key === 'ArrowLeft' && dir.value === 'rtl')
@@ -258,6 +267,7 @@ provideTagsInputRootContext({
   id,
   displayValue: props.displayValue as (value: AcceptableInputValue) => string,
 })
+useAgentRegistration('tags-input', agentContext, props, currentElement)
 </script>
 
 <template>

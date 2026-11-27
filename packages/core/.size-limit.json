@@ -20,7 +20,7 @@
   {
     "path": "dist/index.js",
     "import": "{ ComboboxRoot, ComboboxInput, ComboboxContent, ComboboxItem, ComboboxVirtualizer }",
-    "limit": "36 KB",
+    "limit": "38 KB",
     "name": "Combobox"
   },
   {
@@ -32,7 +32,7 @@
   {
     "path": "dist/index.js",
     "import": "{ DateFieldRoot, DateFieldInput }",
-    "limit": "20 KB",
+    "limit": "21 KB",
     "name": "DateField"
   },
   {
@@ -62,7 +62,19 @@
   {
     "path": "dist/index.js",
     "import": "*",
-    "limit": "186 KB",
+    "limit": "192 KB",
     "name": "Full library"
+  },
+  {
+    "path": "dist/vapor/index.js",
+    "import": "{ DialogRoot, DialogContent, DialogOverlay, DialogTrigger }",
+    "limit": "15 KB",
+    "name": "Vapor: Dialog (reka-ui/vapor)"
+  },
+  {
+    "path": "dist/vapor/index.js",
+    "import": "*",
+    "limit": "119 KB",
+    "name": "Vapor: full entry (reka-ui/vapor)"
   }
 ]

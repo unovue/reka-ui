@@ -28,8 +28,10 @@ export const [injectListboxItemContext, provideListboxItemContext]
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '..'
 import type { AcceptableValue } from '@/shared/types'
-import { computed, onBeforeUnmount } from 'vue'
+import { computed, onBeforeUnmount, onScopeDispose } from 'vue'
 import { useCollection } from '@/Collection'
+import { useSelectorKey } from '@/shared/createKeyedSelector'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { Primitive } from '..'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 import { valueComparator } from './utils'
@@ -50,9 +52,22 @@ const id = useId(undefined, 'reka-listbox-item')
 const { CollectionItem } = useCollection()
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectListboxRootContext()
+useAgentItem(rootContext, props, currentElement)
 
-const isHighlighted = computed(() => currentElement.value != null && currentElement.value === rootContext.highlightedElement.value)
-const isSelected = computed(() => valueComparator(rootContext.modelValue.value, props.value, rootContext.by))
+// Read from the root's keyed selector (one cell per item element) rather than compared against
+// `highlightedElement`: a highlight move then notifies the two items it flips, not every item.
+// A context without the selector (a hand-made one) compares against the shared ref.
+const isHighlighted = computed(rootContext.highlight
+  ? useSelectorKey(rootContext.highlight, () => currentElement.value)
+  : () => currentElement.value != null && currentElement.value === rootContext.highlightedElement.value)
+// Likewise for the selection: the root's selector notifies the items that entered or left it.
+const selection = rootContext.selection
+const selectionHold = selection?.createHold()
+if (selectionHold)
+  onScopeDispose(() => selectionHold.release())
+const isSelected = computed(() => selection
+  ? selection.isSelected(props.value, selectionHold)
+  : valueComparator(rootContext.modelValue.value, props.value, rootContext.by))
 
 const disabled = computed(() => rootContext.disabled.value || props.disabled)
 

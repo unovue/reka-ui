@@ -4,14 +4,14 @@
 <PropsTable :data="[
   {
     'name': 'defaultOpen',
-    'description': '',
+    'description': '<p>The open state of the drawer when it is initially rendered. Use when you do not need to control its open state.</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'false'
   },
   {
     'name': 'defaultSnapPoint',
-    'description': '',
+    'description': '<p>The snap point that is active when the drawer is initially rendered. Use when you do not need to control the active snap point.</p>\n',
     'type': 'null | string | number',
     'required': false
   },
@@ -24,13 +24,13 @@
   },
   {
     'name': 'open',
-    'description': '<p>v-model:open</p>\n',
+    'description': '<p>The controlled open state of the drawer. Can be bound as <code>v-model:open</code>.</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'snapPoint',
-    'description': '<p>v-model:snapPoint</p>\n',
+    'description': '<p>The controlled active snap point. Can be bound as <code>v-model:snapPoint</code>.</p>\n',
     'type': 'null | string | number',
     'required': false
   },
@@ -69,7 +69,7 @@
   },
   {
     'name': 'update:snapPoint',
-    'description': '',
+    'description': '<p>Event handler called when the active snap point changes.</p>\n',
     'type': '[value: DrawerSnapPoint | null]'
   }
 ]" />
@@ -77,12 +77,12 @@
 <SlotsTable :data="[
   {
     'name': 'open',
-    'description': '',
+    'description': '<p>Current open state</p>\n',
     'type': 'boolean'
   },
   {
     'name': 'close',
-    'description': '',
+    'description': '<p>Close the drawer</p>\n',
     'type': '(): void'
   }
 ]" />
@@ -94,11 +94,11 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `defaultOpen` |  | `boolean` | No | `false` |
-| `defaultSnapPoint` |  | `null \| string \| number` | No | - |
+| `defaultOpen` | The open state of the drawer when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
+| `defaultSnapPoint` | The snap point that is active when the drawer is initially rendered. Use when you do not need to control the active snap point. | `null \| string \| number` | No | - |
 | `modal` | Modality of the drawer.  true (default): modal with focus trap, scroll lock, and outside-press dismiss 'trap-focus': traps focus but allows outside pointer events (non-modal side panels) false: non-modal | `false \| true \| "trap-focus"` | No | `true` |
-| `open` | v-model:open | `boolean` | No | - |
-| `snapPoint` | v-model:snapPoint | `null \| string \| number` | No | - |
+| `open` | The controlled open state of the drawer. Can be bound as v-model:open. | `boolean` | No | - |
+| `snapPoint` | The controlled active snap point. Can be bound as v-model:snapPoint. | `null \| string \| number` | No | - |
 | `snapPoints` | Preset snap positions (fractions 0-1, pixels >1, or '148px'/'30rem' strings) | `DrawerSnapPoint[]` | No | - |
 | `snapToSequentialPoints` | When true, snaps to the next sequential snap point (one step at a time). When false, snaps to the nearest snap point by distance. | `boolean` | No | `false` |
 | `swipeDirection` | Direction to swipe to dismiss. | `"right" \| "left" \| "down" \| "up"` | No | `"down"` |
@@ -109,13 +109,13 @@
 | --- | --- | --- |
 | `update:open` | Event handler called when the open state of the dialog changes. | `[value: boolean, details: DrawerOpenChangeDetails]` |
 | `update:openComplete` | Emitted with true once the drawer has finished opening and false once it has finished closing: when the animations and transitions running on the popup have ended, or when its content unmounts. Animations that never end are not waited for. | `[value: boolean]` |
-| `update:snapPoint` |  | `[value: DrawerSnapPoint \| null]` |
+| `update:snapPoint` | Event handler called when the active snap point changes. | `[value: DrawerSnapPoint \| null]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `open` |  | `boolean` |
-| `close` |  | `(): void` |
+| `open` | Current open state | `boolean` |
+| `close` | Close the drawer | `(): void` |
 
 </llm-only>

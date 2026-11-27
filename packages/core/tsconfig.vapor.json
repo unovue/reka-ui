@@ -1,0 +1,19 @@
+{
+  // Type-checks the `reka-ui/vapor` sources and their browser tests (`pnpm type-check`)
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vapor.tsbuildinfo",
+    "paths": {
+      "@/*": ["./src/*"],
+      "#reka": ["./vapor/src/index.ts"],
+      "@iconify/vue": ["../../.histoire/node_modules/@iconify/vue"]
+    },
+    "types": ["vitest/globals"]
+  },
+  "include": [
+    "env.d.ts",
+    "vapor/src/**/*.ts",
+    "vapor/tests/**/*.ts",
+    "vapor/tests/**/*.vue"
+  ]
+}
