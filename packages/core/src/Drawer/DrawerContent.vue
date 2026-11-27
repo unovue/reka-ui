@@ -46,7 +46,7 @@ const forwardedProps = computed(() => {
 const isFullModal = computed(() => rootContext.modal.value === true)
 const isTrapFocusOnly = computed(() => rootContext.modal.value === 'trap-focus')
 const shouldTrapFocus = computed(() => (isFullModal.value || isTrapFocusOnly.value) && rootContext.open.value)
-const shouldHideOthers = computed(() => isFullModal.value && rootContext.open.value && isPresent.value ? currentElement.value : undefined)
+const shouldHideOthers = computed(() => isFullModal.value && isPresent.value ? currentElement.value : undefined)
 useHideOthers(shouldHideOthers)
 
 function finalFocusElement() {

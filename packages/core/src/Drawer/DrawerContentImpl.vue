@@ -43,9 +43,9 @@ import { computeSwipeReleaseScalar, DRAWER_CSS_VARS, getDisplacement, onAnimatio
 
 const props = withDefaults(defineProps<DrawerContentImplProps & {
   /** Whether the content is present, including while it animates out. Forwarded
-   * to `FocusScope` so a force-mounted drawer auto-focuses on open and leaves the
-   * scope stack while closed. The `DismissableLayer` is released as soon as the
-   * drawer closes, so the layer below takes Escape and presses during the exit. */
+   * to `FocusScope` and `DismissableLayer`, so a force-mounted drawer auto-focuses
+   * on open and leaves the scope and layer stacks while closed. During the exit
+   * the layer below takes Escape and presses, and the page stays blocked. */
   present?: boolean
 }>(), {
   initialFocus: true,
@@ -447,7 +447,8 @@ if (process.env.NODE_ENV !== 'production') {
       :ref="forwardRef"
       :as="as"
       :as-child="asChild"
-      :present="rootContext.open.value && props.present"
+      :present="props.present"
+      :exiting="!rootContext.open.value"
       :disable-outside-pointer-events="disableOutsidePointerEvents"
       role="dialog"
       :aria-describedby="rootContext.descriptionId"
