@@ -3,7 +3,7 @@ import { findByAltText, findByText, queryByText, waitForElementToBeRemoved } fro
 import { mount } from '@vue/test-utils'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { componentNames } from '@/test'
 import { AvatarFallback, AvatarImage, AvatarRoot } from '.'
 import Avatar from './story/_Avatar.vue'
@@ -125,5 +125,67 @@ describe('one component per part', () => {
       setup: () => () => h(AvatarRoot, () => h(AvatarImage, { src: 'data:,', as: 'div' }, () => 'inner')),
     }))
     expect(wrapper.find('div div').text()).toBe('inner')
+  })
+})
+
+describe('given an Avatar whose image unmounts and remounts', () => {
+  it('should show fallback again after AvatarImage unmounts and hide it when remounted', async () => {
+    ;(window.Image as any) = ImgClass
+    const showImage = ref(true)
+    const wrapper = mount({
+      components: { AvatarRoot, AvatarImage, AvatarFallback },
+      setup: () => ({ showImage }),
+      template: `
+        <AvatarRoot>
+          <AvatarImage v-if="showImage" src="https://example.com/avatar.png" alt="User" />
+          <AvatarFallback>${FALLBACK}</AvatarFallback>
+        </AvatarRoot>
+      `,
+    })
+
+    // Wait for image to load so fallback is removed
+    await waitForElementToBeRemoved(() => queryByText(wrapper.element as HTMLElement, FALLBACK))
+    expect(wrapper.find('img').exists()).toBe(true)
+
+    // Unmount AvatarImage -> fallback should appear again
+    showImage.value = false
+    await nextTick()
+    expect(wrapper.find('img').exists()).toBe(false)
+    expect(wrapper.text()).toContain(FALLBACK)
+
+    // Remount AvatarImage -> fallback stays visible while loading, then hides on load
+    showImage.value = true
+    await nextTick()
+    expect(wrapper.find('img').exists()).toBe(true)
+    await waitForElementToBeRemoved(() => queryByText(wrapper.element as HTMLElement, FALLBACK))
+    expect(wrapper.text()).not.toContain(FALLBACK)
+
+    wrapper.unmount()
+  })
+
+  it('should not leave root status stuck at idle when swapping keyed AvatarImage instances', async () => {
+    ;(window.Image as any) = ImgClass
+    const useFirst = ref(true)
+    const wrapper = mount({
+      components: { AvatarRoot, AvatarImage, AvatarFallback },
+      setup: () => ({ useFirst }),
+      template: `
+        <AvatarRoot>
+          <AvatarImage v-if="useFirst" key="first" src="https://example.com/a.png" alt="First" />
+          <AvatarImage v-else key="second" src="https://example.com/b.png" alt="Second" />
+          <AvatarFallback>${FALLBACK}</AvatarFallback>
+        </AvatarRoot>
+      `,
+    })
+
+    await waitForElementToBeRemoved(() => queryByText(wrapper.element as HTMLElement, FALLBACK))
+
+    useFirst.value = false
+    await nextTick()
+    expect(wrapper.find('img').attributes('alt')).toBe('Second')
+    await waitForElementToBeRemoved(() => queryByText(wrapper.element as HTMLElement, FALLBACK))
+    expect(wrapper.text()).not.toContain(FALLBACK)
+
+    wrapper.unmount()
   })
 })

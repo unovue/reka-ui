@@ -3,7 +3,7 @@ import type { AvatarRootContext } from './AvatarRoot.vue'
 import type { ImageLoadingStatus } from './utils'
 import type { PartSurface } from '@/shared'
 import { isClient } from '@vueuse/shared'
-import { computed, ref, toRef, toValue, watch, watchEffect } from 'vue'
+import { computed, onScopeDispose, ref, toRef, toValue, watch, watchEffect } from 'vue'
 import { createPartSurface } from '@/shared'
 import { useImageLoadingStatus } from './utils'
 
@@ -64,6 +64,13 @@ export function useAvatarImage(context: AvatarRootContext, props: UseAvatarImage
     },
     { immediate: true },
   )
+
+  // An unmounted image no longer holds the fallback back. Reset only a status this
+  // image wrote, so a keyed replacement that already reported keeps its own.
+  onScopeDispose(() => {
+    if (context.imageLoadingStatus.value === loadingStatus.value)
+      context.imageLoadingStatus.value = 'idle'
+  })
 
   return {
     loadingStatus,
