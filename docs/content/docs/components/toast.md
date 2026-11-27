@@ -533,7 +533,7 @@ function copy(event: MouseEvent) {
 
 ### Custom hotkey
 
-Override the default hotkey using the `event.code` value for each key from [keycode.info](https://keycode.info/).
+Override the default hotkey with the keys that must be pressed together. Each entry is a modifier (`altKey`, `ctrlKey`, `metaKey`, `shiftKey`), an `event.code` value such as `KeyT` from [keycode.info](https://keycode.info/), or an `event.key` value such as `t`.
 
 ```vue line=4
 <template>
