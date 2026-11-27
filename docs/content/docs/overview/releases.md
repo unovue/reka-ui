@@ -32,7 +32,7 @@ Discover the latest release of Reka UI.
 - **Combobox**: Added `max` prop and an `invalid` event to limit the number of selected options
 - **Combobox**: Added `focusOnOpen` prop to keep focus off the input when the content opens
 - **Combobox**: Added `clearValue` to set the value a clear resets to
-- **Listbox**: Added `keepFocusOnValueChange` prop to keep focus in place on programmatic value changes
+- **Listbox**: Added `keepFocusOnValueChange` prop so a programmatic value change doesn't pull focus into the listbox when it is elsewhere
 - **Listbox**: `highlightItem(value, { focus: false })` highlights an item without moving focus to it
 - **Popper**: Added `fallbackAxisSideDirection` prop to fall back to the perpendicular sides on collisions
 - **Toast**: Added `disableHoverPause` and `disableWindowBlurPause` props to `ToastProvider`
