@@ -68,7 +68,7 @@
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, rekaElementFamilies }",
-    "limit": "216 KB",
+    "limit": "218 KB",
     "name": "Elements: all supported families"
   },
   {
@@ -92,7 +92,7 @@
   {
     "path": "dist/vapor/index.js",
     "import": "*",
-    "limit": "155 KB",
+    "limit": "157 KB",
     "name": "Vapor: full entry (reka-ui/vapor)"
   }
 ]

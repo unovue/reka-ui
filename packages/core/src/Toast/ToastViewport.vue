@@ -7,6 +7,8 @@ import { useForwardElement, useTranslations } from '@/shared'
 export interface ToastViewportProps extends PrimitiveProps {
   /**
    * The keys to use as the keyboard shortcut that will move focus to the toast viewport.
+   * Every entry must be pressed together: a modifier (`altKey`, `ctrlKey`, `metaKey`,
+   * `shiftKey`), a key code (`KeyT`) or a key name (`t`).
    * @defaultValue ['F8']
    */
   hotkey?: string[]

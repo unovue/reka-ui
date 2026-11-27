@@ -715,6 +715,14 @@ export interface UseToastViewportReturn {
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle setup — the hotkey and viewport listeners are bound to the calling component.
  */
+const HOTKEY_MODIFIERS = ['altKey', 'ctrlKey', 'metaKey', 'shiftKey']
+
+function isHotkeyEntryPressed(event: KeyboardEvent, key: string) {
+  if (HOTKEY_MODIFIERS.includes(key))
+    return event[key as 'altKey' | 'ctrlKey' | 'metaKey' | 'shiftKey']
+  return event.code === key || event.key === key
+}
+
 export function useToastViewport(options: UseToastViewportOptions): UseToastViewportReturn {
   const { providerContext, viewportElement: currentElement, headFocusProxy, tailFocusProxy } = options
   const hotkey = computed(() => toValue(options.hotkey) ?? ['F8'])
@@ -751,12 +759,13 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
     }
   }, { immediate: true, flush: 'post' })
 
-  // The hotkey is a key combination: every entry must be pressed, a modifier (`altKey`,
-  // `ctrlKey`, …) or the `code` of the key itself.
+  // The hotkey is a key combination: every entry must be pressed, a modifier flag
+  // (`altKey`, `ctrlKey`, `metaKey`, `shiftKey`), the key's `code` (`KeyT`) or its
+  // `key` (`t`).
   useEventListener('keydown', (event: KeyboardEvent) => {
     const keys = hotkey.value
     const isHotkeyPressed = keys.length !== 0
-      && keys.every(key => event[key as keyof KeyboardEvent] || event.code === key)
+      && keys.every(key => isHotkeyEntryPressed(event, key))
     if (isHotkeyPressed)
       viewportElement.value?.focus()
   })
