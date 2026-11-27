@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import Fixture from './fixtures/Pagination.vue'
-import { byId, expectAdopted, expectNoAxeViolations, expectSlotted, mount, text, until } from './utils'
+import ClampFixture from './fixtures/PaginationClamp.vue'
+import { byId, expectAdopted, expectNoAxeViolations, expectSlotted, exposed, mount, text, until } from './utils'
 
 describe('pagination (Vapor)', () => {
   it('renders pages with the current one marked', async () => {
@@ -42,5 +43,12 @@ describe('pagination (Vapor)', () => {
   it('has no axe violations', async () => {
     await mount(Fixture)
     await expectNoAxeViolations()
+  })
+
+  it('clamps the page when `clampPage` turns on after mount', async () => {
+    await mount(ClampFixture)
+    expect(text('page')).toBe('50')
+    exposed<{ clamp: boolean }>().clamp = true
+    await until(() => expect(text('page')).toBe('3'))
   })
 })

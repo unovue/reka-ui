@@ -324,6 +324,19 @@ describe('when the page count shrinks', () => {
     expect(pages(mounted)).toEqual([5])
   })
 
+  it('clamps a `v-model:page` when the parent turns `clampPage` on after mount', async () => {
+    const wrapper = mount({
+      components: { PaginationRoot },
+      data: () => ({ page: 50, clamp: false }),
+      template: `<PaginationRoot v-model:page="page" :total="30" :items-per-page="10" :clamp-page="clamp" />`,
+    })
+    expect(wrapper.vm.page).toBe(50)
+
+    await wrapper.setData({ clamp: true })
+    await nextTick()
+    expect(wrapper.vm.page).toBe(3)
+  })
+
   describe('with `clampPage` and a `v-model:page` that starts undefined', () => {
     function mountBound(data: { page?: number, total: number, clampPage: boolean }) {
       const updates: number[] = []
