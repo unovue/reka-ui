@@ -980,3 +980,34 @@ describe('given a DismissableLayer rendered inside an iframe (#2949)', () => {
     expect(wrapper.emitted('dismiss')?.length).toBe(1)
   })
 })
+
+describe('given a layer that comes back while it is still exiting', () => {
+  it('lets the reopened layer, now on top, take pointer events and not the one below', async () => {
+    const bExiting = ref(false)
+    const showC = ref(false)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => [
+          h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'exiting': bExiting.value, 'data-testid': 'b' } as any, () => 'B'),
+          showC.value ? h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'data-testid': 'c' }, () => 'C') : null,
+        ]
+      },
+    }), { attachTo: document.body })
+    onTestFinished(() => wrapper.unmount())
+    await nextTick()
+
+    // B animates out, C opens, then B reopens before it unmounts: the stack is [C, B].
+    bExiting.value = true
+    await nextTick()
+    showC.value = true
+    await nextTick()
+    bExiting.value = false
+    await nextTick()
+
+    const b = wrapper.find<HTMLElement>('[data-testid="b"]').element
+    const c = wrapper.find<HTMLElement>('[data-testid="c"]').element
+    expect(document.body.style.pointerEvents).toBe('none')
+    expect(b.style.pointerEvents).toBe('auto')
+    expect(c.style.pointerEvents).toBe('none')
+  })
+})

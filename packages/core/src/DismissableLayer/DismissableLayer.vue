@@ -116,9 +116,10 @@ const isBodyPointerEventsDisabled = computed(() => {
 
 const isPointerEventsEnabled = computed(() => {
   const localLayers = Array.from(layers.value)
-  // A leaving layer still blocks the page but is out of the stack: the layers
-  // left in the stack keep taking pointer events.
-  const [highestLayerWithOutsidePointerEventsDisabled] = [...context.layersWithOutsidePointerEventsDisabled].filter(layer => layers.value.has(layer)).slice(-1)
+  // Take the highest blocking layer in stack order. A leaving layer still blocks
+  // the page but is out of the stack, so the layers left in it keep taking
+  // pointer events; a layer reopened while leaving goes back on top of the stack.
+  const [highestLayerWithOutsidePointerEventsDisabled] = localLayers.filter(layer => context.layersWithOutsidePointerEventsDisabled.has(layer)).slice(-1)
   const highestLayerWithOutsidePointerEventsDisabledIndex = localLayers.indexOf(highestLayerWithOutsidePointerEventsDisabled)
 
   return index.value >= highestLayerWithOutsidePointerEventsDisabledIndex
