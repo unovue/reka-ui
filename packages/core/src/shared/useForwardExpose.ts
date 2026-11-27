@@ -133,12 +133,16 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
         mergedChildKeys.push(key)
         if (merged === ret)
           merged = Object.defineProperties({}, Object.getOwnPropertyDescriptors(ret))
+        // Vue caches its expose proxy on first read, so a later `instance.exposed = ret` never
+        // reaches it. Fall back to this component's own value when the forwarded child is gone.
+        const own = Object.getOwnPropertyDescriptor(ret, key)
         Object.defineProperty(merged, key, {
           enumerable: true,
           configurable: true,
           get: () => {
             const forwarded = currentRef.value
-            return forwarded instanceof Element ? undefined : forwarded?.$?.exposed?.[key]
+            const forwardedExposed = forwarded instanceof Element ? undefined : forwarded?.$?.exposed
+            return forwardedExposed && key in forwardedExposed ? forwardedExposed[key] : own?.get?.()
           },
         })
       }
