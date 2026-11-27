@@ -108,6 +108,8 @@ const layerWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeProps(scop
   as: props.as,
   asChild: props.asChild,
   present: props.present,
+  // Closed but still animating out: the layer below takes Escape and presses.
+  exiting: !rootContext.open.value,
   disableOutsidePointerEvents: props.disableOutsidePointerEvents,
 }, mergeProps(content.attrs.value, instance.proxy!.$attrs), {
   onDismiss,

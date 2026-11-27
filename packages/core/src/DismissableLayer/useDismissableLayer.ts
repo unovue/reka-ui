@@ -27,6 +27,13 @@ export interface UseDismissableLayerOptions {
   disableOutsidePointerEvents?: () => boolean | undefined
   /** Whether the layer is currently active (`DismissableLayer`'s `present`). @defaultValue `true` */
   present?: () => boolean | undefined
+  /**
+   * Whether the layer is animating out (`DismissableLayer`'s `exiting`). A leaving
+   * layer keeps its internal backdrop until it is no longer present, but leaves the
+   * layer stack and stops listening straight away, so the layer below takes Escape
+   * and outside interactions during the exit. @defaultValue `false`
+   */
+  exiting?: () => boolean | undefined
   /** Element left interactive through the internal backdrop (`DismissableLayer`'s `backdropCutout`). */
   backdropCutout?: () => HTMLElement | null | undefined
   /** The layer's own visible backdrop (a `DialogOverlay`): the internal backdrop goes right below it. */
@@ -59,7 +66,9 @@ export function useDismissableLayer(options: UseDismissableLayerOptions) {
   // value only: re-running them disarms the listener and drops a pending touch
   // dismissal.
   const isPresent = computed(() => options.present?.() ?? true)
-  const present = () => isPresent.value
+  // In the layer stack and listening: present and not leaving.
+  const isActive = computed(() => isPresent.value && !options.exiting?.())
+  const present = () => isActive.value
   const disableOutsidePointerEvents = () => !!options.disableOutsidePointerEvents?.()
 
   // Participation in the shared stack manager. The manager routes Escape to the
@@ -134,8 +143,9 @@ export function useDismissableLayer(options: UseDismissableLayerOptions) {
   // owns its own backdrop, so the cleanup (prop toggle or unmount) is
   // order-independent, and nothing is ever mounted during SSR (`element`
   // only resolves on the client).
+  // The backdrop follows presence, not `exiting`: a leaving layer keeps blocking.
   watch(
-    [element, disableOutsidePointerEvents, present, () => options.backdropCutout?.(), () => options.backdropBefore?.()],
+    [element, disableOutsidePointerEvents, () => isPresent.value, () => options.backdropCutout?.(), () => options.backdropBefore?.()],
     ([element, disableOutsidePointerEvents, present, cutout, before], _, onCleanup) => {
       if (!element || !present || !disableOutsidePointerEvents)
         return
@@ -193,7 +203,7 @@ export function useDismissableLayer(options: UseDismissableLayerOptions) {
 
 /** `DismissableLayer`'s props and events, for `splitWrapperAttrs`. @internal */
 export const DISMISSABLE_LAYER_WRAPPER: WrapperSpec = {
-  props: { as: false, asChild: true, disableOutsidePointerEvents: true, present: true, backdropCutout: false },
+  props: { as: false, asChild: true, disableOutsidePointerEvents: true, present: true, exiting: true, backdropCutout: false },
   emits: ['escapeKeyDown', 'pointerDownOutside', 'focusOutside', 'interactOutside', 'dismiss'],
 }
 
@@ -207,6 +217,7 @@ export function dismissableLayerOptions(element: UseDismissableLayerOptions['ele
     element,
     disableOutsidePointerEvents: () => wrapper().props.disableOutsidePointerEvents as boolean | undefined,
     present: () => wrapper().props.present as boolean | undefined,
+    exiting: () => wrapper().props.exiting as boolean | undefined,
     backdropCutout: () => wrapper().props.backdropCutout as HTMLElement | null | undefined,
     onEscapeKeyDown: event => emit('onEscapeKeyDown', event),
     onPointerDownOutside: event => emit('onPointerDownOutside', event),

@@ -77,6 +77,13 @@ const props = withDefaults(defineProps<DismissableLayerProps & {
    */
   present?: boolean
   /**
+   * Whether the layer is animating out. A leaving layer keeps blocking outside
+   * pointer events until it is no longer present, but leaves the layer stack
+   * straight away, so the layer below takes Escape and outside interactions
+   * during the exit. Internal, like `present`.
+   */
+  exiting?: boolean
+  /**
    * Element left interactive through a hole in the internal backdrop while
    * `disableOutsidePointerEvents` is on, e.g. a
    * Combobox input or a ContextMenu trigger area. Internal plumbing.
@@ -85,6 +92,7 @@ const props = withDefaults(defineProps<DismissableLayerProps & {
 }>(), {
   disableOutsidePointerEvents: false,
   present: true,
+  exiting: false,
 })
 
 const emits = defineEmits<DismissableLayerPrivateEmits>()
@@ -100,6 +108,7 @@ const layer = useDismissableLayer({
   element: layerElement,
   disableOutsidePointerEvents: () => props.disableOutsidePointerEvents,
   present: () => props.present,
+  exiting: () => props.exiting,
   backdropCutout: () => props.backdropCutout,
   onEscapeKeyDown: event => emits('escapeKeyDown', event),
   onPointerDownOutside: event => emits('pointerDownOutside', event),

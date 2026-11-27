@@ -1094,3 +1094,69 @@ describe('given a DismissableLayer rendered inside an iframe (#2949)', () => {
     expect(wrapper.emitted('dismiss')?.length).toBe(1)
   })
 })
+
+describe('given a layer that is animating out', () => {
+  function mountPair(bExiting: { value: boolean }, showC?: { value: boolean }) {
+    const onDismissA = vi.fn()
+    const onDismissB = vi.fn()
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => [
+          h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'data-testid': 'a', 'onDismiss': onDismissA }, () => 'A'),
+          h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'exiting': bExiting.value, 'data-testid': 'b', 'onDismiss': onDismissB } as any, () => 'B'),
+          showC?.value ? h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'data-testid': 'c' }, () => 'C') : null,
+        ]
+      },
+    }), { attachTo: document.body })
+    onTestFinished(() => wrapper.unmount())
+    return { wrapper, onDismissA, onDismissB }
+  }
+
+  it('hands Escape to the layer below while it leaves', async () => {
+    const bExiting = ref(false)
+    const { onDismissA, onDismissB } = mountPair(bExiting)
+    await nextTick()
+
+    bExiting.value = true
+    await nextTick()
+    await fireEvent.keyDown(document.body, { key: 'Escape' })
+
+    expect(onDismissB).not.toHaveBeenCalled()
+    expect(onDismissA).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps its backdrop until it is no longer present', async () => {
+    const bExiting = ref(false)
+    const { wrapper } = mountPair(bExiting)
+    await nextTick()
+    const backdrops = () => document.querySelectorAll('[data-reka-internal-backdrop]').length
+    const before = backdrops()
+
+    bExiting.value = true
+    await nextTick()
+    expect(backdrops()).toBe(before)
+
+    const a = wrapper.find<HTMLElement>('[data-testid="a"]').element
+    expect(a.style.pointerEvents).toBe('auto')
+  })
+
+  it('lets the reopened layer, now on top, take pointer events and not the one below', async () => {
+    const bExiting = ref(false)
+    const showC = ref(false)
+    const { wrapper } = mountPair(bExiting, showC)
+    await nextTick()
+
+    // B animates out, C opens, then B reopens before it unmounts: the stack is [A, C, B].
+    bExiting.value = true
+    await nextTick()
+    showC.value = true
+    await nextTick()
+    bExiting.value = false
+    await nextTick()
+
+    const b = wrapper.find<HTMLElement>('[data-testid="b"]').element
+    const c = wrapper.find<HTMLElement>('[data-testid="c"]').element
+    expect(b.style.pointerEvents).toBe('auto')
+    expect(c.style.pointerEvents).toBe('none')
+  })
+})
