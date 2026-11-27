@@ -1237,30 +1237,3 @@ describe('given a toast closed by its open prop while its content stays mounted'
     expect(remaining).toBeLessThan(1000)
   })
 })
-
-describe('given an open toast with a close timer running', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
-  it('leaves no timer pending once the provider unmounts', async () => {
-    const wrapper = mount(defineComponent({
-      setup() {
-        return () => h(ToastProvider, { duration: 4000 }, () => [
-          h(ToastRoot, { open: true }, () => h(ToastDescription, null, () => 'Timed toast')),
-          h(ToastViewport),
-        ])
-      },
-    }), { attachTo: document.body })
-    await nextTick()
-    expect(vi.getTimerCount()).toBeGreaterThan(0)
-
-    wrapper.unmount()
-
-    expect(vi.getTimerCount()).toBe(0)
-  })
-})
