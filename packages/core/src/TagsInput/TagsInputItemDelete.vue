@@ -2,6 +2,7 @@
 import type { PrimitiveProps } from '@/Primitive'
 import { computed } from 'vue'
 import { useForwardExpose } from '@/shared'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { injectTagsInputItemContext } from './TagsInputItem.vue'
 import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 
@@ -18,6 +19,7 @@ const props = withDefaults(defineProps<TagsInputItemDeleteProps>(), {
 useForwardExpose()
 const context = injectTagsInputRootContext()
 const itemContext = injectTagsInputItemContext()
+useAgentItem(context, itemContext, undefined, 'delete')
 
 const disabled = computed(() => itemContext.disabled?.value || context.disabled.value)
 

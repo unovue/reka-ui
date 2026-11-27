@@ -23,6 +23,7 @@ import { useEventListener } from '@vueuse/core'
 import { isEqual } from 'ohash'
 import { computed, nextTick, ref } from 'vue'
 import { RovingFocusItem } from '@/RovingFocus'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import Radio from './Radio.vue'
 import { injectRadioGroupRootContext } from './RadioGroupRoot.vue'
 
@@ -51,6 +52,7 @@ defineSlots<{
 const { forwardRef, currentElement } = useForwardExpose()
 
 const rootContext = injectRadioGroupRootContext()
+useAgentItem(rootContext, props, currentElement)
 
 const disabled = computed(() => rootContext.disabled.value || props.disabled)
 const required = computed(() => rootContext.required.value || props.required)

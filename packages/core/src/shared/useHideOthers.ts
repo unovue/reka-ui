@@ -2,6 +2,7 @@ import type { MaybeElementRef } from '@vueuse/core'
 import { unrefElement } from '@vueuse/core'
 import { hideOthers } from 'aria-hidden'
 import { nextTick, onBeforeUnmount, watch } from 'vue'
+import { agentRegistrar } from './useAgentRegistration'
 
 /**
  * Hides other elements from assistive technology after the target's auto-focus.
@@ -38,8 +39,11 @@ export function useHideOthers(target: MaybeElementRef) {
       isInsideClosedPopover = !!el?.closest('[popover]:not(:popover-open)')
     }
     catch {}
-    if (!isInsideClosedPopover)
+    if (!isInsideClosedPopover) {
+      // The agent bridge, when there is one, notes what the app hid itself before everything else is hidden too.
+      agentRegistrar.hiding?.()
       undo = hideOthers(el)
+    }
   }, { flush: 'sync' })
 
   // Restore the background before a descendant FocusScope restores focus to it.

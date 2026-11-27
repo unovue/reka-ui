@@ -15,6 +15,7 @@ export interface ToggleGroupItemProps extends Omit<ToggleProps, 'name' | 'requir
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { Toggle } from '@/Toggle'
 import { injectToggleGroupRootContext } from './ToggleGroupRoot.vue'
 
@@ -26,7 +27,8 @@ const rootContext = injectToggleGroupRootContext()
 const disabled = computed(() => rootContext.disabled?.value || props.disabled)
 const pressed = computed(() => isValueEqualOrExist(rootContext.modelValue.value, props.value))
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, currentElement } = useForwardExpose()
+useAgentItem(rootContext, props, currentElement)
 // `ToggleGroupItem` wraps the multi-root `Toggle`, so the parent's scoped-style id
 // is not auto-forwarded; pass it through manually so consumer `<style scoped>` works.
 const scopeIdAttrs = useForwardScopeId()

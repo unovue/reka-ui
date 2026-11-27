@@ -40,6 +40,7 @@ export default defineConfig({
     index: './src/index.ts',
     internal: './src/internal.ts',
     date: './src/date/index.ts',
+    agent: './src/agent/index.ts',
     constant: './constant/index.ts',
     shared: './src/shared/index.ts',
   },
@@ -58,7 +59,6 @@ export default defineConfig({
    * @see https://github.com/rolldown/tsdown/issues/370
    */
   define: {
-    'import.meta.env.DEV': 'undefined',
     'import.meta.env.MODE': 'undefined',
     // Keys reka-ui's internal contexts by exact version, see `shared/createContext.ts`
     '__REKA_UI_VERSION__': JSON.stringify(version),

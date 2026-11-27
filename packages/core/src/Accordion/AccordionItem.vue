@@ -40,8 +40,10 @@ export const [injectAccordionItemContext, provideAccordionItemContext]
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { CollapsibleRoot } from '@/Collapsible'
+import { computed, withKeys } from 'vue'
+import { provideCollapsibleRootContext } from '@/Collapsible/CollapsibleRoot.vue'
+import { Primitive } from '@/Primitive'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 
 const props = withDefaults(
   defineProps<AccordionItemProps>(),
@@ -49,6 +51,11 @@ const props = withDefaults(
     unmountOnHide: undefined,
   },
 )
+
+const emits = defineEmits<{
+  /** Event handler called when a toggle asks for the item to open or close. The accordion's `modelValue` holds its open state. */
+  'update:open': [value: boolean]
+}>()
 
 defineSlots<{
   default?: (props: {
@@ -78,6 +85,7 @@ const dataState = computed(() =>
 
 defineExpose({ open, dataDisabled })
 const { currentRef, currentElement } = useForwardExpose()
+useAgentItem(rootContext, props, currentElement)
 
 provideAccordionItemContext(defineReactiveIds({
   open,
@@ -89,6 +97,22 @@ provideAccordionItemContext(defineReactiveIds({
   currentElement,
   value: computed(() => props.value),
 }, ['triggerId']))
+
+// The item is its own collapsible root: `AccordionTrigger` and `AccordionContent` read this context
+// as they would under a `CollapsibleRoot`, without the component and its `v-model` state in
+// between. The open state belongs to the accordion, so a toggle only reports the state it asks
+// for as `update:open`, which is what `CollapsibleRoot` emitted before.
+provideCollapsibleRootContext(defineReactiveIds({
+  contentId: '',
+  disabled,
+  open,
+  unmountOnHide: computed(() => props.unmountOnHide ?? rootContext.unmountOnHide.value),
+  onOpenToggle: () => {
+    if (disabled.value)
+      return
+    emits('update:open', !open.value)
+  },
+}, ['contentId']))
 
 function handleArrowKey(e: KeyboardEvent) {
   const target = e.target as HTMLElement
@@ -109,20 +133,19 @@ function handleArrowKey(e: KeyboardEvent) {
     },
   )
 }
+
+const onKeydown = withKeys(handleArrowKey, ['up', 'down', 'left', 'right', 'home', 'end'])
 </script>
 
 <template>
-  <CollapsibleRoot
-    :data-orientation="rootContext.orientation"
-    :data-disabled="dataDisabled"
-    :data-state="dataState"
-    :disabled="disabled"
-    :open="open"
+  <Primitive
     :as="props.as"
     :as-child="props.asChild"
-    :unmount-on-hide="props.unmountOnHide ?? rootContext.unmountOnHide.value"
-    @keydown.up.down.left.right.home.end="handleArrowKey"
+    :data-state="dataState"
+    :data-disabled="dataDisabled"
+    :data-orientation="rootContext.orientation"
+    @keydown="onKeydown"
   >
     <slot :open="open" />
-  </CollapsibleRoot>
+  </Primitive>
 </template>

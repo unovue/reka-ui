@@ -220,6 +220,7 @@ onMounted(() => {
   measureHeight()
 })
 onUnmounted(() => {
+  // A pending close timer keeps the toast's elements and component instance alive until it fires.
   window.clearTimeout(closeTimerRef.value)
   providerContext.onToastRemove()
   unregisterToast?.()

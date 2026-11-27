@@ -15,8 +15,7 @@ export type CollapsibleContentEmits = {
 </script>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Presence } from '@/Presence'
 import {
   Primitive,
@@ -102,22 +101,38 @@ onMounted(() => {
 // animation's name in its own `animationend` handler, and skipped while another CSS animation is
 // running or paused (a running one retries on its own `animationend`). Transitions are not
 // restarted by a move, so they are ignored.
-useEventListener(currentElement, 'animationend', (ev) => {
-  const node = currentElement.value!
-  if (ev.target === node) {
+function handleAnimationEnd(ev: AnimationEvent) {
+  const node = currentElement.value
+  if (node && ev.target === node) {
     requestAnimationFrame(() => {
       if (!node.getAnimations?.().some(animation => 'animationName' in animation && animation.playState !== 'finished'))
         node.style.animationName = 'none'
     })
   }
-})
+}
 
-useEventListener(currentElement, 'beforematch', (ev) => {
+function handleBeforeMatch() {
   requestAnimationFrame(() => {
     rootContext.onOpenToggle()
     emits('contentFound')
   })
-})
+}
+
+// Bound on the element, not in the template: with `asChild` a template listener is handed to the
+// child, and a component child that declares the event (or does not pass its attributes on) would
+// keep it from the element. One watcher follows the element for both events.
+let boundElement: HTMLElement | undefined
+function bindListeners(element: HTMLElement | undefined) {
+  if (element === boundElement)
+    return
+  boundElement?.removeEventListener('animationend', handleAnimationEnd)
+  boundElement?.removeEventListener('beforematch', handleBeforeMatch)
+  boundElement = element
+  element?.addEventListener('animationend', handleAnimationEnd)
+  element?.addEventListener('beforematch', handleBeforeMatch)
+}
+watch(currentElement, bindListeners, { immediate: true, flush: 'post' })
+onBeforeUnmount(() => bindListeners(undefined))
 </script>
 
 <template>

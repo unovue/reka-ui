@@ -1,15 +1,39 @@
 name: Build
 
+# Root files that change what gets installed, built or tested are listed next to
+# `packages/**`, so a lockfile bump or a workflow edit is tested too. Docs-only
+# changes stay out: they are covered by the Lint workflow.
 on:
   push:
     branches:
-      - main
+      - v2
     paths:
       - 'packages/**'
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - eslint.config.mjs
+      - '.github/workflows/**'
+      - '.github/actions/**'
 
   pull_request:
     paths:
       - 'packages/**'
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - eslint.config.mjs
+      - '.github/workflows/**'
+      - '.github/actions/**'
+
+  # The Release workflow calls this one and publishes only when every job passes.
+  workflow_call:
+
+# A new push to a pull request replaces the run in progress. Every other run
+# (a push to v2, a release) gets a group of its own and is never cancelled.
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -25,8 +49,10 @@ jobs:
       - name: Setup (Install node & pnpm)
         uses: ./.github/actions/setup
 
+      # The whole workspace: reka-ui, then the plugins package, which writes
+      # `dist/nuxt`, `dist/resolver` and `dist/namespaced` into packages/core/dist
       - name: Build
-        run: pnpm --filter reka-ui build
+        run: pnpm build
 
       - name: Upload dist artifact
         uses: actions/upload-artifact@v7
@@ -74,6 +100,43 @@ jobs:
       - name: Test (browser)
         run: pnpm --filter reka-ui test:browser
 
+  # Experimental `reka-ui/vapor` entry: its own suite, compiled in Vapor mode against Vue 3.6.
+  test-vapor:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup (Install node & pnpm)
+        uses: ./.github/actions/setup
+
+      - name: Install Chromium
+        run: pnpm --filter reka-ui exec playwright install --with-deps chromium
+
+      - name: Test (Vapor build plugins, Node)
+        run: pnpm --filter reka-ui test:vapor:node
+
+      - name: Test (Vapor)
+        run: pnpm --filter reka-ui test:vapor
+
+      # The same tests against the VDOM components, so a failure that is not Vapor-specific shows up here too
+      - name: Test (VDOM parity)
+        run: pnpm --filter reka-ui test:vapor
+        env:
+          VAPOR_PARITY: vdom
+
+      # The published files: the same tests against the built dist/vapor, plus Node-side checks (SSR stub, exports)
+      - name: Download dist artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: reka-ui-dist
+          path: packages/core/dist
+
+      - name: Test (Vapor, built dist)
+        run: pnpm --filter reka-ui test:vapor:dist
+
   # The Carousel rests on native scroll snapping, smooth scrolling and `scrollend`,
   # where Firefox and WebKit differ from Chromium, so its browser tests run in both.
   test-browser-carousel:
@@ -99,6 +162,29 @@ jobs:
 
       - name: Test (browser)
         run: pnpm --filter reka-ui test:browser src/Carousel
+
+  # The package as it would be published: it is packed, then publint and Are The Types Wrong read the
+  # tarball, Node loads every entry of `exports` with import() and require(), and a small TypeScript
+  # consumer is type-checked against the packed declarations. See packages/core/package-check.
+  package:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup (Install node & pnpm)
+        uses: ./.github/actions/setup
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: reka-ui-dist
+          path: packages/core/dist
+
+      - name: Check the published package
+        run: pnpm package:check
 
   size:
     needs: build

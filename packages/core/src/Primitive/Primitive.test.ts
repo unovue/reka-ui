@@ -299,6 +299,49 @@ describe('test Primitive functionalities', () => {
     })
   })
 
+  it('should follow attribute and `as` changes from the parent', async () => {
+    const wrapper = mount(Primitive, {
+      props: { as: 'span' },
+      attrs: { 'data-state': 'closed' },
+    })
+    expect(wrapper.html()).toBe('<span data-state="closed"></span>')
+
+    await wrapper.setProps({ 'data-state': 'open' } as any)
+    expect(wrapper.html()).toBe('<span data-state="open"></span>')
+
+    await wrapper.setProps({ as: 'p' })
+    expect(wrapper.html()).toBe('<p data-state="open"></p>')
+  })
+
+  it('should create no setup context', () => {
+    // A setup context costs an attrs proxy and an `expose` closure per instance, and Primitive
+    // wraps nearly every part
+    const plain = mount(Primitive)
+    expect(plain.vm.$.setupContext).toBeNull()
+
+    const asChild = mount(Primitive, { props: { asChild: true }, slots: { default: '<div />' } })
+    const instances: any[] = []
+    for (let vnode = asChild.vm.$.subTree; vnode?.component; vnode = vnode.component.subTree)
+      instances.push(vnode.component)
+    expect(asChild.vm.$.setupContext).toBeNull()
+    for (const instance of instances)
+      expect(instance.setupContext).toBeNull()
+  })
+
+  it('should render `asChild` with one component instance', () => {
+    // An `asChild` Primitive used to render a nested `Slot` component around the child
+    const wrapper = mount(Primitive, {
+      props: { asChild: true },
+      attrs: { 'data-parent': '' },
+      slots: { default: '<button class="child">Child</button>' },
+    })
+    expect(wrapper.html()).toBe('<button data-parent="" class="child">Child</button>')
+    // The root of the Primitive is the child element itself, not another component
+    expect(wrapper.vm.$.subTree.component).toBeNull()
+    expect(wrapper.vm.$.subTree.type).toBe('button')
+    expect(wrapper.vm.$el).toBe(wrapper.element)
+  })
+
   it('should not render a plain object without a render function', () => {
     const wrapper = mount(Primitive, {
       props: {

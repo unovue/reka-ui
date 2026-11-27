@@ -1,10 +1,29 @@
 <script lang="ts">
+import type { DateValue } from '@internationalized/date'
+import type { Grid, WeekStartsOn } from '@/date'
 import { isEqualDay } from '@internationalized/date'
 import { RangeCalendarRoot } from '..'
 import { injectDateRangePickerRootContext } from './DateRangePickerRoot.vue'
 </script>
 
 <script setup lang="ts">
+defineSlots<{
+  default?: (props: {
+    /** The current date of the placeholder */
+    date: DateValue
+    /** The grid of dates */
+    grid: Grid<DateValue>[]
+    /** The days of the week */
+    weekDays: string[]
+    /** The start of the week */
+    weekStartsOn: WeekStartsOn
+    /** The calendar locale */
+    locale: string
+    /** Whether or not to always display 6 weeks in the calendar */
+    fixedWeeks: boolean
+  }) => any
+}>()
+
 const rootContext = injectDateRangePickerRootContext()
 </script>
 

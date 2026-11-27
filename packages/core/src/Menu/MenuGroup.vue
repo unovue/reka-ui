@@ -17,15 +17,15 @@ import { Primitive } from '@/Primitive'
 
 const props = defineProps<MenuGroupProps>()
 
-const id = useId(undefined, 'reka-menu-group')
-provideMenuGroupContext({ id })
+// The template reads the id through the context, which follows a consumer `id` on the label.
+const context = provideMenuGroupContext({ id: useId(undefined, 'reka-menu-group') })
 </script>
 
 <template>
   <Primitive
     role="group"
     v-bind="props"
-    :aria-labelledby="id"
+    :aria-labelledby="context.id"
   >
     <slot />
   </Primitive>

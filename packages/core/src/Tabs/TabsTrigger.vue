@@ -12,11 +12,18 @@ export interface TabsTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, mergeProps } from 'vue'
 import { Primitive } from '@/Primitive'
-import { RovingFocusItem } from '@/RovingFocus'
+import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { injectTabsRootContext } from './TabsRoot.vue'
-import { makeContentId, makeTriggerId, useTabsPartId } from './utils'
+import { makeContentId, makeTriggerId, useTabSelected, useTabsPartId } from './utils'
+
+defineOptions({
+  // `$attrs` are merged under the roving and the trigger's own bindings, the precedence the
+  // `RovingFocusItem` wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<TabsTriggerProps>(), {
   disabled: false,
@@ -25,59 +32,61 @@ const props = withDefaults(defineProps<TabsTriggerProps>(), {
 
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectTabsRootContext()
+useAgentItem(rootContext, props, currentElement)
 
 const triggerId = useTabsPartId(rootContext.triggerIds, props, currentElement, () => makeTriggerId(rootContext.baseId, props.value))
 const contentId = computed(() => rootContext.contentIds.value.has(props.value)
   ? rootContext.renderedContentIds.value.get(props.value) ?? makeContentId(rootContext.baseId, props.value)
   : undefined)
 
-const isSelected = computed(() => props.value === rootContext.modelValue.value)
+const isSelected = useTabSelected(rootContext, () => props.value)
+
+const roving = useRovingFocusItem({
+  element: currentElement,
+  focusable: () => !props.disabled,
+  active: isSelected,
+})
 </script>
 
 <template>
-  <RovingFocusItem
-    as-child
-    :focusable="!disabled"
-    :active="isSelected"
+  <Primitive
+    v-bind="mergeProps($attrs, roving.attrs())"
+    :id="triggerId"
+    :ref="forwardRef"
+    role="tab"
+    :type="as === 'button' ? 'button' : undefined"
+    :as="as"
+    :as-child="asChild"
+    :aria-selected="isSelected() ? 'true' : 'false'"
+    :aria-controls="contentId"
+    :data-state="isSelected() ? 'active' : 'inactive'"
+    :disabled="disabledAttr(disabled, props.as, props.asChild)"
+    :data-disabled="disabled ? '' : undefined"
+    :data-orientation="rootContext.orientation.value"
+    @mousedown="(event: MouseEvent) => {
+      if (event.defaultPrevented) return;
+      // only call handler if it's the left button (mousedown gets triggered by all mouse buttons)
+      // but not when the control key is pressed (avoiding MacOS right click)
+      if (!disabled && event.button === 0 && event.ctrlKey === false) {
+        rootContext.changeModelValue(value);
+      }
+      else {
+        // prevent focus to avoid accidental activation
+        event.preventDefault();
+      }
+    }"
+    @keydown.enter.space="(event: KeyboardEvent) => {
+      if (!event.defaultPrevented) rootContext.changeModelValue(value);
+    }"
+    @focus="() => {
+      // handle 'automatic' activation if necessary
+      // ie. activate tab following focus
+      const isAutomaticActivation = rootContext.activationMode !== 'manual';
+      if (!isSelected() && !disabled && isAutomaticActivation) {
+        rootContext.changeModelValue(value);
+      }
+    }"
   >
-    <Primitive
-      :id="triggerId"
-      :ref="forwardRef"
-      role="tab"
-      :type="as === 'button' ? 'button' : undefined"
-      :as="as"
-      :as-child="asChild"
-      :aria-selected="isSelected ? 'true' : 'false'"
-      :aria-controls="contentId"
-      :data-state="isSelected ? 'active' : 'inactive'"
-      :disabled="disabledAttr(disabled, props.as, props.asChild)"
-      :data-disabled="disabled ? '' : undefined"
-      :data-orientation="rootContext.orientation.value"
-      @mousedown="(event: MouseEvent) => {
-        if (event.defaultPrevented) return;
-        // only call handler if it's the left button (mousedown gets triggered by all mouse buttons)
-        // but not when the control key is pressed (avoiding MacOS right click)
-        if (!disabled && event.button === 0 && event.ctrlKey === false) {
-          rootContext.changeModelValue(value);
-        }
-        else {
-          // prevent focus to avoid accidental activation
-          event.preventDefault();
-        }
-      }"
-      @keydown.enter.space="(event: KeyboardEvent) => {
-        if (!event.defaultPrevented) rootContext.changeModelValue(value);
-      }"
-      @focus="() => {
-        // handle 'automatic' activation if necessary
-        // ie. activate tab following focus
-        const isAutomaticActivation = rootContext.activationMode !== 'manual';
-        if (!isSelected && !disabled && isAutomaticActivation) {
-          rootContext.changeModelValue(value);
-        }
-      }"
-    >
-      <slot />
-    </Primitive>
-  </RovingFocusItem>
+    <slot />
+  </Primitive>
 </template>

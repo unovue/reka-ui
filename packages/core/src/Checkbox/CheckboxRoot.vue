@@ -59,7 +59,7 @@ import { isEqual } from 'ohash'
 import { computed, onBeforeUnmount, onMounted, shallowRef, useAttrs, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { Primitive } from '@/Primitive'
-import { RovingFocusItem } from '@/RovingFocus'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { getParentState, getParentToggleValue, getState, isIndeterminate } from './utils'
 
@@ -123,7 +123,8 @@ const nativeDisabled = computed(() => Boolean(checkboxGroupContext?.disabled.val
 const disabled = computed(() => nativeDisabled.value || isGroupMaxReached.value)
 // Checkboxes inside a `CheckboxGroupRoot` share one Field, so none of them
 // takes the field's id (it would be duplicated) or acts as its control.
-const participatesAsControl = computed(() => Boolean(fieldContext) && !checkboxGroupContext)
+// Both contexts are injected once, so this never changes.
+const participatesAsControl = { value: Boolean(fieldContext) && !checkboxGroupContext }
 const resolvedId = computed(() => props.id ?? (participatesAsControl.value ? fieldContext?.fieldId.value : generatedId.value))
 const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
 // `required` is a plain (non-optional-default) `Boolean` prop, so Vue casts
@@ -148,26 +149,35 @@ const checkboxState = computed<CheckedState>(() => {
   }
 })
 
-function handleClick() {
+// A click toggles. Called with `true` or `false` (the agent bridge does), it sets that state instead,
+// so an indeterminate checkbox can be unchecked in one change.
+function handleClick(target?: unknown) {
   // Native `disabled` doesn't block clicks on a non-button (`asChild`), nor when
   // the checkbox is only blocked by the group's `max`.
   if (disabled.value)
     return
+  const to = typeof target === 'boolean' ? target : undefined
+  if (to !== undefined && checkboxState.value === to)
+    return
 
   // Captured before the update: a controlled `modelValue` only changes once
   // the parent re-renders.
-  const nextState = checkboxState.value !== true
+  const nextState = to ?? checkboxState.value !== true
 
   if (!isNullish(checkboxGroupContext?.modelValue.value)) {
     let modelValueArray = [...(checkboxGroupContext.modelValue.value || [])]
     if (isParent.value) {
       const disabledItems = getControlledItems().filter(item => item.disabled())
-      modelValueArray = getParentToggleValue(
-        checkboxGroupContext.allValues.value ?? [],
-        modelValueArray,
-        value => disabledItems.some(item => isEqual(item.value(), value)),
-        checkboxGroupContext.max.value,
-      )
+      const isDisabledValue = (value: unknown) => disabledItems.some(item => isEqual(item.value(), value))
+      const allValues = checkboxGroupContext.allValues.value ?? []
+      const toggled = getParentToggleValue(allValues, modelValueArray, isDisabledValue, checkboxGroupContext.max.value)
+      // Checking only adds: a group with no room left stays as it is, where a click would clear it.
+      if (to === true && toggled.length <= modelValueArray.length)
+        return
+      // Unchecking a mixed parent clears what it can, the way a click on a checked one does.
+      modelValueArray = to === false && checkboxState.value !== true
+        ? modelValueArray.filter(value => isDisabledValue(value) || !isValueEqualOrExist(allValues, value))
+        : toggled
     }
     else if (isValueEqualOrExist(modelValueArray, props.value)) {
       const index = modelValueArray.findIndex(i => isEqual(i, props.value))
@@ -180,7 +190,7 @@ function handleClick() {
   }
   else {
     if (modelValue.value === 'indeterminate') {
-      modelValue.value = props.trueValue as TrueValue
+      modelValue.value = to === false ? props.falseValue as FalseValue : props.trueValue as TrueValue
     }
     else {
       modelValue.value = isChecked.value ? props.falseValue as FalseValue : props.trueValue as TrueValue
@@ -192,11 +202,15 @@ function handleClick() {
 }
 
 // A programmatic/parent-driven change updates `filled`, but isn't dirtying.
-watch(checkboxState, (state) => {
-  if (participatesAsControl.value)
+// Outside a Field (or inside a group) there is nothing to report, so no watcher is created.
+if (participatesAsControl.value) {
+  watch(checkboxState, (state) => {
     fieldContext?.reportControlState({ filled: state === true })
-})
+  })
+}
 
+// Depends on the element, which is set after mount. The template reads it last, so a checkbox
+// without a `name` (no hidden input either way) does not render a second time once it has mounted.
 const isFormControl = useFormControl(currentElement)
 // The hidden form input is rendered as a sibling (not nested) of the interactive
 // control to avoid the `nested-interactive` a11y violation. That makes this a
@@ -291,16 +305,17 @@ if (checkboxGroupContext) {
   onBeforeUnmount(() => items.delete(item))
 }
 
-provideCheckboxRootContext({
+const agentContext = provideCheckboxRootContext({
   disabled: nativeDisabled,
   state: checkboxState,
 })
+useAgentRegistration('checkbox', agentContext, props, currentElement, handleClick)
 </script>
 
 <template>
   <component
     v-bind="{ ...fieldContext?.dataAttributes.value, 'aria-controls': ariaControls, ...$attrs, ...scopeIdAttrs, ...getFieldAriaAttrs() }"
-    :is="checkboxGroupContext?.rovingFocus.value ? RovingFocusItem : Primitive"
+    :is="checkboxGroupContext?.rovingFocus.value ? checkboxGroupContext.RovingFocusItem : Primitive"
     :id="resolvedId"
     :ref="forwardRef"
     role="checkbox"
@@ -329,7 +344,7 @@ provideCheckboxRootContext({
   </component>
 
   <VisuallyHiddenInput
-    v-if="isFormControl && resolvedName && !checkboxGroupContext"
+    v-if="!checkboxGroupContext && resolvedName && isFormControl"
     type="checkbox"
     :checked="!!checkboxState"
     :name="resolvedName"

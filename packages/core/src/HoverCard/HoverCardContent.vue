@@ -3,7 +3,7 @@ import type { HoverCardContentImplEmits, HoverCardContentImplProps } from './Hov
 import { defineAsyncComponent } from 'vue'
 
 const HoverCardContentImpl = defineAsyncComponent({
-  loader: () => import('./HoverCardContentImpl.vue'),
+  loader: () => import('./HoverCardContentImpl.vue').then(m => m.default),
   suspensible: false,
 })
 

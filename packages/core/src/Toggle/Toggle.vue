@@ -33,6 +33,7 @@ import type { Ref } from 'vue'
 import { useVModel } from '@vueuse/core'
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 
 defineOptions({
   inheritAttrs: false,
@@ -73,6 +74,10 @@ const modelValue = useVModel(props, 'modelValue', emits, {
 function togglePressed() {
   modelValue.value = !modelValue.value
 }
+
+// A group item belongs to its ToggleGroupRoot's registration.
+if (!toggleGroupContext)
+  useAgentRegistration('toggle', modelValue, props, currentElement)
 
 const dataState = computed<DataState>(() => {
   return modelValue.value ? 'on' : 'off'

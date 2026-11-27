@@ -7,12 +7,14 @@ export interface MenuLabelProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
+import { claimReferencedId } from '@/shared'
 
 const props = withDefaults(defineProps<MenuLabelProps>(), {
   as: 'div',
 })
 
 const groupContext = injectMenuGroupContext({ id: '' })
+claimReferencedId(groupContext, 'id')
 </script>
 
 <template>
