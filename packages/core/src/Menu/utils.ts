@@ -1,4 +1,4 @@
-import type { MenuContentHideEvent } from './MenuRoot.vue'
+import type { MenuContentHideEvent, MenuContext } from './MenuRoot.vue'
 import { getCurrentScope, onScopeDispose, toRaw } from 'vue'
 import { getActiveElement } from '@/shared'
 
@@ -105,12 +105,11 @@ type ContentHideHandler = (event: MenuContentHideEvent) => void
 const contentHideHandlers = new WeakMap<object, Set<ContentHideHandler>>()
 
 /**
- * `MenuContext.onContentHide`, shared by every menu context and called as its method: adds
- * a handler of a part that returns focus when a kept-mounted content hides. Inside a scope
- * the handler is removed with it.
+ * Adds a handler of a part that returns focus when the kept-mounted content of the menu with
+ * `context` hides. Inside a scope the handler is removed with it.
  */
-export function onContentHide(this: object, handler: ContentHideHandler) {
-  const context = toRaw(this)
+export function onContentHide(context: object, handler: ContentHideHandler) {
+  context = toRaw(context)
   let handlers = contentHideHandlers.get(context)
   if (!handlers)
     contentHideHandlers.set(context, handlers = new Set())
@@ -119,7 +118,47 @@ export function onContentHide(this: object, handler: ContentHideHandler) {
     onScopeDispose(() => handlers.delete(handler))
 }
 
-/** `MenuContext.contentHidden`, shared like `onContentHide`: calls its handlers. */
-export function contentHidden(this: object, event: MenuContentHideEvent) {
-  contentHideHandlers.get(toRaw(this))?.forEach(handler => handler(event))
+/** Calls the content-hide handlers of the menu with `context`. */
+export function contentHidden(context: object, event: MenuContentHideEvent) {
+  contentHideHandlers.get(toRaw(context))?.forEach(handler => handler(event))
+}
+
+type ContentHideHooks = Pick<MenuContext, 'onContentHide' | 'contentHidden'>
+
+// `MenuContext.onContentHide` / `contentHidden` bound to their context, created on the first
+// read: the parts call the functions above, so only a consumer reading the hooks pays for them.
+const boundContentHideHooks = new WeakMap<object, ContentHideHooks>()
+
+function contentHideHooks(context: object): ContentHideHooks {
+  context = toRaw(context)
+  let hooks = boundContentHideHooks.get(context)
+  if (!hooks) {
+    boundContentHideHooks.set(context, hooks = {
+      onContentHide: handler => onContentHide(context, handler),
+      contentHidden: event => contentHidden(context, event),
+    })
+  }
+  return hooks
+}
+
+// The class of every menu context: its hide hooks are getters on the prototype, so a menu holds
+// no functions for them, and they still work destructured. A class rather than
+// `Object.create(prototype)`: its instances keep every field in the object itself.
+class MenuContextBase {
+  constructor(fields: object) {
+    Object.assign(this, fields)
+  }
+
+  get onContentHide(): MenuContext['onContentHide'] {
+    return contentHideHooks(this).onContentHide
+  }
+
+  get contentHidden(): MenuContext['contentHidden'] {
+    return contentHideHooks(this).contentHidden
+  }
+}
+
+/** Creates a menu context: `fields` with the content-hide hooks. */
+export function createMenuContext(fields: Omit<MenuContext, keyof ContentHideHooks>): MenuContext {
+  return new MenuContextBase(fields) as MenuContext
 }

@@ -9,7 +9,7 @@ import { createPartSurface, disclosureState, getActiveElement, getterRef, useArr
 import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
 import { resolveDirection } from '@/shared/useDirection'
 import { useIsUsingKeyboard } from '@/shared/useIsUsingKeyboard'
-import { contentHidden, FIRST_LAST_KEYS, focusFirst, isMouseEvent, isPointerInGraceArea, ITEM_SELECT, LAST_KEYS, onContentHide, SELECTION_KEYS } from './utils'
+import { contentHidden, createMenuContext, FIRST_LAST_KEYS, focusFirst, isMouseEvent, isPointerInGraceArea, ITEM_SELECT, LAST_KEYS, SELECTION_KEYS } from './utils'
 
 // =============================================================================
 // Headless composables for the Menu (overlay) family — issue #2723.
@@ -127,7 +127,7 @@ export function useMenuRoot(props: UseMenuRootProps = {}): UseMenuRootReturn {
     return setState(false, reason, event)
   }
 
-  const menuContext: MenuContext = {
+  const menuContext = createMenuContext({
     open,
     onOpenChange,
     content,
@@ -135,10 +135,7 @@ export function useMenuRoot(props: UseMenuRootProps = {}): UseMenuRootReturn {
       content.value = element
     },
     notifyOpenComplete: value => props.onOpenComplete?.(value),
-    // Shared methods, called on the context.
-    onContentHide,
-    contentHidden,
-  }
+  })
   const menuRootContext: MenuRootContext = {
     onClose,
     dir: dir as Ref<Direction>,
@@ -467,7 +464,7 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
       filterSearch.value = ''
       resetTypeahead()
       const container = contentElement.value
-      menuContext.contentHidden({ container, focusedBeforeShow, focusLeft: hasFocusLeftScope(container ?? null) })
+      contentHidden(menuContext, { container, focusedBeforeShow, focusLeft: hasFocusLeftScope(container ?? null) })
       focusedBeforeShow = null
     }
   }, { immediate: true })
