@@ -1078,7 +1078,7 @@ To keep a value through a reset, cancel the change:
 
 ## Disabled controls in an invalid Field
 
-A disabled `CheckboxRoot`, or a `SelectTrigger` whose `SelectRoot` or trigger is disabled, no longer renders `aria-invalid="true"` inside an invalid `FieldRoot`, as every other disabled control already did. v2 marked them invalid. `data-invalid` still describes the field's state, so styles keyed on it are unchanged; an `aria-invalid` you pass yourself still wins. A selector that must still match a disabled checkbox or select trigger in an invalid field needs `[data-invalid]:not([aria-invalid])` next to `[aria-invalid="true"]`, so an `aria-invalid` you set yourself still decides. Tests that expect `aria-invalid` on such a control, without setting it, should expect it to be absent.
+A disabled `CheckboxRoot`, or a `SelectTrigger` whose `SelectRoot` or trigger is disabled, no longer renders `aria-invalid="true"` inside an invalid `FieldRoot`, as every other disabled control already did. v2 marked them invalid. `data-invalid` still describes the field's state, so styles keyed on it are unchanged; an `aria-invalid` you pass yourself still wins. A selector that must still match a disabled checkbox or select trigger in an invalid field needs the same control selector with `[data-invalid]:not([aria-invalid])` next to its `[aria-invalid="true"]` one, for example `.checkbox[aria-invalid="true"], .checkbox[data-invalid]:not([aria-invalid])`. Keep it scoped to the control, since the invalid `FieldRoot` carries `data-invalid` too; the `:not()` lets an `aria-invalid` you set yourself still decide. Tests that expect `aria-invalid` on such a control, without setting it, should expect it to be absent.
 
 ## Pagination keeps the page within the page count
 
