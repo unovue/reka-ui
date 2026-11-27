@@ -65,9 +65,11 @@ function resolveAnchorSibling(target: ComponentPublicInstance, el: CharacterData
   const next = el?.nextElementSibling
   if (!next)
     return null
+  // Down to the innermost rendered subtree: through component roots and the
+  // active branch of a `<Suspense>` root.
   let vnode = target.$?.subTree
-  while (vnode?.component)
-    vnode = vnode.component.subTree
+  while (vnode?.component || vnode?.suspense?.activeBranch)
+    vnode = vnode.component ? vnode.component.subTree : vnode.suspense!.activeBranch!
   const end = vnode?.anchor as Node | null | undefined
   // 4: Node.DOCUMENT_POSITION_FOLLOWING
   return end && next.compareDocumentPosition(end) & 4 ? next : null
