@@ -17,7 +17,7 @@
   },
   {
     'name': 'hotkey',
-    'description': '<p>The keys to use as the keyboard shortcut that will move focus to the toast viewport.</p>\n',
+    'description': '<p>The keys to use as the keyboard shortcut that will move focus to the toast viewport.\nEvery entry must be pressed together: a modifier (<code>altKey</code>, <code>ctrlKey</code>, <code>metaKey</code>,\n<code>shiftKey</code>), a key code (<code>KeyT</code>) or a key name (<code>t</code>).</p>\n',
     'type': 'string[]',
     'required': false,
     'default': '[\'F8\']'
@@ -40,7 +40,7 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"ol"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `hotkey` | The keys to use as the keyboard shortcut that will move focus to the toast viewport. | `string[]` | No | `["F8"]` |
+| `hotkey` | The keys to use as the keyboard shortcut that will move focus to the toast viewport. Every entry must be pressed together: a modifier (altKey, ctrlKey, metaKey, shiftKey), a key code (KeyT) or a key name (t). | `string[]` | No | `["F8"]` |
 | `label` | An author-localized label for the toast viewport to provide context for screen reader users when navigating page landmarks. The available {hotkey} placeholder will be replaced for you. Alternatively, you can pass in a custom function to generate the label. Defaults to the toastViewportLabel message of ConfigProvider. | `string \| ((hotkey: string) => string)` | No | `'Notifications ({hotkey})'` |
 
 </llm-only>
