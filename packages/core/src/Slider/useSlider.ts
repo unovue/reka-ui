@@ -3,7 +3,7 @@ import type { SliderRootContext } from './SliderRoot.vue'
 import type { SliderOrientation } from './utils'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { DataOrientation, Direction } from '@/shared/types'
-import { computed, ref, toRaw, toValue } from 'vue'
+import { computed, ref, toValue } from 'vue'
 import { clamp, createPartSurface, fieldRef, getDecimalCount, getterRef, useControllableState, useTranslations } from '@/shared'
 import { resolveDirection } from '@/shared/useDirection'
 import {
@@ -356,7 +356,8 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     const prevValue = valuesBeforeSlideStart[valueIndexToChangeRef.value]
     const nextValue = currentModelValue.value[valueIndexToChangeRef.value]
     if (nextValue !== prevValue) {
-      const committed = toRaw(currentModelValue.value)
+      // The bounds can change mid-drag; commit what the slider can actually hold.
+      const committed = currentModelValue.value.map(value => clamp(value, min.value, max.value))
       props.onValueCommit?.(committed)
       props.emit?.('valueCommit', committed)
     }

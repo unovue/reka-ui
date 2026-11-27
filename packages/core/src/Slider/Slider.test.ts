@@ -37,6 +37,27 @@ it.each([
   expect(thumb.attributes('aria-valuenow')).toBe(String(next))
 })
 
+it.each([
+  { defaultValue: [50], clientX: 85, min: 0, max: 60, expected: [60] },
+  { defaultValue: [50], clientX: 15, min: 40, max: 100, expected: [40] },
+  { defaultValue: [50], clientX: 45, min: 20, max: 60, expected: [45] },
+  { defaultValue: [20, 80], clientX: 85, min: 40, max: 60, expected: [40, 60] },
+])('commits $expected when the bounds change to [$min, $max] during a drag', async ({ defaultValue, clientX, min, max, expected }) => {
+  const wrapper = mount(SliderRoot, {
+    props: { defaultValue, thumbAlignment: 'overflow' },
+    slots: { default: () => defaultValue.map((_, key) => h(SliderThumb, { key })) },
+  })
+  const slider = wrapper.get('[data-slider-impl]').element
+  vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 20))
+
+  await fireEvent.pointerDown(slider, { clientX: defaultValue.at(-1)!, pointerId: 1 })
+  await fireEvent.pointerMove(slider, { clientX, pointerId: 1 })
+  await wrapper.setProps({ min, max })
+  await fireEvent.pointerUp(slider, { pointerId: 1 })
+
+  expect(wrapper.emitted('valueCommit')).toEqual([[expected]])
+})
+
 describe('given default Slider', () => {
   let wrapper: VueWrapper<InstanceType<typeof Slider>>
 
