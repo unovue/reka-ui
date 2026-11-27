@@ -171,8 +171,15 @@ export function getListboxItemSurface<T extends AcceptableValue = AcceptableValu
       return
 
     if (!isDisabled() && ev) {
-      context.onValueChange(toValue(value), reason, ev.detail.originalEvent)
-      context.changeHighlight(toValue(options.element)!)
+      const element = toValue(options.element)!
+      const select = () => context.onValueChange(toValue(value), reason, ev.detail.originalEvent)
+      if (context.onSelection) {
+        context.onSelection(element, select)
+      }
+      else {
+        select()
+        context.changeHighlight(element)
+      }
     }
   }
 
@@ -591,6 +598,105 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     return getItems().map(i => i.ref).filter(i => !isDisabledItem(i))
   }
 
+  // Focus recovery for a selection that removes the focused item (a list that
+  // filters out what is selected): once the update renders, the focus that fell
+  // to `body` with the item moves to the nearest surviving item, next first.
+  interface SelectionRecovery {
+    token: number
+    selectedElement: HTMLElement
+    candidates: { ref: HTMLElement, value: T }[]
+  }
+  let selectionRecoveryToken = 0
+  let pendingSelectionRecovery: SelectionRecovery | undefined
+  function cancelSelectionRecovery() {
+    selectionRecoveryToken++
+    pendingSelectionRecovery = undefined
+  }
+  if (getCurrentScope())
+    onScopeDispose(cancelSelectionRecovery)
+
+  function recoverSelectionFocus(token: number) {
+    const recovery = pendingSelectionRecovery
+    if (selectionRecoveryToken !== token || !recovery || recovery.token !== token)
+      return
+    pendingSelectionRecovery = undefined
+
+    const root = toValue(props.element)
+    const activeElement = getActiveElement()
+    // Focus on `body` alone is no permission to move it: the item had to own the
+    // focus when it was selected, and the focus must have left with it.
+    const focusWasLost = !activeElement || activeElement === document.body || activeElement === document.documentElement
+    if (
+      isVirtual.value
+      || disabled.value
+      || !focusable.value
+      || (root && !root.isConnected)
+      || !focusWasLost
+      || recovery.selectedElement.isConnected
+      || (highlightedElement.value && highlightedElement.value !== recovery.selectedElement)
+    ) {
+      return
+    }
+
+    const selectedIndex = recovery.candidates.findIndex(candidate => candidate.ref === recovery.selectedElement)
+    if (selectedIndex === -1)
+      return
+    if (previousElement.value === recovery.selectedElement || !previousElement.value?.isConnected)
+      previousElement.value = null
+
+    // Matched by value (`by`-aware), not by element or index: the items may have
+    // been recreated, and more than one may have gone.
+    const currentItems = getItems()
+    const candidates = [
+      ...recovery.candidates.slice(selectedIndex + 1),
+      ...recovery.candidates.slice(0, selectedIndex).reverse(),
+    ]
+    for (const candidate of candidates) {
+      const item = currentItems.find(current => compare(current.value, candidate.value, props.by))
+      if (item?.ref.isConnected) {
+        changeHighlight(item.ref)
+        return
+      }
+    }
+  }
+
+  function onSelection(element: HTMLElement, select: () => boolean) {
+    const token = ++selectionRecoveryToken
+    pendingSelectionRecovery = undefined
+
+    const activeElement = getActiveElement()
+    const wasFocused = !!activeElement && !!element?.contains(activeElement)
+    const candidates = wasFocused && !isVirtual.value && !disabled.value && focusable.value && element.isConnected
+      ? getItems(true)
+      : []
+    const recovery: SelectionRecovery | undefined = candidates.some(candidate => candidate.ref === element)
+      ? { token, selectedElement: element, candidates: candidates.map(({ ref, value }) => ({ ref, value })) }
+      : undefined
+
+    if (!select()) {
+      // An unchanged, cancelled or `max`-blocked selection still highlights the item.
+      if (selectionRecoveryToken === token)
+        changeHighlight(element)
+      return
+    }
+
+    // A synchronous `update:modelValue` handler may have started another selection,
+    // which now owns the token.
+    if (selectionRecoveryToken !== token)
+      return
+
+    // The app may move the focus on purpose while handling the update: that wins
+    // over re-focusing the item.
+    if (getActiveElement() !== activeElement)
+      return
+    changeHighlight(element)
+
+    if (recovery) {
+      pendingSelectionRecovery = recovery
+      nextTick(() => recoverSelectionFocus(token))
+    }
+  }
+
   function changeHighlight(el: HTMLElement, scrollIntoView = true, focus?: boolean) {
     if (!el)
       return
@@ -719,6 +825,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   }
 
   function onLeave(event: Event) {
+    cancelSelectionRecovery()
     const el = highlightedElement.value
 
     if ((el as Node)?.isConnected) {
@@ -730,6 +837,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   }
 
   function onEnter(event: Event) {
+    cancelSelectionRecovery()
     const entryFocusEvent = new CustomEvent('listbox.entryFocus', { bubbles: false, cancelable: true })
     event.currentTarget?.dispatchEvent(entryFocusEvent)
     props.onEntryFocus?.(entryFocusEvent)
@@ -995,6 +1103,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   const context: ListboxRootContext<T> = {
     modelValue: contextModelValue,
     onValueChange,
+    onSelection,
     multiple: multiple as Ref<boolean>,
     orientation: orientation as Ref<DataOrientation>,
     dir: dir as Ref<Direction>,

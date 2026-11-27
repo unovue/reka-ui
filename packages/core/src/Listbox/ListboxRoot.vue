@@ -17,6 +17,12 @@ export type ListboxRootContext<T> = {
   modelValue: Ref<T | Array<T> | undefined>
   /** Returns `false` when the value is unchanged or the change was cancelled. */
   onValueChange: (val: T, reason?: ListboxChangeReason | BaseChangeReason, event?: Event) => boolean
+  /**
+   * Runs an item selection (`select`) and highlights the item, moving the focus to a
+   * surviving item when the selection removes the focused one. Optional: without it
+   * an item calls `onValueChange` then `changeHighlight`.
+   */
+  onSelection?: (element: HTMLElement, select: () => boolean) => void
   multiple: Ref<boolean>
   orientation: Ref<DataOrientation>
   dir: Ref<Direction>
