@@ -91,7 +91,9 @@ describe('given a SliderArea, in a real browser', () => {
 
     const rootRect = root.getBoundingClientRect()
     const thumbRect = thumb.getBoundingClientRect()
-    expect(Math.abs(thumbRect.left + 2 - (rootRect.left + 100))).toBeLessThanOrEqual(2)
-    expect(Math.abs(thumbRect.top + 2 - (rootRect.top + 100))).toBeLessThanOrEqual(2)
+    // WebKit lands the grabbed point about 2.8px off even when no capture was lost (Chromium
+    // 1px); without the fix it is about 24px off.
+    expect(Math.abs(thumbRect.left + 2 - (rootRect.left + 100))).toBeLessThanOrEqual(3)
+    expect(Math.abs(thumbRect.top + 2 - (rootRect.top + 100))).toBeLessThanOrEqual(3)
   })
 })
