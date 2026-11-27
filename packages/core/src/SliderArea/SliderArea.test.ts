@@ -283,6 +283,123 @@ describe('given default SliderArea', () => {
           expect(wrapper.emitted('valueCommit')?.[0].length).toBe(1)
         })
       })
+
+      describe('after pointerup and then lostpointercapture', () => {
+        beforeEach(async () => {
+          await root.trigger('pointerup', { pointerId: 1 })
+          await root.trigger('lostpointercapture', { pointerId: 1 })
+        })
+
+        it('should emit valueCommit on wrapper once', async () => {
+          expect(wrapper.emitted('valueCommit')).toHaveLength(1)
+        })
+      })
+
+      describe('after lostpointercapture and then pointerup', () => {
+        beforeEach(async () => {
+          await root.trigger('lostpointercapture', { pointerId: 1 })
+          // The area no longer holds capture once it has lost it.
+          vi.mocked(window.HTMLElement.prototype.hasPointerCapture).mockReturnValueOnce(false)
+          await root.trigger('pointerup', { pointerId: 1 })
+        })
+
+        it('should emit valueCommit on wrapper once', async () => {
+          expect(wrapper.emitted('valueCommit')).toHaveLength(1)
+        })
+      })
+
+      describe('after pointerup once capture is gone, with no lostpointercapture on the area', () => {
+        beforeEach(async () => {
+          vi.mocked(window.HTMLElement.prototype.hasPointerCapture).mockReturnValueOnce(false)
+          await root.trigger('pointerup', { pointerId: 1 })
+        })
+
+        it('should emit valueCommit on wrapper', async () => {
+          expect(wrapper.emitted('valueCommit')).toHaveLength(1)
+        })
+      })
+
+      describe('after pointercancel', () => {
+        beforeEach(async () => {
+          await root.trigger('pointercancel', { pointerId: 1 })
+          await root.trigger('lostpointercapture', { pointerId: 1 })
+        })
+
+        it('should emit valueCommit on wrapper', async () => {
+          expect(wrapper.emitted('valueCommit')).toHaveLength(1)
+        })
+      })
+    })
+  })
+
+  describe('after a second pointer slides and both lift', () => {
+    beforeEach(async () => {
+      const root = wrapper.find('[aria-disabled]')
+      vi.spyOn(root.element, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 100))
+      await root.trigger('pointerdown', { clientX: 10, clientY: 10, pointerId: 1 })
+      await root.trigger('pointerdown', { clientX: 50, clientY: 50, pointerId: 2 })
+      await root.trigger('pointerup', { pointerId: 1 })
+      await root.trigger('pointermove', { clientX: 90, clientY: 90, pointerId: 2 })
+      await root.trigger('pointerup', { pointerId: 2 })
+    })
+
+    it('should end the slide for each pointer', async () => {
+      expect(wrapper.emitted('valueCommit')).toEqual([[[[50, 50]]], [[[90, 90]]]])
+    })
+  })
+
+  describe('after a slide that ends while disabled', () => {
+    it('should read where the area is now on the next slide', async () => {
+      const root = wrapper.find('[aria-disabled]')
+      const rect = vi.spyOn(root.element, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 100))
+      await root.trigger('pointerdown', { clientX: 10, clientY: 10, pointerId: 1 })
+      await wrapper.setProps({ disabled: true })
+      await root.trigger('pointerup', { pointerId: 1 })
+      await wrapper.setProps({ disabled: false })
+      // The area moves between the two slides, as when the page scrolls.
+      rect.mockReturnValue(new DOMRect(0, 100, 100, 100))
+
+      await root.trigger('pointerdown', { clientX: 30, clientY: 130, pointerId: 2 })
+
+      expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toEqual([[30, 30]])
+      expect(wrapper.emitted('valueCommit')).toBeUndefined()
+    })
+  })
+
+  describe('after a press that starts while disabled and moves once enabled', () => {
+    it('should slide, commit once and read where the area is now on the next slide', async () => {
+      const root = wrapper.find('[aria-disabled]')
+      const rect = vi.spyOn(root.element, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 100))
+      await wrapper.setProps({ disabled: true })
+      // Touch and pen capture the pointer to the pressed element even when the area ignores the press.
+      await root.trigger('pointerdown', { clientX: 10, clientY: 10, pointerId: 1 })
+      await wrapper.setProps({ disabled: false })
+      await root.trigger('pointermove', { clientX: 60, clientY: 60, pointerId: 1 })
+      expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toEqual([[60, 60]])
+      await root.trigger('pointerup', { pointerId: 1 })
+      expect(wrapper.emitted('valueCommit')).toEqual([[[[60, 60]]]])
+      // The area moves between the two presses, as when the page scrolls.
+      rect.mockReturnValue(new DOMRect(0, 100, 100, 100))
+
+      await root.trigger('pointerdown', { clientX: 30, clientY: 130, pointerId: 2 })
+
+      expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toEqual([[30, 30]])
+    })
+
+    it('should commit a slide back to where the slide before it started', async () => {
+      const root = wrapper.find('[aria-disabled]')
+      vi.spyOn(root.element, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 100))
+      await root.trigger('pointerdown', { clientX: 50, clientY: 50, pointerId: 1 })
+      await root.trigger('pointermove', { clientX: 70, clientY: 70, pointerId: 1 })
+      await root.trigger('pointerup', { pointerId: 1 })
+      await wrapper.setProps({ disabled: true })
+      await root.trigger('pointerdown', { clientX: 70, clientY: 70, pointerId: 2 })
+      await wrapper.setProps({ disabled: false })
+
+      await root.trigger('pointermove', { clientX: 50, clientY: 50, pointerId: 2 })
+      await root.trigger('pointerup', { pointerId: 2 })
+
+      expect(wrapper.emitted('valueCommit')).toEqual([[[[70, 70]]], [[[50, 50]]]])
     })
   })
 
