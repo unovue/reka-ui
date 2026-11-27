@@ -119,15 +119,28 @@ describe('resolveRefTarget', () => {
     expect(resolveRefTarget({ element: null, $el: document.createComment('') })).toBeNull()
   })
 
-  it('resolves a #text / #comment `$el` anchor to the next element sibling', () => {
+  it('resolves a #text / #comment `$el` anchor to the next element sibling before the end anchor', () => {
     const parent = document.createElement('div')
     const text = document.createTextNode('')
     const comment = document.createComment('')
     const span = document.createElement('span')
-    parent.append(text, span)
-    expect(resolveRefTarget({ $el: text })).toBe(span)
+    const end = document.createTextNode('')
+    parent.append(text, span, end)
+    const $ = { subTree: { anchor: end } }
+    expect(resolveRefTarget({ $el: text, $ })).toBe(span)
     parent.prepend(comment)
-    expect(resolveRefTarget({ $el: comment })).toBe(comment.nextElementSibling)
+    expect(resolveRefTarget({ $el: comment, $ })).toBe(comment.nextElementSibling)
+  })
+
+  it('does not resolve a #text / #comment `$el` anchor to an element after the component', () => {
+    const parent = document.createElement('div')
+    const start = document.createTextNode('')
+    const end = document.createTextNode('')
+    const outsider = document.createElement('div')
+    parent.append(start, end, outsider)
+    expect(resolveRefTarget({ $el: start, $: { subTree: { anchor: end } } })).toBeNull()
+    // A text root has no end anchor: nothing after it belongs to the component.
+    expect(resolveRefTarget({ $el: start, $: { subTree: {} } })).toBeNull()
   })
 
   it('resolves a mounted multi-root component through its fragment anchor', async () => {

@@ -32,7 +32,8 @@ export function isElement(value: unknown): value is Element {
  *    child's root swaps;
  * 3. otherwise the component's `$el`. For multi-root (fragment) and text-root
  *    components `$el` is the anchor `#text` / `#comment` node, so the next
- *    element sibling is used instead.
+ *    element sibling is used instead, but only while it sits inside the
+ *    component (before its fragment's end anchor); otherwise `null`.
  */
 export function resolveRefTarget<T extends Element = HTMLElement>(target: unknown): T | null {
   // Template refs only ever deliver objects (or `null`).
@@ -50,7 +51,26 @@ export function resolveRefTarget<T extends Element = HTMLElement>(target: unknow
   // A `#text` / `#comment` anchor (fragment or text root) is the only kind of
   // `$el` that is not an element; resolve it to the next element sibling.
   const el = '$el' in target ? (target as { $el: CharacterData | Element | null }).$el : null
-  return (isElement(el) ? el : el?.nextElementSibling ?? null) as T | null
+  if (isElement(el))
+    return el as unknown as T
+  return resolveAnchorSibling(target as ComponentPublicInstance, el) as T | null
+}
+
+/**
+ * The next element sibling of a fragment or text root's start anchor, but only
+ * when it sits before the end anchor of the component's innermost subtree: an
+ * element that merely follows the component is never returned.
+ */
+function resolveAnchorSibling(target: ComponentPublicInstance, el: CharacterData | null | undefined): Element | null {
+  const next = el?.nextElementSibling
+  if (!next)
+    return null
+  let vnode = target.$?.subTree
+  while (vnode?.component)
+    vnode = vnode.component.subTree
+  const end = vnode?.anchor as Node | null | undefined
+  // 4: Node.DOCUMENT_POSITION_FOLLOWING
+  return end && next.compareDocumentPosition(end) & 4 ? next : null
 }
 
 /**
