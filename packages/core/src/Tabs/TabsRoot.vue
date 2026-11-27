@@ -2,11 +2,17 @@
 import type { Ref } from 'vue'
 import type { DataOrientation, Direction, StringOrNumber } from '../shared/types'
 import type { PrimitiveProps } from '@/Primitive'
+import type { KeyedSelector } from '@/shared/createKeyedSelector'
 import { useVModel } from '@vueuse/core'
 import { createRekaContext, useDirection, useForwardExpose, useId } from '@/shared'
 
 export interface TabsRootContext {
   modelValue: Ref<StringOrNumber | undefined>
+  /**
+   * Whether a tab value is the selected one. A trigger or a content that reads it re-renders only
+   * when its own tab is entered or left, where reading `modelValue` re-evaluates on every change.
+   */
+  selection: KeyedSelector<StringOrNumber>
   changeModelValue: (value: StringOrNumber) => void
   orientation: Ref<DataOrientation>
   dir: Ref<Direction>
@@ -64,6 +70,8 @@ export const [injectTabsRootContext, provideTabsRootContext]
 <script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">
 import { ref, shallowRef, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
+import { createKeyedSelector } from '@/shared/createKeyedSelector'
+import { useLazySlotProps } from '@/shared/lazySlotProps'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
 
 const props = withDefaults(defineProps<TabsRootProps<T>>(), {
@@ -96,6 +104,7 @@ const renderedContentIds = ref(new Map<StringOrNumber, string>())
 
 const agentContext = provideTabsRootContext({
   modelValue,
+  selection: createKeyedSelector<StringOrNumber>(() => modelValue.value),
   changeModelValue: (value: StringOrNumber) => {
     modelValue.value = value as T
   },
@@ -118,6 +127,11 @@ const agentContext = provideTabsRootContext({
   renderedContentIds,
 })
 useAgentRegistration('tabs', agentContext, props)
+
+// Read when a consumer slot uses it, not where the slot is rendered: the slot is rendered by this
+// root's element, and a value read there re-renders it, and through it every trigger and content,
+// on each tab change.
+const slotProps = useLazySlotProps({ modelValue: () => modelValue.value })
 </script>
 
 <template>
@@ -127,6 +141,6 @@ useAgentRegistration('tabs', agentContext, props)
     :as-child="asChild"
     :as="as"
   >
-    <slot :model-value="modelValue" />
+    <slot v-bind="slotProps()" />
   </Primitive>
 </template>

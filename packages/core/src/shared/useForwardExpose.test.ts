@@ -1,6 +1,7 @@
+import type { ComponentInternalInstance } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
-import { computed, defineComponent, Fragment, h, nextTick, ref, watchPostEffect } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
+import { computed, defineComponent, Fragment, getCurrentInstance, h, nextTick, ref, watchPostEffect } from 'vue'
 
 import { Primitive } from '../Primitive'
 import { useForwardExpose } from './useForwardExpose'
@@ -434,6 +435,284 @@ describe('useForwardRef', async () => {
     parentRef.value?.increment()
     expect(parentRef.value?.count).toBe(1)
     expect(parentRef.value?.$el).toBeInstanceOf(HTMLButtonElement)
+  })
+
+  describe('when the forwarded child clears', () => {
+    // Parent and child both expose `message`; while a child is forwarded, it wins.
+    const Child = defineComponent({
+      setup(_, { expose }) {
+        expose({ message: 'child' })
+        return () => h('button', 'Child')
+      },
+    })
+    const OtherChild = defineComponent({
+      setup(_, { expose }) {
+        expose({ other: 'other' })
+        return () => h('button', 'Other')
+      },
+    })
+
+    function mountForwarding(render: (forwardRef: ReturnType<typeof useForwardExpose>['forwardRef']) => ReturnType<typeof h>) {
+      const instance = ref<any>()
+      const Forwarding = defineComponent({
+        setup(_, { expose }) {
+          expose({ message: 'parent' })
+          const { forwardRef } = useForwardExpose()
+          return () => render(forwardRef)
+        },
+      })
+      const wrapper = mount(defineComponent(() => () => h(Forwarding, { ref: instance })))
+      return { instance, wrapper }
+    }
+
+    it('should restore the parent exposed value when the child unmounts', async () => {
+      const show = ref(true)
+      const { instance, wrapper } = mountForwarding(forwardRef =>
+        show.value ? h(Child, { ref: forwardRef }) : h('div', 'Fallback'))
+
+      try {
+        // Read through the ref first: Vue caches the expose proxy on this first read.
+        expect(instance.value.message).toBe('child')
+
+        show.value = false
+        await nextTick()
+        expect(instance.value.$el.textContent).toBe('Fallback')
+        expect(instance.value.message).toBe('parent')
+      }
+      finally {
+        wrapper.unmount()
+      }
+    })
+
+    it('should forward the child exposed value again when it remounts', async () => {
+      const show = ref(true)
+      const { instance, wrapper } = mountForwarding(forwardRef =>
+        show.value ? h(Child, { ref: forwardRef }) : h('div', 'Fallback'))
+
+      try {
+        expect(instance.value.message).toBe('child')
+        show.value = false
+        await nextTick()
+        expect(instance.value.message).toBe('parent')
+
+        show.value = true
+        await nextTick()
+        expect(instance.value.$el.textContent).toBe('Child')
+        expect(instance.value.message).toBe('child')
+      }
+      finally {
+        wrapper.unmount()
+      }
+    })
+
+    it('should restore the parent exposed value when the child is replaced by a DOM element', async () => {
+      const showComponent = ref(true)
+      const { instance, wrapper } = mountForwarding(forwardRef =>
+        showComponent.value
+          ? h(Child, { ref: forwardRef })
+          : h('button', { ref: (element: any) => forwardRef(element) }, 'Replacement'))
+
+      try {
+        expect(instance.value.message).toBe('child')
+
+        showComponent.value = false
+        await nextTick()
+        expect(instance.value.$el.textContent).toBe('Replacement')
+        expect(instance.value.message).toBe('parent')
+      }
+      finally {
+        wrapper.unmount()
+      }
+    })
+
+    it('should restore the parent exposed value when the replacement child does not expose it', async () => {
+      const showFirst = ref(true)
+      const { instance, wrapper } = mountForwarding(forwardRef =>
+        h(showFirst.value ? Child : OtherChild, { ref: forwardRef, key: showFirst.value ? 'first' : 'second' }))
+
+      try {
+        expect(instance.value.message).toBe('child')
+
+        showFirst.value = false
+        await nextTick()
+        expect(instance.value.message).toBe('parent')
+      }
+      finally {
+        wrapper.unmount()
+      }
+    })
+
+    it('should keep a value only the child exposes undefined once the child is gone', async () => {
+      const show = ref(true)
+      const OnlyChild = defineComponent({
+        setup(_, { expose }) {
+          expose({ childOnly: 'child-only' })
+          return () => h('button', 'Child')
+        },
+      })
+      const { instance, wrapper } = mountForwarding(forwardRef =>
+        show.value ? h(OnlyChild, { ref: forwardRef }) : h('div', 'Fallback'))
+
+      try {
+        expect(instance.value.childOnly).toBe('child-only')
+
+        show.value = false
+        await nextTick()
+        expect(instance.value.childOnly).toBeUndefined()
+        expect(instance.value.message).toBe('parent')
+      }
+      finally {
+        wrapper.unmount()
+      }
+    })
+  })
+
+  it('should keep the merged expose while the forwarded component stays the same', async () => {
+    const Child = defineComponent({
+      setup(_, { expose }) {
+        expose({ childValue: 'child' })
+        return () => h('span', 'Child')
+      },
+    })
+    const tick = ref(0)
+    const wrapper = mount(defineComponent({
+      props: { label: { type: String, default: 'parent' } },
+      setup() {
+        const { forwardRef } = useForwardExpose()
+        // `data-tick` patches the child on every render, and Vue calls `forwardRef` with it again
+        return () => h(Child, { 'ref': forwardRef, 'data-tick': tick.value })
+      },
+    }))
+
+    try {
+      await nextTick()
+      const exposed = wrapper.vm.$.exposed!
+      expect(Object.keys(exposed)).toEqual(['label', '$el', 'childValue'])
+
+      const defineProperties = vi.spyOn(Object, 'defineProperties')
+      for (let i = 0; i < 3; i++) {
+        tick.value++
+        await nextTick()
+      }
+      const rebuilds = defineProperties.mock.calls.length
+      defineProperties.mockRestore()
+      expect(rebuilds).toBe(0)
+      expect(wrapper.get('span').attributes('data-tick')).toBe('3')
+
+      expect(wrapper.vm.$.exposed).toBe(exposed)
+      expect(exposed.childValue).toBe('child')
+      expect(exposed.label).toBe('parent')
+      expect(exposed.$el).toBe(wrapper.get('span').element)
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('should expose its own object when the forwarded component exposes nothing', async () => {
+    const Child = defineComponent({ setup: () => () => h('span', 'Child') })
+    let copies = 0
+    const wrapper = mount(defineComponent({
+      props: { label: { type: String, default: 'parent' } },
+      setup() {
+        const { forwardRef } = useForwardExpose()
+        return () => h(Child, {
+          ref: (instance) => {
+            // A ref whose `$el` is inherited, as a component's public instance is in a production build
+            const publicInstance = instance && Object.create({ get $el() { return (instance as any).$el } }, { $: { value: (instance as any).$ } })
+            const defineProperties = vi.spyOn(Object, 'defineProperties')
+            forwardRef(publicInstance)
+            copies += defineProperties.mock.calls.length
+            defineProperties.mockRestore()
+          },
+        })
+      },
+    }))
+
+    try {
+      await nextTick()
+      expect(copies).toBe(0)
+
+      const exposed = wrapper.vm.$.exposed!
+      expect(Object.keys(exposed)).toEqual(['label', '$el'])
+      expect(exposed.label).toBe('parent')
+      expect(exposed.$el).toBe(wrapper.get('span').element)
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('should merge again when the forwarded component replaces its own expose', async () => {
+    const tick = ref(0)
+    let middle!: ComponentInternalInstance
+    // A component that swaps its exposed object after setup, without an `$el` of its own
+    const Middle = defineComponent({
+      setup(_, { expose }) {
+        expose({ first: 1 })
+        middle = getCurrentInstance()!
+        return () => h('i')
+      },
+    })
+    const wrapper = mount(defineComponent({
+      setup() {
+        const { forwardRef } = useForwardExpose()
+        return () => h(Middle, { 'ref': forwardRef, 'data-tick': tick.value })
+      },
+    }))
+
+    try {
+      await nextTick()
+      expect(Object.keys(wrapper.vm.$.exposed!)).toEqual(['$el', 'first'])
+      expect(wrapper.vm.$.exposed!.first).toBe(1)
+
+      middle.exposed = { second: 2 }
+      // The outer component is patched again, with the same `Middle` instance
+      tick.value++
+      await nextTick()
+      expect(Object.keys(wrapper.vm.$.exposed!)).toEqual(['$el', 'second'])
+      expect(wrapper.vm.$.exposed!.second).toBe(2)
+      expect(wrapper.vm.$.exposed!.$el).toBe(wrapper.get('i').element)
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('should merge again when the forwarded component adds or removes a key of its own expose in place', async () => {
+    const tick = ref(0)
+    const api: Record<string, number> = { first: 1 }
+    const Middle = defineComponent({
+      setup(_, { expose }) {
+        expose(api)
+        return () => h('i')
+      },
+    })
+    const wrapper = mount(defineComponent({
+      setup() {
+        const { forwardRef } = useForwardExpose()
+        return () => h(Middle, { 'ref': forwardRef, 'data-tick': tick.value })
+      },
+    }))
+
+    try {
+      await nextTick()
+      expect(Object.keys(wrapper.vm.$.exposed!)).toEqual(['$el', 'first'])
+
+      api.second = 2
+      tick.value++
+      await nextTick()
+      expect(Object.keys(wrapper.vm.$.exposed!)).toEqual(['$el', 'first', 'second'])
+      expect(wrapper.vm.$.exposed!.second).toBe(2)
+
+      delete api.first
+      tick.value++
+      await nextTick()
+      expect(Object.keys(wrapper.vm.$.exposed!)).toEqual(['$el', 'second'])
+    }
+    finally {
+      wrapper.unmount()
+    }
   })
 
   it('should update currentElement when as-child conditional child swaps', async () => {

@@ -125,6 +125,19 @@ Contains content to be rendered in the open dialog
       attribute: '[data-state]',
       values: ['open', 'closed'],
     },
+    {
+      attribute: '[data-nested-dialog-open]',
+      values: ['Present when a nested dialog is open'],
+    },
+  ]"
+/>
+
+<CssVariablesTable
+  :data="[
+    {
+      cssVariable: '--nested-dialogs',
+      description: 'The number of nested dialogs that are open on top of this one',
+    },
   ]"
 />
 
@@ -157,6 +170,19 @@ If you want to hide the description, wrap it inside our Visually Hidden utility 
 You can nest multiple layers of dialogs.
 
 <ComponentPreview name="DialogNested" />
+
+While a nested dialog is open, the content of each dialog below it has the `data-nested-dialog-open` attribute, and its `--nested-dialogs` CSS variable holds the number of dialogs open on top of it. Use them to dim or scale the dialogs underneath. Both go back as soon as the nested dialog starts to close, so the dialog below can animate alongside the exit.
+
+```css
+.DialogContent {
+  transition: transform 200ms, filter 200ms;
+  transform: scale(calc(1 - 0.05 * var(--nested-dialogs)));
+}
+
+.DialogContent[data-nested-dialog-open] {
+  filter: brightness(0.9);
+}
+```
 
 ### Close after asynchronous form submission
 

@@ -1,5 +1,7 @@
 <script lang="ts">
+import type { SelectionSelector as SelectionSelectorType } from './selectionSelector'
 import type { PrimitiveProps } from '@/Primitive'
+import type { KeyedSelector } from '@/shared/createKeyedSelector'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
 import { usePrimitiveElement } from '@/Primitive'
 import { getFocusIntent } from '@/RovingFocus/utils'
@@ -19,6 +21,10 @@ type ListboxRootContext<T> = {
   highlightOnHover: Ref<boolean>
   loop: Ref<boolean>
   highlightedElement: Ref<HTMLElement | null>
+  /** `highlightedElement` as a keyed selector: an item reads its own cell, so a highlight move re-renders two items. */
+  highlight?: KeyedSelector<HTMLElement>
+  /** The selection as a keyed selector: an item reads its own cell instead of comparing against the whole model. */
+  selection?: SelectionSelectorType<T>
   isVirtual: Ref<boolean>
   virtualFocusHook: EventHook<{ event?: Event, scroll: boolean, keepFocus?: boolean, isStale?: () => boolean }>
   virtualKeydownHook: EventHook<KeyboardEvent>
@@ -124,8 +130,11 @@ import { createEventHook, useVModel } from '@vueuse/core'
 import { isClient } from '@vueuse/shared'
 import { nextTick, ref, toRefs, watch } from 'vue'
 import { useCollection } from '@/Collection'
+import { createKeyedSelector } from '@/shared/createKeyedSelector'
+import { useLazySlotProps } from '@/shared/lazySlotProps'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
+import { SelectionSelector } from './selectionSelector'
 import { compare } from './utils'
 
 const props = withDefaults(defineProps<ListboxRootProps>(), {
@@ -166,6 +175,12 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
   deep: true,
 }) as Ref<T | T[] | undefined>
+
+const selection = new SelectionSelector<T>(() => modelValue.value, props.by)
+
+// Read when a consumer slot uses it, not when the slot is rendered: the slot is rendered by this
+// root's element, and a model read there re-renders it, and through it every item, on each selection.
+const slotProps = useLazySlotProps({ modelValue: () => modelValue.value })
 
 // Blocks a multiple selection that would go over `max`, emitting `invalid` with the first value
 // over the limit. Returns `true` when the selection is blocked.
@@ -219,6 +234,7 @@ function onValueChange(val: T) {
 }
 
 const highlightedElement = ref<HTMLElement | null>(null)
+const highlight = createKeyedSelector<HTMLElement>(() => highlightedElement.value)
 const previousElement = ref<HTMLElement | null>(null)
 const isVirtual = ref(false)
 const isComposing = ref(false)
@@ -236,7 +252,8 @@ const virtualKeydownHook = createEventHook<KeyboardEvent>()
 const virtualHighlightHook = createEventHook<{ value: T, focus?: boolean }>()
 
 function getCollectionItem() {
-  return getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
+  // `getItems()` already leaves the disabled items out.
+  return getItems().map(i => i.ref)
 }
 
 function changeHighlight(el: HTMLElement, scrollIntoView = true, focus?: boolean) {
@@ -669,6 +686,9 @@ const agentContext = provideListboxRootContext({
   highlightOnHover,
   loop,
   highlightedElement,
+  highlight,
+  // @ts-expect-error ignoring
+  selection,
   isVirtual,
   virtualFocusHook,
   virtualKeydownHook,
@@ -701,7 +721,7 @@ useAgentRegistration('listbox', agentContext, props, currentElement)
     @pointerleave="onLeave"
     @focusout="onFocusOut"
   >
-    <slot :model-value="modelValue" />
+    <slot v-bind="slotProps()" />
 
     <VisuallyHiddenInput
       v-if="isFormControl && name"
