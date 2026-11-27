@@ -691,6 +691,9 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
       return
     changeHighlight(element)
 
+    // So may the `onHighlight` handler.
+    if (selectionRecoveryToken !== token)
+      return
     if (recovery) {
       pendingSelectionRecovery = recovery
       nextTick(() => recoverSelectionFocus(token))
