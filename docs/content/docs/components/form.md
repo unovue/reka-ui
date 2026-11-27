@@ -19,9 +19,9 @@ Extends the native form element with server error display and submit-time valida
   :features="[
     'Runs every Field\'s validation on submit and focuses the first invalid control instead of submitting.',
     'Displays server-side errors by field name, cleared automatically once the user edits that field.',
-    'Hands you the value of every named field through `formSubmit`, or leaves a valid form to submit natively.',
-    'Sets a default `validationMode` for every Field inside it.',
-    'Native `reset` clears every Field\'s touched/dirty/error state.',
+    'Hands you the value of every named field through <code>formSubmit</code>, or leaves a valid form to submit natively.',
+    'Sets a default <code>validationMode</code> for every Field inside it.',
+    'Native <code>reset</code> clears every Field\'s touched, dirty and error state.',
   ]"
 />
 

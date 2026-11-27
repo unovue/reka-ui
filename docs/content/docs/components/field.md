@@ -17,14 +17,14 @@ Accessible wiring between a label, control, description, and error message, with
 
 <Highlights
   :features="[
-    'Generates and wires up ids/aria-describedby/aria-invalid automatically.',
-    'Works with a plain native input, or with existing reka controls (Checkbox, Select, DateField, ...) placed inside it.',
-    'Sync or async custom validation, with `onSubmit`/`onBlur`/`onChange` timing and optional debounce.',
-    'Validates `required` on non-native controls (Checkbox, Select, DateField) too.',
-    'Reads native constraint-validation state (`required`, `pattern`, `type=email`, ...) automatically.',
-    'Exposes `data-valid`/`data-invalid`/`data-dirty`/`data-touched`/`data-filled`/`data-focused` on every part for styling.',
-    'Shows the browser\'s validation message by default, or your own per failing constraint.',
-    'Fully additive — every reka control behaves exactly as before when used outside a Field.',
+    'Generates and wires up <code>id</code>, <code>aria-describedby</code> and <code>aria-invalid</code> automatically.',
+    'Works with a plain native input, or with Reka UI controls (Checkbox, Select, DateField and more) placed inside it.',
+    'Sync or async custom validation, run <code>onSubmit</code>, <code>onBlur</code> or <code>onChange</code>, with optional debounce.',
+    'Validates <code>required</code> on non-native controls (Checkbox, Select, DateField) too.',
+    'Reads native constraint validation (<code>required</code>, <code>pattern</code>, <code>type=&quot;email&quot;</code> and more) automatically.',
+    'Exposes <code>data-valid</code>, <code>data-invalid</code>, <code>data-dirty</code>, <code>data-touched</code>, <code>data-filled</code> and <code>data-focused</code> on every part for styling.',
+    'Shows the browser\'s validation message by default, or your own message per failing constraint.',
+    'Fully additive: every Reka UI control behaves exactly as before when used outside a Field.',
   ]"
 />
 

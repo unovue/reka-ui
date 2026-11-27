@@ -13,6 +13,64 @@ Discover the latest release of Reka UI.
 
 ---
 
+## v2.12
+
+### ✨ New Features
+
+#### Components
+
+- **Carousel**: New primitives for slides scrolled with touch, mouse, wheel, keyboard or controls, with indicators and an autoplay toggle <Badge>Alpha</Badge>
+- **SliderArea**: New two-dimensional input for selecting a point within a region
+- **ScrollArea**: New `ScrollAreaVirtualizer` to virtualize long lists inside a scroll area
+- **Checkbox**: New `parent` prop on `CheckboxRoot` and `allValues` on `CheckboxGroupRoot` for a parent checkbox that checks or clears the whole group
+
+#### Functionality
+
+- **ConfigProvider**: Added `translations` to translate the built-in accessible labels. See the [i18n guide](/docs/guides/i18n)
+- **Dialog/AlertDialog**: Content below an open nested dialog gets `data-nested-dialog-open` and a `--nested-dialogs` CSS variable for styling
+- **Popover/DropdownMenu/ContextMenu/Menubar**: Added `unmountOnHide` prop to keep content mounted while closed
+- **Combobox**: Added `max` prop and an `invalid` event to limit the number of selected options
+- **Combobox**: Added `focusOnOpen` prop to keep focus off the input when the content opens
+- **Combobox**: Added `clearValue` to set the value a clear resets to
+- **Listbox**: Added `keepFocusOnValueChange` prop to keep focus in place on programmatic value changes
+- **Listbox**: `highlightItem(value, { focus: false })` highlights an item without moving focus to it
+- **Popper**: Added `fallbackAxisSideDirection` prop to fall back to the perpendicular sides on collisions
+- **Toast**: Added `disableHoverPause` and `disableWindowBlurPause` props to `ToastProvider`
+- **PinInput**: Added `requireComplete` prop so a required PIN only validates when every input is filled
+- **NumberField**: Added `keepValueOnUnparsableInput` prop to keep the value when the typed input cannot be parsed
+- **TimeRangeField**: Added `allowWrap` prop for time windows that cross midnight
+- **Stepper**: Added `announce` prop to localize the step announcement, or turn it off with `false`
+
+#### Developer Experience
+
+- **Vapor**: New experimental `reka-ui/vapor` entry for Vue Vapor mode. See the [Vapor guide](/docs/guides/vapor)
+- **Agents**: New `reka-ui/agent` entry that lets AI agents inspect and operate your UI. See the [Agents guide](/docs/guides/agents)
+- **Nuxt**: The `reka-ui/nuxt` module now auto-imports composables such as `useFilter` and `useForwardProps` (`useId` excepted)
+- **Performance**: Faster mounting and fewer re-renders across Select, Combobox, Listbox, Tree, Tabs, Accordion, Menu, Checkbox, Collection and `Primitive`
+- **Performance**: Popover, Tooltip and HoverCard content is now loaded lazily
+- **Dev warnings**: Splitter and ColorSwatch development warnings are no longer stripped from the published build
+
+### ⚠️ Behavior Changes
+
+These are fixes, but they change behavior you may rely on.
+
+- **Vue**: The minimum supported Vue version is now `3.5.22`.
+- **Listbox**: If an `update:modelValue` handler moves focus, focus stays where the handler put it.
+- **Tree**: Edits nested deeper than an item's own properties no longer emit `update:modelValue`. Replace the value instead of mutating it deeply.
+- **Toast**: `Escape` now closes only the focused toast. Viewport `hotkey` entries are matched as one key combination, by `event.code` or `event.key`.
+- **Combobox**: `Enter` no longer selects the highlighted item while the content is closed.
+- **Combobox**: `ComboboxEmpty` now renders as a disabled option.
+- **Select**: A `multiple` Select now submits every selected value in a form.
+- **ToggleGroup**: A disabled group is no longer submitted with its form.
+- **Tabs**: Right and middle clicks no longer activate a tab.
+- **Tooltip/HoverCard/NavigationMenu**: Triggers now have `type="button"`, so they no longer submit a surrounding form.
+- **Dialog**: Body scroll stays locked until the exit animation has finished.
+- **Primitive**: Unsafe `as` values are ignored. A disabled part rendered as a non-button element gets `aria-disabled` instead of a `disabled` attribute.
+- **Pagination**: The active page is clamped when the page count shrinks.
+- **Types**: Emits without a payload are typed `[]` instead of `[void]`. `ProgressRoot` model updates are typed as numbers.
+
+---
+
 ## v2.11
 
 ### ✨ New Features
