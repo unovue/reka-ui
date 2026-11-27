@@ -1129,6 +1129,28 @@ describe('given a ToastViewport hotkey', () => {
     expect(document.activeElement).toBe(viewport)
   })
 
+  it('should focus the viewport on a hotkey written as a key name', async () => {
+    const viewport = mountViewport(['t'])
+    await fireEvent.keyDown(window, { key: 'u', code: 'KeyU' })
+    expect(document.activeElement).not.toBe(viewport)
+    await fireEvent.keyDown(window, { key: 't', code: 'KeyT' })
+    expect(document.activeElement).toBe(viewport)
+  })
+
+  it('should match a modifier with a key name', async () => {
+    const viewport = mountViewport(['ctrlKey', '/'])
+    await fireEvent.keyDown(window, { key: '/', code: 'Slash' })
+    expect(document.activeElement).not.toBe(viewport)
+    await fireEvent.keyDown(window, { key: '/', code: 'Slash', ctrlKey: true })
+    expect(document.activeElement).toBe(viewport)
+  })
+
+  it('should not treat other KeyboardEvent properties as pressed', async () => {
+    const viewport = mountViewport(['key'])
+    await fireEvent.keyDown(window, { key: 'a', code: 'KeyA' })
+    expect(document.activeElement).not.toBe(viewport)
+  })
+
   it('should follow a changed hotkey and label it', async () => {
     document.body.innerHTML = ''
     const hotkey = ref(['F8'])
