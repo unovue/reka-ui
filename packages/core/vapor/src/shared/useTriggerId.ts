@@ -1,7 +1,7 @@
 // Copy of src/shared/useTriggerId.ts with the three VDOM-instance reads swapped for Vapor-safe ones
 // (generic instance, root node from `instance.block`, no `$forceUpdate` in Vapor).
 import type { Ref } from 'vue'
-import { computed, onActivated, onBeforeMount, onBeforeUnmount, onBeforeUpdate, onDeactivated, onMounted, onUpdated, ref, useAttrs, watch } from 'vue'
+import { computed, nextTick, onActivated, onBeforeMount, onBeforeUnmount, onBeforeUpdate, onDeactivated, onMounted, onUpdated, ref, useAttrs, watch } from 'vue'
 
 // How many content elements are rendered for a context. Kept beside the context rather
 // than on it, so the context types stay as they are.
@@ -57,13 +57,14 @@ export function useTriggerId(
   else if (!context.triggerId && generate)
     context.triggerId = generate()
 
-  onBeforeUpdate(() => {
+  const syncConsumerId = () => {
     if (attrs.id === consumerId)
       return
     consumerId = attrs.id
     if (typeof consumerId === 'string' && consumerId)
       context.triggerId = consumerId
-  })
+  }
+  onBeforeUpdate(syncConsumerId)
   const syncRendered = () => {
     const renderedId = element.value?.id
     if (renderedId && renderedId !== context.triggerId)
@@ -71,6 +72,25 @@ export function useTriggerId(
   }
   onMounted(syncRendered)
   onUpdated(syncRendered)
+
+  // A Vapor component does not update when only a fallthrough attribute changes (the child that
+  // renders it patches it), so the update hooks above never see a new consumer `id`. Vapor attrs are
+  // reactive: watch them. The new id reaches the element with the render the context change causes.
+  watch(() => attrs.id, () => {
+    syncConsumerId()
+    nextTick(syncRendered)
+  }, { flush: 'post' })
+  // An `asChild` Primitive applies the attrs to its child element by hand, after this component
+  // mounted and without an update here: follow the element's own `id`.
+  if (typeof MutationObserver !== 'undefined') {
+    watch(element, (el, _, onCleanup) => {
+      if (!el)
+        return
+      const observer = new MutationObserver(syncRendered)
+      observer.observe(el, { attributes: true, attributeFilter: ['id'] })
+      onCleanup(() => observer.disconnect())
+    }, { immediate: true, flush: 'post' })
+  }
 }
 
 /**

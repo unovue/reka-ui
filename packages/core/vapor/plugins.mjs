@@ -391,6 +391,27 @@ const PATCHES = {
     ['import { inject, provide } from \'vue\'', `import { inject, provide } from 'vue'\nimport { prepareReferencedIds } from ${JSON.stringify(resolve(here, 'src/shared/useReferencedId.ts'))}`],
     ['provide(injectionKey, contextValue)', 'provide(injectionKey, prepareReferencedIds(contextValue))'],
   ],
+  // `vShowOnComponents` turns ComboboxContent's `v-show` into a `display: none` style that reaches this
+  // component through `$attrs`, and the `:style` below (bound after `v-bind="$attrs"`) sets `display: flex`
+  // over it. VDOM's `v-show` writes `el.style.display` after props, so it wins there. Fold the same
+  // condition (`present`, which ComboboxContent passes with the `v-show` value) into the display.
+  [src('Combobox/ComboboxContentImpl.vue')]: [
+    ['display: (props.hideWhenEmpty && isEmpty) ? \'none\' : \'flex\',', 'display: (!props.present || (props.hideWhenEmpty && isEmpty)) ? \'none\' : \'flex\','],
+  ],
+  // A consumer listener on the trigger (`@click`, `@keydown`, `@pointerdown`) has to run before the
+  // trigger's own, which skip opening when it called `preventDefault()`. In VDOM the attrs fall through
+  // `MenuAnchor` (and `RovingFocusItem`) `asChild`, whose `Slot` merges them before the child's own
+  // listeners. Vapor's `asChild` adoption adds them to the element after the child's own. Bind the attrs
+  // on the trigger's `Primitive` before its own listeners instead, so the merged handler calls the
+  // consumer's first, as v2 does.
+  [src('DropdownMenu/DropdownMenuTrigger.vue')]: [
+    ['const { forwardRef, currentElement: triggerElement } = useForwardExpose()', 'defineOptions({ inheritAttrs: false })\nconst { forwardRef, currentElement: triggerElement } = useForwardExpose()'],
+    ['<MenuAnchor as-child>\n    <Primitive\n', '<MenuAnchor as-child>\n    <Primitive\n      v-bind="$attrs"\n'],
+  ],
+  [src('Menubar/MenubarTrigger.vue')]: [
+    ['const { forwardRef, currentElement: triggerElement } = useForwardExpose()', 'defineOptions({ inheritAttrs: false })\nconst { forwardRef, currentElement: triggerElement } = useForwardExpose()'],
+    ['<MenuAnchor as-child>\n        <Primitive\n', '<MenuAnchor as-child>\n        <Primitive\n          v-bind="$attrs"\n'],
+  ],
   [src('ScrollArea/ScrollAreaVirtualizer.vue')]: [
     [/\/\/ not a computed: slots aren't reactive[^\n]*\nfunction getVirtualizedItems\(\) \{[\s\S]*?\n\}\n/, `function rowAttrs(item: VirtualItem) {
   const start = item.start - scrollMargin.value

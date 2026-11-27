@@ -307,6 +307,7 @@
     "Combobox/ComboboxContentImpl.vue": {
       "chains": 3,
       "exposeElement": 1,
+      "patches": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -826,6 +827,7 @@
     "DropdownMenu/DropdownMenuTrigger.vue": {
       "chains": 1,
       "exposeElement": 1,
+      "patches": 2,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -1143,6 +1145,7 @@
     "Menubar/MenubarTrigger.vue": {
       "chains": 3,
       "exposeElement": 1,
+      "patches": 2,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -2275,7 +2278,7 @@
     "chains": 59,
     "exposeElement": 476,
     "getCurrentInstance": 5,
-    "patches": 11,
+    "patches": 16,
     "presenceAttrs": 9,
     "sfcs": 476,
     "slotProps": 263,
