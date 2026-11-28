@@ -341,6 +341,7 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 - Methods of a component rendered through a part's `as` / `asChild` are no longer reachable on the part's ref.
 - `useForwardExpose` is deprecated and logs a one-time warning in development; `useForwardElement` replaces it.
 - The Carousel parts (added in v2.12, not in `3.0.0-alpha.0`) follow this contract too: their refs expose only `element` and `$el`, with no methods. The same prop-read and `as` / `asChild` rules below apply.
+- `SliderAreaArea`, `SliderAreaRegion`, `SliderAreaThumb` and `ScrollAreaVirtualizer` (added in v2.12, not in `3.0.0-alpha.0`) follow this contract too. The `SliderArea` part refs expose only `element` and `$el`. The `ScrollAreaVirtualizer` ref exposes `element`, `$el` and its documented `virtualizer` (TanStack Virtual instance), unchanged; only its prop reads (`options`, `overscan`, `estimateSize`, `horizontal`) are gone. The same prop-read and `as` / `asChild` rules below apply.
 
 **How to find it.**
 - Template refs on Reka UI parts: `ref="x"` / `:ref` / `useTemplateRef('x')` / `ref<InstanceType<typeof SomePart>>()` on any component imported from `reka-ui`. For each ref variable, list every property read off `x.value`.

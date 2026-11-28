@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
 
 export interface SliderAreaRegionProps extends PrimitiveProps {}
 </script>
@@ -8,13 +7,15 @@ export interface SliderAreaRegionProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
+import { useForwardElement } from '@/shared'
 import { convertValueToPercentage } from '../Slider/utils'
 import { injectSliderAreaRootContext } from './SliderAreaRoot.vue'
 
 withDefaults(defineProps<SliderAreaRegionProps>(), { as: 'span' })
 const rootContext = injectSliderAreaRootContext()
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const percentagesX = computed(() => rootContext.currentModelValue.value.map(v =>
   convertValueToPercentage(v[0], rootContext.minX.value, rootContext.maxX.value),
@@ -52,6 +53,7 @@ const endEdgeY = computed(() => rootContext.isSlidingFromTop.value ? 'bottom' : 
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :data-disabled="rootContext.disabled.value ? '' : undefined"
     :as-child="asChild"
     :as="as"
