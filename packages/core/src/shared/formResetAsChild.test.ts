@@ -4,8 +4,17 @@ import { describe, expect, it } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { ListboxContent, ListboxItem, ListboxRoot } from '@/Listbox'
 import { RadioGroupItem, RadioGroupRoot } from '@/RadioGroup'
+import { SelectRoot } from '@/Select'
+import { SliderRoot, SliderThumb, SliderTrack } from '@/Slider'
 import { TagsInputInput, TagsInputItem, TagsInputItemText, TagsInputRoot } from '@/TagsInput'
 import { ToggleGroupItem, ToggleGroupRoot } from '@/ToggleGroup'
+
+// jsdom lacks ResizeObserver, which the Slider thumb uses.
+globalThis.ResizeObserver ??= class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
 
 // An `asChild` root with a `name` renders a fragment: its child, then the
 // hidden input. The reset binds the child, the element the attrs land on.
@@ -83,6 +92,46 @@ describe('given an `asChild` root with a hidden input', () => {
     form.reset()
     await nextTick()
     expect(texts()).toEqual(['a'])
+    wrapper.unmount()
+  })
+})
+
+// `SelectRoot` hands its reset to the trigger it renders around; a control
+// placed in its slot is not that trigger and keeps its own reset.
+describe('given a control in a `SelectRoot` slot', () => {
+  it('resets a Listbox to its own default', async () => {
+    const { wrapper, form } = setup(`
+      <SelectRoot default-value="x">
+        <ListboxRoot default-value="a">
+          <ListboxContent>
+            <ListboxItem value="a">A</ListboxItem>
+            <ListboxItem value="b">B</ListboxItem>
+          </ListboxContent>
+        </ListboxRoot>
+      </SelectRoot>`, { SelectRoot, ListboxRoot, ListboxContent, ListboxItem })
+    const items = wrapper.findAll('[role=option]')
+    await items[1].trigger('click')
+    expect(items[1].attributes('aria-selected')).toBe('true')
+    form.reset()
+    await nextTick()
+    expect(items[0].attributes('aria-selected')).toBe('true')
+    wrapper.unmount()
+  })
+
+  it('resets a Slider to its own default', async () => {
+    const { wrapper, form } = setup(`
+      <SelectRoot default-value="x">
+        <SliderRoot :default-value="[20]">
+          <SliderTrack />
+          <SliderThumb />
+        </SliderRoot>
+      </SelectRoot>`, { SelectRoot, SliderRoot, SliderTrack, SliderThumb })
+    const thumb = wrapper.find('[role=slider]')
+    await thumb.trigger('keydown', { key: 'ArrowRight' })
+    expect(thumb.attributes('aria-valuenow')).toBe('21')
+    form.reset()
+    await nextTick()
+    expect(thumb.attributes('aria-valuenow')).toBe('20')
     wrapper.unmount()
   })
 })

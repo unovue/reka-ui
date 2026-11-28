@@ -1,5 +1,5 @@
 import type { InjectionKey, VNode } from 'vue'
-import { inject, provide } from 'vue'
+import { getCurrentInstance, inject, provide } from 'vue'
 
 /** Called with the native `reset` event of the form the element is associated with. */
 export type FormResetHandler = (event: Event) => void
@@ -107,10 +107,14 @@ function vnodeElement(vnode: VNode): Element | null {
   let node = vnode.el as Node | null
   if (node?.nodeType === 1)
     return node as Element
+  // Only a fragment has an end anchor; anything else (a comment, a text) is
+  // not an element, and what follows it belongs to someone else.
   const end = vnode.component ? vnode.component.subTree.anchor : vnode.anchor
+  if (!end)
+    return null
   while (node && node !== end && node.nodeType !== 1)
     node = node.nextSibling
-  return node?.nodeType === 1 ? node as Element : null
+  return node && node !== end ? node as Element : null
 }
 
 /**
@@ -138,6 +142,20 @@ export function provideFormResetOwner(handler: FormResetHandler) {
 /** The handler of the component this control is the element of, if any. @internal */
 export function injectFormResetOwner(): FormResetHandler | undefined {
   return inject(FORM_RESET_OWNER, undefined)
+}
+
+/**
+ * `injectFormResetOwner` for a control a component renders as its own root
+ * (the slider of a color slider, the listbox of a swatch picker): only the
+ * parent's handler counts, so a control placed in another owner's slot (a
+ * listbox inside a `SelectRoot`) keeps its own reset.
+ * @internal
+ */
+export function injectParentFormResetOwner(): FormResetHandler | undefined {
+  const provides = (getCurrentInstance()?.parent as { provides?: Record<symbol, unknown> } | null | undefined)?.provides
+  return provides && Object.hasOwn(provides, FORM_RESET_OWNER)
+    ? provides[FORM_RESET_OWNER as symbol] as FormResetHandler
+    : undefined
 }
 
 const FORM_RESET_DEFAULT: InjectionKey<unknown> = Symbol('FormResetDefault')

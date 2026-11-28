@@ -191,7 +191,7 @@ import { useCollection } from '@/Collection'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
-import { formResetBinder, injectFormResetOwner } from '@/shared/formReset'
+import { formResetBinder, injectParentFormResetOwner } from '@/shared/formReset'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -303,7 +303,7 @@ useAgentRegistration('listbox', context, props, currentElement)
 // Read off the composable's return here: a closure over that object would keep
 // all of it alive for the life of the component.
 const { isControlled } = listbox
-const onFormReset = injectFormResetOwner() ?? ((event: Event) => { resetControllableState(isControlled, event) })
+const onFormReset = injectParentFormResetOwner() ?? ((event: Event) => { resetControllableState(isControlled, event) })
 if (field)
   provideListboxFieldContext({ field, contentElement: fieldContent! })
 // Only shadow an ancestor listbox's wiring; otherwise providing nothing already reads as `null`.
