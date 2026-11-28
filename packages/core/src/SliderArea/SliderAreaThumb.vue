@@ -9,7 +9,7 @@ import { useMounted } from '@vueuse/core'
 import { computed } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose, useSize, useTranslations } from '@/shared'
+import { useForwardElement, useSize, useTranslations } from '@/shared'
 import { convertValueToPercentage, getLabel, getThumbInBoundsOffset } from '../Slider/utils'
 import { injectSliderAreaRootContext } from './SliderAreaRoot.vue'
 
@@ -24,7 +24,8 @@ const props = withDefaults(defineProps<SliderAreaThumbProps>(), {
 const t = useTranslations()
 
 const rootContext = injectSliderAreaRootContext()
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const { CollectionItem, getItems } = useCollection()
 
 const index = computed(() => currentElement.value ? getItems(true).findIndex(i => i.ref === currentElement.value) : -1)

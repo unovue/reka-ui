@@ -22,7 +22,7 @@ import type { Range, VirtualItem, Virtualizer } from '@tanstack/vue-virtual'
 import { defaultRangeExtractor, useVirtualizer } from '@tanstack/vue-virtual'
 import { useResizeObserver } from '@vueuse/core'
 import { cloneVNode, computed, ref, shallowRef, useSlots, watch } from 'vue'
-import { getActiveElement, renderSlotFragments, useForwardExpose } from '@/shared'
+import { getActiveElement, mergeExpose, renderSlotFragments, useForwardElement } from '@/shared'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 
 const props = defineProps<ScrollAreaVirtualizerProps<T>>()
@@ -91,12 +91,11 @@ const virtualizer = useVirtualizer({
   },
 })
 
-defineExpose({
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(mergeExpose(expose, {
   /** The underlying TanStack Virtual instance, e.g. for `scrollToIndex` */
   virtualizer,
-})
-
-const { forwardRef, currentElement } = useForwardExpose()
+}))
 
 function updateScrollMargin() {
   const viewport = rootContext.viewport.value
