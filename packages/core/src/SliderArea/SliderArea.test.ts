@@ -938,6 +938,60 @@ describe('given a contained SliderArea thumb dragged while a second pointer pres
     wrapper.unmount()
   })
 
+  it('commits a slide only for the pointer that made it', async () => {
+    const value = ref([[40, 40]])
+    const wrapper = mount(defineComponent({
+      components: { SliderAreaRoot, SliderAreaArea, SliderAreaThumb },
+      setup: () => ({ value }),
+      template: `
+        <SliderAreaRoot v-model="value">
+          <SliderAreaArea />
+          <SliderAreaThumb />
+        </SliderAreaRoot>`,
+    }), { attachTo: document.body })
+    const root = wrapper.findComponent(SliderAreaRoot)
+    const thumb = wrapper.find('[role="slider"]')
+    vi.spyOn(root.element, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 100))
+
+    await thumb.trigger('pointerdown', { clientX: 40, clientY: 40, pointerId: 1 })
+    await thumb.trigger('pointerdown', { clientX: 40, clientY: 40, pointerId: 2 })
+    await thumb.trigger('pointermove', { clientX: 50, clientY: 50, pointerId: 2 })
+    await thumb.trigger('pointerup', { pointerId: 1 })
+    expect(root.emitted('valueCommit')).toBeUndefined()
+    await thumb.trigger('pointerup', { pointerId: 2 })
+
+    expect(root.emitted('valueCommit')).toEqual([[[[50, 50]]]])
+    wrapper.unmount()
+  })
+
+  it('keeps the keyboard on the focused thumb when another pointer\'s move changes nothing', async () => {
+    const value = ref([[10, 10], [90, 90]])
+    const wrapper = mount(defineComponent({
+      components: { SliderAreaRoot, SliderAreaArea, SliderAreaThumb },
+      setup: () => ({ value }),
+      template: `
+        <SliderAreaRoot v-model="value">
+          <SliderAreaArea />
+          <SliderAreaThumb />
+          <SliderAreaThumb />
+        </SliderAreaRoot>`,
+    }), { attachTo: document.body })
+    const root = wrapper.findComponent(SliderAreaRoot)
+    const [first, second] = wrapper.findAll('[role="slider"]')
+    vi.spyOn(root.element, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 100))
+
+    await first.trigger('pointerdown', { clientX: 10, clientY: 10, pointerId: 1 })
+    await first.trigger('focus')
+    await second.trigger('pointerdown', { clientX: 90, clientY: 90, pointerId: 2 })
+    await second.trigger('focus')
+    // Within the same step: nothing changes, and the second thumb keeps focus.
+    await first.trigger('pointermove', { clientX: 10.2, clientY: 10.2, pointerId: 1 })
+    await second.trigger('keydown', { key: 'ArrowRight' })
+
+    expect(value.value).toEqual([[10, 10], [91, 90]])
+    wrapper.unmount()
+  })
+
   it('commits the first pointer\'s slide when a second pointer pressed and lifted during it', async () => {
     const value = ref([[40, 40]])
     const wrapper = mount(defineComponent({

@@ -188,6 +188,8 @@ interface PointerSlide {
   start: number[][]
   /** The thumb the pointer drives. */
   index: number
+  /** Whether a change this pointer made was accepted: another pointer's change is not its to commit. */
+  changed: boolean
   /** Where on its thumb the pointer grabbed it (`contain` mode), measured on its first move. */
   offset?: { x: number, y: number }
 }
@@ -241,22 +243,22 @@ function getPointFromPointerEvent(event: PointerEvent, slideStart?: boolean): nu
   return [scaleX(posX), scaleY(posY)]
 }
 
-function handleSlideStart(event: PointerEvent) {
+function handleSlideStart(event: PointerEvent): boolean {
   const point = getPointFromPointerEvent(event, true)
   const closestIndex = getClosestThumbIndex(currentModelValue.value, point, minX.value, maxX.value, minY.value, maxY.value)
   if (closestIndex === -1)
-    return
-  updateValues(point, closestIndex, { reason: 'track-press', event })
+    return false
+  return updateValues(point, closestIndex, { reason: 'track-press', event })
 }
 
-function handleSlideMove(event: PointerEvent) {
+function handleSlideMove(event: PointerEvent): boolean {
   const point = getPointFromPointerEvent(event)
-  updateValues(point, valueIndexToChangeRef.value, { reason: 'drag', event })
+  return updateValues(point, valueIndexToChangeRef.value, { reason: 'drag', event })
 }
 
 // Commits each pointer's slide when it ends, as the Slider does, if that slide changed its thumb.
 function handleSlideEnd(slide: PointerSlide) {
-  if (disabled.value)
+  if (disabled.value || !slide.changed)
     return
   const prevValue = slide.start[slide.index]
   const nextValue = currentModelValue.value[slide.index]
@@ -274,7 +276,7 @@ function clampAxis(nextValue: number, axisIndex: number, atIndex: number, minGap
   return nextValue
 }
 
-function updateValues(point: number[], atIndex: number, options: { commit?: boolean, reason?: SliderAreaChangeReason | BaseChangeReason, event?: Event } = {}) {
+function updateValues(point: number[], atIndex: number, options: { commit?: boolean, reason?: SliderAreaChangeReason | BaseChangeReason, event?: Event } = {}): boolean {
   const nextX = snapToStep(point[0], minX.value, maxX.value, stepX.value)
   const nextY = snapToStep(point[1], minY.value, maxY.value, stepY.value)
 
@@ -288,7 +290,7 @@ function updateValues(point: number[], atIndex: number, options: { commit?: bool
   valueIndexToChangeRef.value = atIndex
 
   if (valuesEqual(modelValue.value, nextValues))
-    return
+    return false
 
   pending = { value: nextValues, commit: !!options.commit, focusIndex: atIndex }
   const changed = setState(nextValues, options.reason ?? 'imperative-action', options.event)
@@ -296,6 +298,7 @@ function updateValues(point: number[], atIndex: number, options: { commit?: bool
   // Cancelled: no thumb moved or took focus, so the keyboard stays on the thumb it was on.
   if (!changed)
     valueIndexToChangeRef.value = previousIndex
+  return changed
 }
 
 type StepAxis = 'x' | 'y'
@@ -364,7 +367,7 @@ function handleKeyDown(event: KeyboardEvent) {
 }
 
 function startPointerSlide(pointerId: number): PointerSlide {
-  const slide: PointerSlide = { start: currentModelValue.value, index: valueIndexToChangeRef.value }
+  const slide: PointerSlide = { start: currentModelValue.value, index: valueIndexToChangeRef.value, changed: false }
   slides.set(pointerId, slide)
   return slide
 }
@@ -394,8 +397,8 @@ function handlePointerDown(event: PointerEvent) {
   if (matchedThumb) {
     matchedThumb.focus()
   }
-  else {
-    handleSlideStart(event)
+  else if (handleSlideStart(event)) {
+    slide.changed = true
   }
   slide.index = valueIndexToChangeRef.value
 }
@@ -408,9 +411,13 @@ function handlePointerMove(event: PointerEvent) {
     // Touch and pen keep the capture of a press made while disabled, so such a slide starts on its first move.
     const slide = slides.get(event.pointerId) ?? startPointerSlide(event.pointerId)
     // Another pointer may have moved the active thumb since; this pointer drives its own.
+    // A move that changes nothing focuses nothing, so the keyboard stays where it was.
+    const focusedIndex = valueIndexToChangeRef.value
     valueIndexToChangeRef.value = slide.index
-    handleSlideMove(event)
-    slide.index = valueIndexToChangeRef.value
+    if (handleSlideMove(event))
+      slide.changed = true
+    else
+      valueIndexToChangeRef.value = focusedIndex
   }
 }
 
