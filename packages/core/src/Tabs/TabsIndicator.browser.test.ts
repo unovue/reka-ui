@@ -56,4 +56,21 @@ describe('tabs indicator, in a real browser', () => {
     get('a-1')!.style.width = '70px'
     await expect.poll(() => indicator('a')).toEqual(['70px', '45px'])
   })
+
+  it('follows the tabs it mounts with inside a list that is already there', async () => {
+    const shown = ref(false)
+    mount(defineComponent({
+      setup: () => () => h(TabsRoot, { defaultValue: '0' }, () => h(TabsList, { style: 'position: relative; display: flex; width: 300px; height: 40px' }, () => shown.value
+        ? [
+            h(TabsIndicator, { 'data-testid': 'late-indicator' }),
+            h(TabsTrigger, { value: '0', style: 'padding: 0; border: 0' }, () => h('span', { 'data-testid': 'late-0', 'style': 'display: inline-block; width: 40px' })),
+          ]
+        : [])),
+    }), { attachTo: document.body })
+
+    shown.value = true
+    await expect.poll(() => indicator('late')).toEqual(['40px', '0px'])
+    get('late-0')!.style.width = '55px'
+    await expect.poll(() => indicator('late')).toEqual(['55px', '0px'])
+  })
 })

@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { onScopeDispose, ref, watch } from 'vue'
+import { onMounted, onScopeDispose, ref, watch } from 'vue'
 import { mergeExpose, useForwardElement } from '@/shared'
 import { injectTabsRootContext } from './TabsRoot.vue'
 
@@ -76,17 +76,24 @@ watch(() => [context.modelValue.value, context?.dir.value], () => {
 }, { immediate: true, flush: 'post' })
 
 // The list and its tabs (looked up again whenever the list element changes) are observed for
-// size changes.
+// size changes. They are first collected once mounted, so that tabs rendered after the indicator
+// are found too.
 let observed: Element[] = []
-watch(() => context.tabsList.value, (list) => {
+let observedList: HTMLElement | undefined
+function observeTabs(list: HTMLElement | undefined) {
+  if (list === observedList && observed.length)
+    return
   unobserveAll(observed, updateIndicatorStyle)
   observed = []
+  observedList = list
   if (typeof window === 'undefined' || !('ResizeObserver' in window))
     return
   const targets = [list, ...Array.from(list?.querySelectorAll<HTMLElement>('[role="tab"]') || [])]
   observed = targets.filter((target): target is HTMLElement => target instanceof Element)
   observeAll(observed, updateIndicatorStyle)
-}, { immediate: true, flush: 'post' })
+}
+watch(() => context.tabsList.value, observeTabs, { flush: 'post' })
+onMounted(() => observeTabs(context.tabsList.value))
 onScopeDispose(() => unobserveAll(observed, updateIndicatorStyle))
 
 function setIndicatorStyle(size: number, thickness: number, position: number) {
