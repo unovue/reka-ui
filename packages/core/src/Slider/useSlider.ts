@@ -1,9 +1,9 @@
-import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { ComputedRef, MaybeRefOrGetter, Ref, WatchHandle } from 'vue'
 import type { SliderRootContext } from './SliderRoot.vue'
 import type { SliderOrientation } from './utils'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { DataOrientation, Direction } from '@/shared/types'
-import { computed, ref, toValue } from 'vue'
+import { computed, getCurrentScope, ref, toValue, watch } from 'vue'
 import { clamp, createPartSurface, fieldRef, getDecimalCount, getterRef, useControllableState, useTranslations } from '@/shared'
 import { resolveDirection } from '@/shared/useDirection'
 import {
@@ -27,7 +27,8 @@ import {
  *   (the track, the range or the root itself) moved the thumb closest to the
  *   pointer there. A press on a thumb only focuses it and changes nothing.
  * - `'drag'`: a pointer move while pressed, whether the press started on a thumb
- *   or on the track.
+ *   or on the track. Also a `min` / `max` change during the drag, which moves
+ *   any value outside the new bounds onto the nearest bound.
  * - `'keyboard'`: an arrow (with or without Shift), Page Up / Page Down, Home or
  *   End key on a focused thumb.
  */
@@ -215,7 +216,11 @@ export interface UseSliderReturn {
   updateValues: (value: number, atIndex: number, options?: { commit?: boolean, reason?: SliderChangeReason | BaseChangeReason, event?: Event }) => boolean
   /** A pointer press at `value` on the track: moves the closest thumb. */
   startSlide: (value: number, event?: Event) => void
-  /** A pointer move at `value` while pressed. */
+  /**
+   * A pointer move at `value` while pressed. From the first `startSlide` /
+   * `moveSlide` until `endSlide`, every value is kept within `min` / `max`,
+   * including when they change mid-drag.
+   */
   moveSlide: (value: number, event?: Event) => void
   /** The pointer was released: emits `valueCommit` when the drag changed the value. */
   endSlide: () => void
@@ -306,13 +311,14 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
   const currentModelValue = computed(() => Array.isArray(modelValue.value) ? [...modelValue.value] : [])
   let valuesBeforeSlideStart = currentModelValue.value
 
-  function updateValues(value: number, atIndex: number, options: { commit?: boolean, reason?: SliderChangeReason | BaseChangeReason, event?: Event } = {}): boolean {
+  function updateValues(value: number, atIndex: number, options: { commit?: boolean, reason?: SliderChangeReason | BaseChangeReason, event?: Event, clampAll?: boolean } = {}): boolean {
     // Steps count from `min`, so a fractional `min` needs its digits kept too.
     const decimalCount = Math.max(getDecimalCount(min.value), getDecimalCount(step.value))
     const snapToStep = roundValue(Math.round((value - min.value) / step.value) * step.value + min.value, decimalCount)
     const nextValue = clamp(snapToStep, min.value, max.value)
 
-    const nextValues = getNextSortedValues(currentModelValue.value, nextValue, atIndex)
+    const values = options.clampAll ? clampToBounds(currentModelValue.value) : currentModelValue.value
+    const nextValues = getNextSortedValues(values, nextValue, atIndex)
 
     if (!hasMinStepsBetweenValues(nextValues, minStepsBetweenThumbs.value * step.value))
       return false
@@ -337,27 +343,70 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     return changed
   }
 
+  function clampToBounds(values: number[]) {
+    return values.map(value => clamp(value, min.value, max.value))
+  }
+
+  // Outside a drag the model is never clamped: a programmatic value outside the
+  // bounds stays as it is. During one, the values the slider shows, emits and
+  // commits stay within the current bounds, so a bounds change moves them.
+  // Started by the drag, in the caller's scope, and stopped by `endSlide`, so
+  // an idle slider holds no watcher.
+  const scope = getCurrentScope()
+  let stopBoundsWatch: WatchHandle | undefined
+  // The bounds when the drag started: a press that moves nothing, under
+  // unchanged bounds, changes nothing.
+  let dragBounds: [number, number] | undefined
+  /** `true` when the model was out of bounds and the move into range was accepted. */
+  function clampModelToBounds(): boolean {
+    const values = currentModelValue.value
+    const clamped = clampToBounds(values)
+    return !isSameValues(values, clamped) && setState(clamped, 'drag')
+  }
+  function trackBounds() {
+    if (stopBoundsWatch || (scope && !scope.active))
+      return
+    dragBounds = [min.value, max.value]
+    // A standalone drag can start without the root's pointerdown.
+    valuesBeforeSlideStart = currentModelValue.value
+    const start = () => watch(() => [min.value, max.value], () => {
+      // A slider disabled mid-drag takes no more changes from it.
+      if (!disabled.value)
+        clampModelToBounds()
+    })
+    stopBoundsWatch = scope ? scope.run(start) : start()
+  }
+
   function startSlide(value: number, event?: Event) {
     if (disabled.value)
       return
+    trackBounds()
     const closestIndex = getClosestValueIndex(currentModelValue.value, value)
-    updateValues(value, closestIndex, { reason: 'track-press', event })
+    updateValues(value, closestIndex, { reason: 'track-press', event, clampAll: true })
   }
 
   function moveSlide(value: number, event?: Event) {
     if (disabled.value)
       return
-    updateValues(value, valueIndexToChangeRef.value, { reason: 'drag', event })
+    trackBounds()
+    updateValues(value, valueIndexToChangeRef.value, { reason: 'drag', event, clampAll: true })
   }
 
   function endSlide() {
+    const boundsChanged = !!dragBounds && (dragBounds[0] !== min.value || dragBounds[1] !== max.value)
+    stopBoundsWatch?.()
+    stopBoundsWatch = undefined
+    dragBounds = undefined
     if (disabled.value)
       return
-    const prevValue = valuesBeforeSlideStart[valueIndexToChangeRef.value]
-    const nextValue = currentModelValue.value[valueIndexToChangeRef.value]
-    if (nextValue !== prevValue) {
-      // The bounds can change mid-drag; commit what the slider can actually hold.
-      const committed = currentModelValue.value.map(value => clamp(value, min.value, max.value))
+    // A bounds change and the release can land in one tick, before the watcher
+    // runs. A controlled model can still hold the old values after an accepted
+    // move into range, so that move counts as a change on its own.
+    const clamped = boundsChanged && clampModelToBounds()
+    // Every thumb: a bounds change can move one that was not dragged.
+    if (clamped || !isSameValues(currentModelValue.value, valuesBeforeSlideStart)) {
+      // Still clamped: `beforeUpdate` can veto the model's move into range.
+      const committed = clampToBounds(currentModelValue.value)
       props.onValueCommit?.(committed)
       props.emit?.('valueCommit', committed)
     }
@@ -433,9 +482,12 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     () => partState(context),
   )
   // Records where a drag started, so `endSlide` can tell whether it changed anything.
+  // A press on a thumb starts a drag too, before any value moves.
   function onPointerdown() {
-    if (!disabled.value)
-      valuesBeforeSlideStart = currentModelValue.value
+    if (disabled.value)
+      return
+    valuesBeforeSlideStart = currentModelValue.value
+    trackBounds()
   }
   // Built on first read: the Root SFC never reads them (Track and Range build their own).
   let track: PartSurface<SliderTrackState> | undefined
