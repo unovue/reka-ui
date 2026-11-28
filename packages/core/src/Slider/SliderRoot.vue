@@ -77,7 +77,7 @@ import { computed, getCurrentInstance, mergeProps, useAttrs, watch } from 'vue'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
-import { formResetBinder, injectFormResetOwner } from '@/shared/formReset'
+import { formResetBinder, injectParentFormResetOwner } from '@/shared/formReset'
 import { createWrapperEmit, splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
@@ -166,7 +166,7 @@ provideSliderFieldContext(field)
 
 // A native reset of the owning form puts the value back to `defaultValue`.
 // Inside a color slider the reset is the color slider's, which owns the value.
-const onFormReset = injectFormResetOwner() ?? ((event: Event) => { resetControllableState(isControlled, event) })
+const onFormReset = injectParentFormResetOwner() ?? ((event: Event) => { resetControllableState(isControlled, event) })
 
 if (ownField)
   watch(modelValue, value => ownField.sync(value))

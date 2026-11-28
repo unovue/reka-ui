@@ -532,7 +532,7 @@ const PATCHES = {
   // Vapor calls a component's `@vue:mounted` hook without a vnode; `Primitive` calls it again with
   // its element (see vapor/src/Primitive.ts), so the binder skips the call that has none
   [src('shared/formReset.ts')]: [
-    ['vnode => bind(vnode.el as Element | null,', 'vnode => vnode && bind(vnode.el as Element | null,'],
+    ['vnode => bind(vnodeElement(vnode),', 'vnode => vnode && bind(vnodeElement(vnode),'],
   ],
   // `vShowOnComponents` turns ComboboxContent's `v-show` into a `display: none` style that reaches this
   // component through `$attrs`, and the `:style` below (bound after `v-bind="$attrs"`) sets `display: flex`

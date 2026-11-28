@@ -1519,6 +1519,7 @@
       "patches": 2
     },
     "shared/formReset.ts": {
+      "getCurrentInstance": 1,
       "patches": 1
     },
     "shared/splitWrapperAttrs.ts": {
@@ -1555,7 +1556,7 @@
   },
   "totals": {
     "exposeElement": 291,
-    "getCurrentInstance": 29,
+    "getCurrentInstance": 30,
     "patches": 17,
     "presenceAttrs": 8,
     "renderAs": 130,
