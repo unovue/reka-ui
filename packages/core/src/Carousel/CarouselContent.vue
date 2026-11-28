@@ -7,13 +7,14 @@ export interface CarouselContentProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { watch } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectCarouselRootContext } from './CarouselRoot.vue'
 import { getCarouselContentSurface } from './useCarousel'
 
 withDefaults(defineProps<CarouselContentProps>(), { as: 'div' })
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectCarouselRootContext()
 
 watch(currentElement, (el) => {

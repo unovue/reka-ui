@@ -9,7 +9,7 @@ export interface CarouselIndicatorProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectCarouselIndicatorGroupContext } from './CarouselIndicatorGroup.vue'
 import { injectCarouselRootContext } from './CarouselRoot.vue'
 import { getCarouselIndicatorSurface } from './useCarousel'
@@ -23,7 +23,8 @@ defineSlots<{
   }) => any
 }>()
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectCarouselRootContext()
 // In a `CarouselIndicatorGroup`, a tab of its tablist; on its own, a plain button.
 const group = injectCarouselIndicatorGroupContext(null)
