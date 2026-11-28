@@ -14,9 +14,11 @@ import { Presence } from '.'
 // the current opacity and goes straight back down. It never plays the enter on to
 // full opacity first.
 
-const DURATION = 400
-/** How far the opacity may still go up after the close: a frame or two of the enter. */
-const GOING_ON_LIMIT = 0.1
+// Long enough that the frames a close takes to reach the DOM (a part that defers
+// its unmount, a `<Transition>` starting its leave) stay well under the limit.
+const DURATION = 1000
+/** How far the opacity may still go up after the close: a few frames of the enter, never on to 1. */
+const GOING_ON_LIMIT = 0.15
 
 const styleElements: HTMLStyleElement[] = []
 function addStyles(css: string) {
@@ -61,7 +63,7 @@ async function closeDuringEnter(open: Ref<boolean>) {
   let highest = 0
   let frames = 0
   const start = performance.now()
-  while (popup() && performance.now() - start < DURATION * 3) {
+  while (popup() && performance.now() - start < DURATION * 2) {
     highest = Math.max(highest, shownOpacity(popup()!))
     frames++
     await nextFrame()
