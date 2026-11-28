@@ -159,6 +159,18 @@ describe('useSlider — model', () => {
     s.endSlide()
   })
 
+  it('accepts spacing at decimal steps after the bounds narrow', async () => {
+    const max = ref(1)
+    const s = useSlider({ defaultValue: [0.7, 0.8, 0.9], max, step: 0.1, minStepsBetweenThumbs: 1 })
+    s.startSlide(0.7)
+    max.value = 0.6
+    await nextTick()
+    expect(s.modelValue.value).toEqual([0.4, 0.5, 0.6])
+    s.moveSlide(0.3)
+    expect(s.modelValue.value).toEqual([0.3, 0.5, 0.6])
+    s.endSlide()
+  })
+
   it('a standalone drag compares the release with the values when it started', () => {
     const emit = vi.fn()
     const s = useSlider({ defaultValue: [20, 80], emit })

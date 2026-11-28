@@ -141,7 +141,7 @@ const resolvedDisabled = () => ownField ? ownField.disabled(props.disabled) : pr
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` / `valueCommit` emits
 // live in the composable (`modelValue === undefined` → uncontrolled).
-const { modelValue, root, orientation: orientationGeometry, startSlide, moveSlide, endSlide, context, isControlled, updateValues } = useSlider({
+const { modelValue, root, orientation: orientationGeometry, startSlide, moveSlide, endSlide, getSlideIndex, context, isControlled, updateValues } = useSlider({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   disabled: resolvedDisabled,
@@ -197,6 +197,7 @@ const pointer = useSliderPointer({
   context,
   orientation: orientationGeometry,
   emit: (key, ...args) => emitSlide(key, ...args),
+  getSlideIndex,
 })
 
 // Switching orientation remounts the element (see `:key`), which starts a new

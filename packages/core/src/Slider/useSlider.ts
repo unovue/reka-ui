@@ -229,6 +229,12 @@ export interface UseSliderReturn {
   moveSlide: (value: number, event?: Event) => void
   /** The pointer was released: emits `valueCommit` when this pointer's slide changed the value. */
   endSlide: (event?: Event) => void
+  /**
+   * The thumb index the slide of the event's pointer drives (it follows a
+   * crossing), or `undefined` when that pointer has no slide.
+   * @internal
+   */
+  getSlideIndex: (event?: Event) => number | undefined
   /** The orientation geometry (edges, direction) the thumb and range surfaces position against. */
   orientation: SliderOrientation
   /** The slider element surface: `aria-disabled`, the thumb transform, and the keyboard and pointer-down handlers. */
@@ -621,6 +627,7 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     startSlide,
     moveSlide,
     endSlide,
+    getSlideIndex: event => getSlide(event)?.index,
     orientation: orientationContext,
     root,
     get track() {

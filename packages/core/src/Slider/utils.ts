@@ -85,7 +85,11 @@ export function hasMinStepsBetweenValues(values: number[], minStepsBetweenValues
   if (minStepsBetweenValues > 0) {
     const stepsBetweenValues = getStepsBetweenValues(values)
     const actualMinStepsBetweenValues = Math.min(...stepsBetweenValues)
-    return actualMinStepsBetweenValues >= minStepsBetweenValues
+    // A gap between decimal values carries floating-point error (0.5 - 0.4 is
+    // 0.09999999999999998): allow a few units in the last place of the values,
+    // which is below anything the values themselves can tell apart.
+    const tolerance = 8 * Number.EPSILON * Math.max(...values.map(Math.abs), minStepsBetweenValues)
+    return actualMinStepsBetweenValues >= minStepsBetweenValues - tolerance
   }
   return true
 }

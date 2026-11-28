@@ -934,6 +934,31 @@ describe('given a slider pressed by several pointers', () => {
     }
   })
 
+  it('keeps a stationary pointer\'s grab when another pointer drags its thumb past it', async () => {
+    const { value, wrapper, thumbs } = mountControlled([20, 80], { thumbAlignment: 'contain' })
+    // A 120px track with 20px thumbs: in `contain` mode a thumb's left edge is at its value in px.
+    vi.spyOn(wrapper.get('[data-slider-impl]').element, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 120, 20))
+    thumbs.forEach((thumb, index) => {
+      Object.defineProperty(thumb, 'clientWidth', { value: 20 })
+      vi.spyOn(thumb, 'getBoundingClientRect').mockImplementation(() => new DOMRect(value.value[index], 0, 20, 20))
+    })
+    const [first, second] = thumbs
+    try {
+      // The first pointer holds the first thumb 2px in from its edge and does not move.
+      await fireEvent.pointerDown(first, { clientX: 22, pointerId: 1 })
+      await fireEvent.pointerDown(second, { clientX: 82, pointerId: 2 })
+      await fireEvent.pointerMove(second, { clientX: 82, pointerId: 2 })
+      await fireEvent.pointerMove(second, { clientX: 12, pointerId: 2 })
+      expect(value.value).toEqual([10, 20])
+
+      await fireEvent.pointerMove(first, { clientX: 22, pointerId: 1 })
+      expect(value.value).toEqual([10, 20])
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
   it('keeps each pointer on the thumb it pressed', async () => {
     const { value, wrapper, thumbs: [first, second] } = mountControlled([10, 90])
     try {
