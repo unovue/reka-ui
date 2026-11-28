@@ -291,11 +291,18 @@ export function usePresenceState(
   /** `data-starting-style` / `data-ending-style`, as `Presence` adds them to its child. */
   statusAttrs: () => Readonly<Record<string, string>>
 } {
-  const node = { get value() { return element.value ?? undefined } } as Readonly<Ref<HTMLElement | undefined>>
+  // As in `Presence`: a popper positioning wrapper is not the animated node, its first child is.
+  const observed = (): HTMLElement | undefined => {
+    const el = element.value
+    if (!el)
+      return undefined
+    return (el.hasAttribute('data-reka-popper-content-wrapper') ? el.firstElementChild : el) as HTMLElement | undefined
+  }
+  const node = { get value() { return observed() } } as Readonly<Ref<HTMLElement | undefined>>
   const state = shallowRef<PresenceState>(present() ? 'mounted' : 'unmounted')
   let controller: PresenceController | undefined
   const scope = getCurrentScope()
-  watch([present, () => element.value ?? undefined], ([isPresent, el], [prevPresent, prevEl]) => {
+  watch([present, observed], ([isPresent, el], [prevPresent, prevEl]) => {
     if (isPresent !== prevPresent) {
       if (!controller && isPresent) {
         controller = new PresenceController(state, node, options)
