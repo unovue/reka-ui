@@ -121,6 +121,44 @@ describe('useSlider — model', () => {
     s.endSlide()
   })
 
+  it('keeps a pointer on its thumb after a move that changes nothing onto another thumb\'s value', () => {
+    const s = useSlider({ defaultValue: [20, 80] })
+    const pointer = (pointerId: number) => new PointerEvent('pointermove', { pointerId })
+    s.startSlide(20, pointer(1))
+    s.startSlide(80, pointer(2))
+    s.moveSlide(80, pointer(1))
+    s.moveSlide(80, pointer(2))
+    s.moveSlide(70, pointer(1))
+    s.moveSlide(90, pointer(2))
+    expect(s.modelValue.value).toEqual([70, 90])
+  })
+
+  it('commits a bounds clamp for every open slide when a move brings the values into range first', () => {
+    const emit = vi.fn()
+    const max = ref(100)
+    const s = useSlider({ defaultValue: [20, 80], max, emit })
+    const pointer = (pointerId: number) => new PointerEvent('pointermove', { pointerId })
+    s.startSlide(20, pointer(1))
+    s.startSlide(80, pointer(2))
+    // The move lands before the bounds watcher runs.
+    max.value = 60
+    s.moveSlide(20, pointer(1))
+    expect(s.modelValue.value).toEqual([20, 60])
+    s.endSlide(pointer(1))
+    s.endSlide(pointer(2))
+    expect(emit.mock.calls.filter(call => call[0] === 'valueCommit')).toEqual([['valueCommit', [20, 60]], ['valueCommit', [20, 60]]])
+  })
+
+  it('keeps a fractional minStepsBetweenThumbs apart when the bounds narrow', async () => {
+    const max = ref(10)
+    const s = useSlider({ defaultValue: [5, 10], max, minStepsBetweenThumbs: 0.5 })
+    s.startSlide(5)
+    max.value = 1
+    await nextTick()
+    expect(s.modelValue.value).toEqual([0.5, 1])
+    s.endSlide()
+  })
+
   it('a standalone drag compares the release with the values when it started', () => {
     const emit = vi.fn()
     const s = useSlider({ defaultValue: [20, 80], emit })

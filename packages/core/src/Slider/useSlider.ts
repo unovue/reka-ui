@@ -361,9 +361,9 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     const gap = minStepsBetweenThumbs.value * step.value
     if (isSameValues(values, clamped) || hasMinStepsBetweenValues(clamped, gap))
       return clamped
-    // Push up from `min`, then down from `max`. Rounded like a step, so the
-    // gap is not lost to floating point.
-    const decimalCount = Math.max(getDecimalCount(min.value), getDecimalCount(max.value), getDecimalCount(step.value))
+    // Push up from `min`, then down from `max`. Rounded to the digits of the
+    // bounds and the gap, so the gap is not lost to floating point.
+    const decimalCount = Math.max(getDecimalCount(min.value), getDecimalCount(max.value), getDecimalCount(step.value), getDecimalCount(gap))
     const spaced = [...clamped]
     for (let i = 1; i < spaced.length; i++)
       spaced[i] = Math.max(spaced[i], roundValue(spaced[i - 1] + gap, decimalCount))
@@ -453,13 +453,28 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     stopBoundsWatch = scope ? scope.run(start) : start()
   }
 
+  /**
+   * `updateValues` with every value kept in bounds. A move that brings the
+   * values into range before the bounds watcher runs takes the watcher's
+   * clamp with it, so every open slide counts it, as the watcher would.
+   */
+  function slideTo(slide: PointerSlide, value: number, atIndex: number, reason: SliderChangeReason, event?: Event): boolean {
+    const values = currentModelValue.value
+    const clamps = !isSameValues(values, clampToBounds(values))
+    const changed = updateValues(value, atIndex, { reason, event, clampAll: true })
+    if (changed && clamps)
+      slides.forEach(open => open.changed = true)
+    else if (changed)
+      slide.changed = true
+    return changed
+  }
+
   function startSlide(value: number, event?: Event) {
     if (disabled.value)
       return
     const slide = openSlide(event)
     const closestIndex = getClosestValueIndex(currentModelValue.value, value)
-    if (updateValues(value, closestIndex, { reason: 'track-press', event, clampAll: true }))
-      slide.changed = true
+    slideTo(slide, value, closestIndex, 'track-press', event)
     slide.index = valueIndexToChangeRef.value
   }
 
@@ -470,13 +485,11 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     // Another pointer may have moved the active thumb since; this pointer drives its own.
     const focusedIndex = valueIndexToChangeRef.value
     valueIndexToChangeRef.value = slide.index
-    const changed = updateValues(value, slide.index, { reason: 'drag', event, clampAll: true })
-    // A crossing hands the pointer the thumb's new place.
-    slide.index = valueIndexToChangeRef.value
-    if (changed)
-      slide.changed = true
-    // A move that changes nothing focuses nothing, so the keyboard stays where it was.
-    else
+    // An accepted crossing moves `slide.index` with its thumb (`followSortedThumbs`).
+    // A move that changes nothing keeps it: onto another thumb's value it
+    // would otherwise pick whichever equal thumb comes first. It focuses
+    // nothing either, so the keyboard stays where it was.
+    if (!slideTo(slide, value, slide.index, 'drag', event))
       valueIndexToChangeRef.value = focusedIndex
   }
 
