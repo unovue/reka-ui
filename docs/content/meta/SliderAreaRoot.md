@@ -134,9 +134,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the slider area value changes; <code>details.cancel()</code> vetoes the change.</p>\n',
+    'type': '[payload: number[][], details: ChangeEventDetails&lt;SliderAreaChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the slider area value changes</p>\n',
-    'type': '[payload: number[][] | undefined]'
+    'type': '[payload: number[][], details: ChangeEventDetails&lt;SliderAreaChangeReason, Event&gt;]'
   },
   {
     'name': 'valueCommit',
@@ -184,7 +189,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the slider area value changes | `[payload: number[][] \| undefined]` |
+| `beforeUpdate:modelValue` | Event handler called before the slider area value changes; `details.cancel()` vetoes the change. | `[payload: number[][], details: ChangeEventDetails<SliderAreaChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the slider area value changes | `[payload: number[][], details: ChangeEventDetails<SliderAreaChangeReason, Event>]` |
 | `valueCommit` | Event handler called when the value changes at the end of an interaction. | `[payload: number[][]]` |
 
 **Slots**
