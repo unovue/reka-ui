@@ -129,6 +129,46 @@ describe('bounds changing during a drag', () => {
     expect(values()).toEqual([60])
   })
 
+  it('commits when the bounds move a thumb that was not dragged', async () => {
+    const { wrapper, values } = mountDragged({ defaultValue: [20, 80] })
+
+    const thumbs = wrapper.findAll('[role="slider"]')
+    await fireEvent.pointerDown(thumbs[0].element, { clientX: 20, pointerId: 1 })
+    await wrapper.setProps({ max: 60 })
+    await fireEvent.pointerUp(thumbs[0].element, { pointerId: 1 })
+
+    expect(values()).toEqual([20, 60])
+    expect(wrapper.emitted('valueCommit')).toEqual([[[20, 60]]])
+  })
+
+  it('commits a move into range that a controlled parent has not rendered yet', async () => {
+    const wrapper = mount(SliderRoot, {
+      props: { modelValue: [85], thumbAlignment: 'overflow' },
+      slots: { default: () => h(SliderThumb) },
+    })
+    const thumb = wrapper.get('[role="slider"]').element
+    await fireEvent.pointerDown(thumb, { clientX: 85, pointerId: 1 })
+    // The bounds change and the release land in one tick; the parent never writes back.
+    wrapper.setProps({ max: 60 })
+    await nextTick()
+    await fireEvent.pointerUp(thumb, { pointerId: 1 })
+
+    expect(wrapper.emitted('valueCommit')).toEqual([[[60]]])
+  })
+
+  it('leaves a value set out of range while idle alone on a press that moves nothing', async () => {
+    const { wrapper, values } = mountDragged({ defaultValue: [80] })
+    await wrapper.setProps({ max: 60 })
+
+    const thumb = wrapper.get('[role="slider"]').element
+    await fireEvent.pointerDown(thumb, { clientX: 80, pointerId: 1 })
+    await fireEvent.pointerUp(thumb, { pointerId: 1 })
+
+    expect(values()).toEqual([80])
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    expect(wrapper.emitted('valueCommit')).toBeUndefined()
+  })
+
   it('lets beforeUpdate cancel the move into range', async () => {
     const onBeforeUpdate = vi.fn((_value: number[], details: ChangeEventDetails<SliderChangeReason>) => details.cancel())
     const { wrapper, slider, values } = mountDragged()

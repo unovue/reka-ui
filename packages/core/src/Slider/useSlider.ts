@@ -354,16 +354,22 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
   // an idle slider holds no watcher.
   const scope = getCurrentScope()
   let stopBoundsWatch: WatchHandle | undefined
-  function clampModelToBounds() {
+  // The bounds when the drag started: a press that moves nothing, under
+  // unchanged bounds, changes nothing.
+  let dragBounds: [number, number] | undefined
+  /** `true` when the model was out of bounds and the move into range was accepted. */
+  function clampModelToBounds(): boolean {
     const values = currentModelValue.value
     const clamped = clampToBounds(values)
-    if (!isSameValues(values, clamped))
-      setState(clamped, 'drag')
+    return !isSameValues(values, clamped) && setState(clamped, 'drag')
   }
   function trackBounds() {
     if (stopBoundsWatch || (scope && !scope.active))
       return
-    const start = () => watch(() => [min.value, max.value], clampModelToBounds)
+    dragBounds = [min.value, max.value]
+    const start = () => watch(() => [min.value, max.value], () => {
+      clampModelToBounds()
+    })
     stopBoundsWatch = scope ? scope.run(start) : start()
   }
 
@@ -383,17 +389,18 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
   }
 
   function endSlide() {
-    const wasTracking = !!stopBoundsWatch
+    const boundsChanged = !!dragBounds && (dragBounds[0] !== min.value || dragBounds[1] !== max.value)
     stopBoundsWatch?.()
     stopBoundsWatch = undefined
+    dragBounds = undefined
     if (disabled.value)
       return
-    // A bounds change and the release can land in one tick, before the watcher runs.
-    if (wasTracking)
-      clampModelToBounds()
-    const prevValue = valuesBeforeSlideStart[valueIndexToChangeRef.value]
-    const nextValue = currentModelValue.value[valueIndexToChangeRef.value]
-    if (nextValue !== prevValue) {
+    // A bounds change and the release can land in one tick, before the watcher
+    // runs. A controlled model can still hold the old values after an accepted
+    // move into range, so that move counts as a change on its own.
+    const clamped = boundsChanged && clampModelToBounds()
+    // Every thumb: a bounds change can move one that was not dragged.
+    if (clamped || !isSameValues(currentModelValue.value, valuesBeforeSlideStart)) {
       // Still clamped: `beforeUpdate` can veto the model's move into range.
       const committed = clampToBounds(currentModelValue.value)
       props.onValueCommit?.(committed)
