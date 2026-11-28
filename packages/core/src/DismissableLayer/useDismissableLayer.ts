@@ -10,8 +10,8 @@ import { blockPositioningWrapper, getInternalBackdrop, mountInternalBackdrop } f
 import {
   branches,
   highestDisabledIndex,
-  highestDisabledIndexAt,
   indexOfLayer,
+  isPointerEventsEnabledAt,
   registerStackLayer,
 } from './layerStack'
 import {
@@ -105,9 +105,10 @@ export function useDismissableLayer(options: UseDismissableLayerOptions) {
       containsComposed(branch, event.target as Node),
     )
 
-    // Eligibility as of the start of this press: a handler on the target may
-    // already have opened another layer that disables outside pointer events.
-    const isEnabledAtPress = index.value >= highestDisabledIndexAt(event.detail.originalEvent)
+    // Eligibility as of the start of this press, by layer: a handler on the
+    // target may already have opened another layer that disables outside pointer
+    // events, and on touch a layer below may leave before the deferred `click`.
+    const isEnabledAtPress = isPointerEventsEnabledAt(stackLayer, event.detail.originalEvent)
     if (!present() || !isEnabledAtPress || isPointerDownOnBranch)
       return
     // A press on the layer's own backdrop returns focus as the layer closes; the

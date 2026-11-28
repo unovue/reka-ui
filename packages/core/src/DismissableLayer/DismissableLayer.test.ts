@@ -1160,3 +1160,95 @@ describe('given a layer that is animating out', () => {
     expect(c.style.pointerEvents).toBe('none')
   })
 })
+
+// A touch press outside is handled on its `click`, but its eligibility is the
+// stack's at `pointerdown`. A layer below that leaves (or starts animating out)
+// in between must not change which layers that press reaches.
+describe('given a touch press outside while the stack changes before its click', () => {
+  beforeEach(() => {
+    resetLayerStack()
+    document.body.innerHTML = ''
+  })
+
+  // jsdom has no `PointerEvent`; see `touchPointerDown` above.
+  function touchPointerDown(target: EventTarget) {
+    const event = new MouseEvent('pointerdown', { bubbles: true })
+    Object.defineProperty(event, 'pointerType', { value: 'touch' })
+    target.dispatchEvent(event)
+  }
+
+  function mountStack(a: { exiting: { value: boolean }, present: { value: boolean } }) {
+    const onDismissA = vi.fn()
+    const onDismissB = vi.fn()
+    const onDismissC = vi.fn()
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => [
+          a.present.value
+            ? h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'exiting': a.exiting.value, 'data-testid': 'a', 'onDismiss': onDismissA } as any, () => 'A')
+            : null,
+          h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'data-testid': 'b', 'onDismiss': onDismissB }, () => 'B'),
+          h(DismissableLayerPrimitive, { 'data-testid': 'c', 'onDismiss': onDismissC }, () => 'C'),
+        ]
+      },
+    }), { attachTo: document.body })
+    onTestFinished(() => wrapper.unmount())
+    return { onDismissA, onDismissB, onDismissC }
+  }
+
+  it('still dismisses the layers it reached when a layer below starts animating out', async () => {
+    const a = { exiting: ref(false), present: ref(true) }
+    const { onDismissA, onDismissB, onDismissC } = mountStack(a)
+    await sleep(1)
+
+    touchPointerDown(document.body)
+    a.exiting.value = true
+    await nextTick()
+    await fireEvent.click(document.body)
+    await sleep(1)
+
+    expect(onDismissA).not.toHaveBeenCalled()
+    expect(onDismissB).toHaveBeenCalledTimes(1)
+    expect(onDismissC).toHaveBeenCalledTimes(1)
+  })
+
+  it('still dismisses the layers it reached when a layer below is removed', async () => {
+    const a = { exiting: ref(false), present: ref(true) }
+    const { onDismissB, onDismissC } = mountStack(a)
+    await sleep(1)
+
+    touchPointerDown(document.body)
+    a.present.value = false
+    await nextTick()
+    await fireEvent.click(document.body)
+    await sleep(1)
+
+    expect(onDismissB).toHaveBeenCalledTimes(1)
+    expect(onDismissC).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps a layer that was below a modal one at pointerdown open when the modal one leaves', async () => {
+    const onDismissLower = vi.fn()
+    const onDismissModal = vi.fn()
+    const modalExiting = ref(false)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => [
+          h(DismissableLayerPrimitive, { 'data-testid': 'lower', 'onDismiss': onDismissLower }, () => 'Lower'),
+          h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'exiting': modalExiting.value, 'data-testid': 'modal', 'onDismiss': onDismissModal } as any, () => 'Modal'),
+        ]
+      },
+    }), { attachTo: document.body })
+    onTestFinished(() => wrapper.unmount())
+    await sleep(1)
+
+    touchPointerDown(document.body)
+    modalExiting.value = true
+    await nextTick()
+    await fireEvent.click(document.body)
+    await sleep(1)
+
+    expect(onDismissLower).not.toHaveBeenCalled()
+    expect(onDismissModal).not.toHaveBeenCalled()
+  })
+})
