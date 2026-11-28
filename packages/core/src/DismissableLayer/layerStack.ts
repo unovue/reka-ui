@@ -67,18 +67,26 @@ const armingTimers = new Set<number>()
 const foreignDocuments = new Map<Document, number>()
 
 /**
- * The highest index of a layer that disables outside pointer events, as it was
- * when each `pointerdown` started (in the capture phase), before a handler on the
- * target could open another layer. A layer reads its eligibility for that event
- * from it, not from the live stack (#2741).
+ * The layers that took outside pointer events when each `pointerdown` started
+ * (in the capture phase): the top layer that disables them and every layer
+ * above it, or all of them when none does. Recorded before a handler on the
+ * target could open another layer (#2741), and by identity, so a touch press
+ * handled on its later `click` keeps the eligibility it had at `pointerdown`
+ * even if a layer below leaves the stack in between.
  */
-const disabledIndexAtPointerDown = new WeakMap<Event, number>()
+const eligibleLayersAtPointerDown = new WeakMap<Event, ReadonlySet<StackLayer>>()
 function handlePointerDownCapture(event: Event) {
-  disabledIndexAtPointerDown.set(event, highestDisabledIndex())
+  eligibleLayersAtPointerDown.set(event, new Set(layers.slice(Math.max(highestDisabledIndex(), 0))))
 }
-/** `highestDisabledIndex()` as it was when `event` started. @internal */
-export function highestDisabledIndexAt(event: Event): number {
-  return disabledIndexAtPointerDown.get(event) ?? highestDisabledIndex()
+/**
+ * Whether `layer` took outside pointer events when `event` started; the live
+ * stack's answer for an event that started before any layer listened. @internal
+ */
+export function isPointerEventsEnabledAt(layer: StackLayer, event: Event): boolean {
+  const eligible = eligibleLayersAtPointerDown.get(event)
+  if (eligible)
+    return eligible.has(layer)
+  return layers.indexOf(layer) >= highestDisabledIndex()
 }
 
 function installOutsideListeners() {
