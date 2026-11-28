@@ -403,6 +403,22 @@ Two carousels can share the same `v-model`: the thumbnails follow the main one, 
 </template>
 ```
 
+### Reacting to changes
+
+`update:modelValue` receives a second argument whose `reason` tells what moved the carousel: `'next-press'`, `'prev-press'`, `'indicator-press'`, `'keyboard'`, `'drag'`, `'swipe'` (in `fade` mode), `'wheel'`, `'scroll'` (a native scroll of the track), `'autoplay'`, `'auto-scroll'`, `'missing'` (the current snap went away) or `'imperative-action'` (the slot's `scrollTo`, `scrollPrev` and `scrollNext`). `update:playing` reports `'toggle-press'`, `'interaction'`, `'keyboard-focus'`, `'reduced-motion'`, `'end-reached'` or `'imperative-action'`. `beforeUpdate:modelValue` and `beforeUpdate:playing` fire first; `details.cancel()` keeps the current snap or rotation state.
+
+```vue line=4-5
+<template>
+  <CarouselRoot
+    aria-label="Gallery"
+    @update:model-value="(index, details) => analytics.track('slide', { index, reason: details.reason })"
+    @before-update:model-value="(index, details) => locked && details.cancel()"
+  >
+    ...
+  </CarouselRoot>
+</template>
+```
+
 ### Fade
 
 With `fade`, the slides are stacked and the current one has `opacity: 1`, the others `opacity: 0`. Add the transition to the items.

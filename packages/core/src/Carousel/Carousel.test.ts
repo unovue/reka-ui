@@ -24,9 +24,10 @@ function activeIndices(wrapper: VueWrapper) {
   return items(wrapper).flatMap((item, i) => item.attributes('data-active') !== undefined ? [i] : [])
 }
 
+/** The value of the last `name` emit, without its change details. */
 function lastEmit(wrapper: VueWrapper, name: string) {
-  const events = wrapper.emitted(name) as [unknown][] | undefined
-  return events?.at(-1)
+  const events = wrapper.emitted(name) as [unknown, ...unknown[]][] | undefined
+  return events?.at(-1)?.slice(0, 1)
 }
 
 /**
