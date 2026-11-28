@@ -1,0 +1,20 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`accordion content attrs > merges consumer attrs over the content's own 1`] = `
+"<div>
+  <div data-state="open" data-orientation="vertical">
+    <h3 data-state="open" data-orientation="vertical"><button id="reka-accordion-trigger-v-0" type="button" data-state="open" aria-controls="reka-collapsible-content-v-1" aria-expanded="true" data-orientation="vertical" data-reka-collection-item="">A</button></h3>
+    <div data-state="open" data-orientation="vertical" role="group" aria-labelledby="reka-accordion-trigger-v-0" style="--reka-accordion-content-width: var(--reka-collapsible-content-width); --reka-accordion-content-height: var(--reka-collapsible-content-height); color: red; --reka-collapsible-content-height: 0px; --reka-collapsible-content-width: 0px; transition-duration: 0s; animation-name: none;" class="c" data-x="1" aria-label="Panel A" tabindex="-1" id="reka-collapsible-content-v-1">p</div>
+  </div>
+  <div data-state="closed" data-orientation="vertical">
+    <h3 data-state="closed" data-orientation="vertical"><button id="reka-accordion-trigger-v-2" type="button" data-state="closed" aria-controls="custom" aria-expanded="false" data-orientation="vertical" data-reka-collection-item="">B</button></h3>
+    <section data-state="closed" data-orientation="vertical" role="region" aria-labelledby="reka-accordion-trigger-v-2" style="--reka-accordion-content-width: var(--reka-collapsible-content-width); --reka-accordion-content-height: var(--reka-collapsible-content-height); padding: 1px; --reka-collapsible-content-height: 0px; --reka-collapsible-content-width: 0px;" id="custom" hidden="">
+      <!--v-if-->
+    </section>
+  </div>
+  <div data-state="closed" data-orientation="vertical">
+    <h3 data-state="closed" data-orientation="vertical"><button id="reka-accordion-trigger-v-4" type="button" data-state="closed" aria-controls="reka-collapsible-content-v-5" aria-expanded="false" data-orientation="vertical" data-reka-collection-item="">C</button></h3>
+    <article data-state="closed" data-orientation="vertical" role="region" aria-labelledby="reka-accordion-trigger-v-4" style="--reka-accordion-content-width: var(--reka-collapsible-content-width); --reka-accordion-content-height: var(--reka-collapsible-content-height); --reka-collapsible-content-height: 0px; --reka-collapsible-content-width: 0px;" class="child" id="reka-collapsible-content-v-5" data-y="2">r</article>
+  </div>
+</div>"
+`;

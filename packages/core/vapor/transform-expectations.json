@@ -2,7 +2,9 @@
   "files": {
     "Accordion/AccordionContent.vue": {
       "exposeElement": 1,
-      "sfcs": 1
+      "renderAs": 1,
+      "sfcs": 1,
+      "slotProps": 1
     },
     "Accordion/AccordionHeader.vue": {
       "exposeElement": 1,
@@ -1544,7 +1546,7 @@
     "Presence/Presence.ts": 1,
     "Primitive/Primitive.ts": 2,
     "Primitive/Slot.ts": 2,
-    "Primitive/renderAs.ts": 128,
+    "Primitive/renderAs.ts": 129,
     "Teleport/portalGate.ts": 19,
     "shared/useEmitAsProps.ts": 2,
     "shared/useForwardElement.ts": 5,
@@ -1559,9 +1561,9 @@
     "getCurrentInstance": 30,
     "patches": 17,
     "presenceAttrs": 8,
-    "renderAs": 130,
+    "renderAs": 131,
     "sfcs": 291,
-    "slotProps": 153,
+    "slotProps": 154,
     "vShow": 3,
     "vShowWhenKept": 4,
     "vueuse": 5

@@ -44,4 +44,28 @@ describe('collapsible content rendered as a child component', () => {
       wrapper.unmount()
     })
   }
+
+  it('opens when found after switching from its own element to a child component', async () => {
+    const open = ref(false)
+    const asChild = ref(false)
+    const wrapper = mount(defineComponent({
+      components: { CollapsibleRoot, CollapsibleContent, DeclaresEvents },
+      setup: () => ({ open, asChild }),
+      template: `
+<CollapsibleRoot v-model:open="open" :unmount-on-hide="false">
+  <CollapsibleContent :as-child="asChild" class="content"><DeclaresEvents v-if="asChild">Panel</DeclaresEvents><template v-else>Panel</template></CollapsibleContent>
+</CollapsibleRoot>`,
+    }), { attachTo: document.body })
+    await nextTick()
+    asChild.value = true
+    await nextTick()
+    await nextTick()
+
+    wrapper.find('.content').element.dispatchEvent(new Event('beforematch', { bubbles: true }))
+    await frame()
+    await nextTick()
+
+    expect(open.value).toBe(true)
+    wrapper.unmount()
+  })
 })
