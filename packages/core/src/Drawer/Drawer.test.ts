@@ -800,7 +800,16 @@ describe('update:openComplete', () => {
   })
 
   it('emits nothing for an opening that is interrupted by a close', async () => {
-    const animation = stubAnimation()
+    stubAnimation()
+    // The closed state replaces the enter with an exit animation; that one holds the close.
+    const enterAnimations = HTMLElement.prototype.getAnimations
+    let finishExit!: () => void
+    const exitFinished = new Promise<void>(resolve => finishExit = resolve)
+    const exit = { playState: 'running', effect: { getComputedTiming: () => ({ endTime: 100 }) }, finished: exitFinished }
+    exitFinished.then(() => exit.playState = 'finished')
+    HTMLElement.prototype.getAnimations = function (this: HTMLElement) {
+      return this.hasAttribute('data-ending-style') ? [exit as unknown as Animation] : enterAnimations.call(this)
+    }
     const onOpenComplete = vi.fn()
     const { getByText } = render(DrawerWithOpenComplete, { props: { onOpenComplete } })
     await fireEvent.click(getByText('Open'))
@@ -808,10 +817,10 @@ describe('update:openComplete', () => {
     await fireEvent.click(getByText('Close'))
     await nextFrame()
     await nextTick()
-    // v3 waits for the running animation before it reports the close.
+    // v3 waits for the exit animation before it reports the close.
     expect(onOpenComplete).not.toHaveBeenCalled()
 
-    animation.finish()
+    finishExit()
     await vi.waitFor(() => expect(onOpenComplete.mock.calls).toEqual([[false]]))
   })
 
