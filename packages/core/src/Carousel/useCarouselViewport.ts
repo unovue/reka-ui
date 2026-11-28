@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 import type { CarouselRootContext } from './CarouselRoot.vue'
+import type { CarouselChangeReason } from './useCarousel'
 import type { CarouselItemRect, CarouselSnap } from './utils'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { areEqual } from '@/shared'
@@ -351,7 +352,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     if (firstLayout) {
       firstLayout = false
       const nearest = getNearestSnapIndex(position, context.snaps.value, context.modelValue.value)
-      if (position > 1 && nearest !== context.modelValue.value && context.changeModelValue(nearest)) {
+      if (position > 1 && nearest !== context.modelValue.value && context.changeModelValue(nearest, 'scroll')) {
         scrollToSnap(nearest, 'instant')
         rotate()
         return
@@ -425,7 +426,13 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     await pendingRotation
   }
 
-  function settle() {
+  /** The reason a native scroll moved the current snap: the momentum of a drag, `autoScroll`, or the user. */
+  function scrollReason(): CarouselChangeReason {
+    return momentumFrame ? 'drag' : autoScrollRunning.value ? 'auto-scroll' : 'scroll'
+  }
+
+  /** `reason`: what the scroll that came to rest was, when `scrollReason` can no longer tell. */
+  function settle(event?: Event, reason: CarouselChangeReason = scrollReason()) {
     clearScrollEndTimer()
     // A programmatic scroll that stopped short: the `scrollend` of an earlier
     // instant scroll (a loop reorder) arrived while it was on its way, or the
@@ -444,7 +451,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     if (!context.measured.value || dragState || momentumFrame)
       return
     const nearest = getNearestSnapIndex(getScroll(), context.snaps.value, context.modelValue.value)
-    if (nearest !== context.modelValue.value && !context.changeModelValue(nearest))
+    if (nearest !== context.modelValue.value && !context.changeModelValue(nearest, reason, event))
       scrollToSnap(context.modelValue.value)
     else if (!context.options.value.dragFree && !autoScrollRunning.value && Math.abs(context.snaps.value[nearest].position - getScroll()) >= 1)
       scrollToSnap(nearest)
@@ -476,7 +483,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
         return
       const nearest = getNearestSnapIndex(getScroll(), context.snaps.value, context.modelValue.value)
       if (nearest !== context.modelValue.value)
-        context.changeModelValue(nearest)
+        context.changeModelValue(nearest, scrollReason())
     })
   }
 
@@ -524,7 +531,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       return
     if (event.pointerType === 'touch') {
       // A finger on the scroller takes over the scroll natively, and holds rotation until it lifts.
-      context.reportInteraction()
+      context.reportInteraction(event)
       interrupt()
       holdForFinger()
     }
@@ -641,7 +648,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       state.started = true
       context.dragging.value = true
       // A mouse or pen press is only an interaction once it drags: a click on a slide keeps a running scroll and autoplay.
-      context.reportInteraction()
+      context.reportInteraction(event)
       interrupt()
       if (!fade.value) {
         setScrollSnapSuspended(true)
@@ -697,9 +704,9 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       const elapsed = Math.max(1, event.timeStamp - state.time)
       if (Math.abs(delta) >= SWIPE_DISTANCE || Math.abs(delta) / elapsed >= SWIPE_VELOCITY) {
         if (delta < 0)
-          context.scrollNext()
+          context.scrollNext('swipe', event)
         else
-          context.scrollPrev()
+          context.scrollPrev('swipe', event)
       }
       return
     }
@@ -720,7 +727,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       if (from !== -1 && Math.abs(to - from) > 1)
         target = order[from + Math.sign(to - from)]
     }
-    if (target !== context.modelValue.value && !context.changeModelValue(target))
+    if (target !== context.modelValue.value && !context.changeModelValue(target, 'drag', event))
       target = context.modelValue.value
     scrollToSnap(target)
   }
@@ -742,7 +749,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       const stuck = Math.abs(getScroll(el) - before) < 0.1
       if (Math.abs(velocity) < 0.02 || stuck) {
         momentumFrame = 0
-        settle()
+        settle(undefined, 'drag')
         return
       }
       if (context.loopActive.value)
@@ -779,7 +786,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     if (!pages && !scrollsTrack)
       return
     if (!pages) {
-      context.reportInteraction()
+      context.reportInteraction(event)
       interrupt()
       return
     }
@@ -800,7 +807,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     if (!can && !wheelLocked)
       return
     event.preventDefault()
-    context.reportInteraction()
+    context.reportInteraction(event)
     interrupt()
     if (wheelLocked)
       return
@@ -810,9 +817,9 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     wheelLocked = true
     wheelDelta = 0
     if (forward)
-      context.scrollNext()
+      context.scrollNext('wheel', event)
     else
-      context.scrollPrev()
+      context.scrollPrev('wheel', event)
   }
 
   function onKeydown(event: KeyboardEvent) {
@@ -823,18 +830,18 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     const last = context.snapCount.value - 1
     let handled = true
     if (event.key === nextKey)
-      context.scrollNext()
+      context.scrollNext('keyboard', event)
     else if (event.key === prevKey)
-      context.scrollPrev()
+      context.scrollPrev('keyboard', event)
     else if (event.key === 'Home')
-      context.changeModelValue(0)
+      context.changeModelValue(0, 'keyboard', event)
     else if (event.key === 'End' && last >= 0)
-      context.changeModelValue(last)
+      context.changeModelValue(last, 'keyboard', event)
     else
       handled = false
     if (handled) {
       event.preventDefault()
-      context.reportInteraction()
+      context.reportInteraction(event)
       interrupt()
     }
   }
@@ -876,7 +883,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
         if ((step > 0 && expected >= max - 0.5) || (step < 0 && expected <= 0.5)) {
           autoScrollFrame = 0
           // Kept playing (cancelled, or a controlled parent ignored it): rest at the end with snapping back on.
-          if (!context.setPlaying(false))
+          if (!context.setPlaying(false, 'end-reached'))
             setScrollSnapSuspended(false)
           return
         }

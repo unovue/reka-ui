@@ -594,7 +594,7 @@ useTooltip
 useTree
 withDefault
 
-# types (988)
+# types (990)
 AcceptableInputValue
 AcceptableValue
 AccordionChangeReason
@@ -684,12 +684,14 @@ CarouselAlign
 CarouselAutoScrollOptions
 CarouselAutoplayOptions
 CarouselAutoplayToggleProps
+CarouselChangeReason
 CarouselContainScroll
 CarouselContentProps
 CarouselIndicatorGroupProps
 CarouselIndicatorProps
 CarouselItemProps
 CarouselNextProps
+CarouselPlayingChangeReason
 CarouselPreviousProps
 CarouselRootEmits
 CarouselRootProps

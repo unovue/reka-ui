@@ -1,5 +1,7 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import type { Ref } from 'vue'
+import type { SliderChangeReason } from './useSlider'
+import type { ChangeEventDetails } from '@/shared'
 import { fireEvent } from '@testing-library/vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -56,6 +58,156 @@ it.each([
   await fireEvent.pointerUp(slider, { pointerId: 1 })
 
   expect(wrapper.emitted('valueCommit')).toEqual([[expected]])
+})
+
+describe('bounds changing during a drag', () => {
+  function mountDragged(props: Record<string, unknown> = {}) {
+    const defaultValue = (props.defaultValue as number[] | undefined) ?? [50]
+    const wrapper = mount(SliderRoot, {
+      props: { defaultValue, thumbAlignment: 'overflow', ...props },
+      slots: { default: () => defaultValue.map((_, key) => h(SliderThumb, { key })) },
+    })
+    const slider = wrapper.get('[data-slider-impl]').element
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 20))
+    const values = () => wrapper.findAll('[role="slider"]').map(thumb => Number(thumb.attributes('aria-valuenow')))
+    return { wrapper, slider, values }
+  }
+
+  it.each([
+    { defaultValue: [50], clientX: 85, min: 0, max: 60, expected: [60] },
+    { defaultValue: [50], clientX: 15, min: 40, max: 100, expected: [40] },
+    { defaultValue: [20, 80], clientX: 85, min: 40, max: 60, expected: [40, 60] },
+  ])('moves the model into [$min, $max] before the pointer is released', async ({ defaultValue, clientX, min, max, expected }) => {
+    const { wrapper, slider, values } = mountDragged({ defaultValue })
+
+    await fireEvent.pointerDown(slider, { clientX: defaultValue.at(-1)!, pointerId: 1 })
+    await fireEvent.pointerMove(slider, { clientX, pointerId: 1 })
+    await wrapper.setProps({ min, max })
+
+    expect(values()).toEqual(expected)
+    expect(wrapper.emitted<[number[], { reason: string }]>('update:modelValue')!.at(-1)).toEqual([expected, expect.objectContaining({ reason: 'drag' })])
+
+    await fireEvent.pointerUp(slider, { pointerId: 1 })
+    expect(wrapper.emitted('valueCommit')).toEqual([[expected]])
+    expect(values()).toEqual(expected)
+  })
+
+  it('keeps every emitted value in range as the drag continues', async () => {
+    const { wrapper, slider } = mountDragged({ defaultValue: [20, 80] })
+
+    await fireEvent.pointerDown(slider, { clientX: 20, pointerId: 1 })
+    await fireEvent.pointerMove(slider, { clientX: 30, pointerId: 1 })
+    await wrapper.setProps({ max: 60 })
+    // 40px of a 0..60 track
+    await fireEvent.pointerMove(slider, { clientX: 40, pointerId: 1 })
+    await fireEvent.pointerUp(slider, { pointerId: 1 })
+
+    const emitted = wrapper.emitted<[number[]]>('update:modelValue')!.map(([value]) => value)
+    expect(emitted).toEqual([[30, 80], [30, 60], [24, 60]])
+    expect(wrapper.emitted('valueCommit')).toEqual([[[24, 60]]])
+  })
+
+  it('brings a value left out of range while idle into range once a drag moves a thumb', async () => {
+    const { wrapper, slider, values } = mountDragged({ defaultValue: [20, 80] })
+    await wrapper.setProps({ max: 60 })
+    expect(values()).toEqual([20, 80])
+
+    // 10px of a 0..60 track: thumb 0 moves to 6
+    await fireEvent.pointerDown(slider, { clientX: 10, pointerId: 1 })
+    await fireEvent.pointerUp(slider, { pointerId: 1 })
+
+    expect(values()).toEqual([6, 60])
+    expect(wrapper.emitted<[number[]]>('update:modelValue')!.map(([value]) => value)).toEqual([[6, 60]])
+  })
+
+  it('moves the model into range when the drag started on a thumb and has not moved yet', async () => {
+    const { wrapper, values } = mountDragged({ defaultValue: [80] })
+
+    await fireEvent.pointerDown(wrapper.get('[role="slider"]').element, { clientX: 80, pointerId: 1 })
+    await wrapper.setProps({ max: 60 })
+
+    expect(values()).toEqual([60])
+  })
+
+  it('commits when the bounds move a thumb that was not dragged', async () => {
+    const { wrapper, values } = mountDragged({ defaultValue: [20, 80] })
+
+    const thumbs = wrapper.findAll('[role="slider"]')
+    await fireEvent.pointerDown(thumbs[0].element, { clientX: 20, pointerId: 1 })
+    await wrapper.setProps({ max: 60 })
+    await fireEvent.pointerUp(thumbs[0].element, { pointerId: 1 })
+
+    expect(values()).toEqual([20, 60])
+    expect(wrapper.emitted('valueCommit')).toEqual([[[20, 60]]])
+  })
+
+  it('commits a move into range that a controlled parent has not rendered yet', async () => {
+    const wrapper = mount(SliderRoot, {
+      props: { modelValue: [85], thumbAlignment: 'overflow' },
+      slots: { default: () => h(SliderThumb) },
+    })
+    const thumb = wrapper.get('[role="slider"]').element
+    await fireEvent.pointerDown(thumb, { clientX: 85, pointerId: 1 })
+    // The bounds change and the release land in one tick; the parent never writes back.
+    wrapper.setProps({ max: 60 })
+    await nextTick()
+    await fireEvent.pointerUp(thumb, { pointerId: 1 })
+
+    expect(wrapper.emitted('valueCommit')).toEqual([[[60]]])
+  })
+
+  it('leaves a value set out of range while idle alone on a press that moves nothing', async () => {
+    const { wrapper, values } = mountDragged({ defaultValue: [80] })
+    await wrapper.setProps({ max: 60 })
+
+    const thumb = wrapper.get('[role="slider"]').element
+    await fireEvent.pointerDown(thumb, { clientX: 80, pointerId: 1 })
+    await fireEvent.pointerUp(thumb, { pointerId: 1 })
+
+    expect(values()).toEqual([80])
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    expect(wrapper.emitted('valueCommit')).toBeUndefined()
+  })
+
+  it('leaves the model alone when the bounds change after the slider is disabled mid-drag', async () => {
+    const { wrapper, slider, values } = mountDragged()
+
+    await fireEvent.pointerDown(slider, { clientX: 50, pointerId: 1 })
+    await fireEvent.pointerMove(slider, { clientX: 85, pointerId: 1 })
+    await wrapper.setProps({ disabled: true })
+    await wrapper.setProps({ max: 60 })
+
+    expect(values()).toEqual([85])
+    expect(wrapper.emitted<[number[]]>('update:modelValue')!.map(([value]) => value)).toEqual([[85]])
+  })
+
+  it('lets beforeUpdate cancel the move into range', async () => {
+    const onBeforeUpdate = vi.fn((_value: number[], details: ChangeEventDetails<SliderChangeReason>) => details.cancel())
+    const { wrapper, slider, values } = mountDragged()
+
+    await fireEvent.pointerDown(slider, { clientX: 50, pointerId: 1 })
+    await fireEvent.pointerMove(slider, { clientX: 85, pointerId: 1 })
+    await wrapper.setProps({ 'onBeforeUpdate:modelValue': onBeforeUpdate, 'max': 60 })
+
+    expect(onBeforeUpdate).toHaveBeenCalledWith([60], expect.objectContaining({ reason: 'drag' }))
+    expect(values()).toEqual([85])
+  })
+
+  it('leaves the model alone when the bounds change outside a drag', async () => {
+    const { wrapper, slider, values } = mountDragged({ defaultValue: [85] })
+
+    await wrapper.setProps({ max: 60 })
+    expect(values()).toEqual([85])
+
+    // 50px of a 0..60 track
+    await fireEvent.pointerDown(slider, { clientX: 50, pointerId: 1 })
+    await fireEvent.pointerUp(slider, { pointerId: 1 })
+    expect(values()).toEqual([30])
+    await wrapper.setProps({ max: 20 })
+
+    expect(values()).toEqual([30])
+    expect(wrapper.emitted<[number[]]>('update:modelValue')!.map(([value]) => value)).toEqual([[30]])
+  })
 })
 
 describe('given default Slider', () => {
