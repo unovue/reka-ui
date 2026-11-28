@@ -1,6 +1,6 @@
 import type { MaybeRefOrGetter, Ref } from 'vue'
 import type { StringOrNumber } from '@/shared/types'
-import { getCurrentInstance, onMounted, onScopeDispose, shallowRef, toValue, watch } from 'vue'
+import { getCurrentInstance, onBeforeUpdate, onMounted, onScopeDispose, shallowRef, toValue, watch } from 'vue'
 import { rendersForeignId } from '@/shared/usePartId'
 
 /**
@@ -57,12 +57,17 @@ export function useHydratedId(element: Readonly<Ref<HTMLElement | null>>, genera
  * follows it (the consumer's id wins). Follows `value` and `id`
  * changes and drops the entry on unmount.
  *
+ * Pass `propsOnly` when `value` and `id` read nothing but the part's own props:
+ * a new prop value always re-renders the part, so the entry is then checked
+ * before each update instead of by a watcher of its own.
+ *
  * @lifecycle setup
  */
 export function useTabsPartId(
   ids: Ref<Map<StringOrNumber, string>>,
   value: MaybeRefOrGetter<StringOrNumber>,
   id: MaybeRefOrGetter<string | undefined>,
+  propsOnly = false,
 ) {
   // The entry this part wrote. It is only removed while the map still holds it:
   // when two parts swap `value`s in one update, the other part may already have
@@ -77,7 +82,7 @@ export function useTabsPartId(
     ids.value = map
   }
 
-  watch([() => toValue(value), () => toValue(id)], ([key, next]) => {
+  function sync(key: StringOrNumber, next: string | undefined) {
     // `registered &&`, not `registered?.key`: an undefined `value` would match the missing entry.
     if (registered && registered.key === key && registered.id === next)
       return
@@ -88,6 +93,15 @@ export function useTabsPartId(
     if (ids.value.get(key) !== next)
       ids.value = new Map(ids.value).set(key, next)
     registered = { key, id: next }
-  }, { immediate: true })
+  }
+
+  if (propsOnly && getCurrentInstance()) {
+    const check = () => sync(toValue(value), toValue(id))
+    check()
+    onBeforeUpdate(check)
+  }
+  else {
+    watch([() => toValue(value), () => toValue(id)], ([key, next]) => sync(key, next), { immediate: true })
+  }
   onScopeDispose(release)
 }

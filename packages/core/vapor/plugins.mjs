@@ -529,6 +529,10 @@ const PATCHES = {
   [src('shared/usePartId.ts')]: [
     ['    refresh()\n    onBeforeUpdate(refresh)', '    refresh()\n    watch(() => toValue(id), refresh, { flush: \'sync\' })'],
   ],
+  // Same for a Tabs part's `id` and `value`: the part keeps watching them.
+  [src('Tabs/utils.ts')]: [
+    ['  if (propsOnly && getCurrentInstance()) {', '  if (false) {'],
+  ],
   // Vapor calls a component's `@vue:mounted` hook without a vnode; `Primitive` calls it again with
   // its element (see vapor/src/Primitive.ts), so the binder skips the call that has none
   [src('shared/formReset.ts')]: [
