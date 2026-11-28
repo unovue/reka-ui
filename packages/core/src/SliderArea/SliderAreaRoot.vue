@@ -2,8 +2,21 @@
 import type { Ref } from 'vue'
 import type { Direction, FormFieldProps } from '../shared/types'
 import type { PrimitiveProps } from '@/Primitive'
-import { useCollection } from '@/Collection'
-import { createRekaContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import { useCollection, useCollectionSlot } from '@/Collection'
+import { createRekaContext, useDirection, useFormControl, useForwardElement } from '@/shared'
+
+/**
+ * Why the value changed; carried as `details.reason` on every change.
+ * - `'track-press'`: a pointer press anywhere in the slider area except on a
+ *   thumb moved the thumb closest to the pointer there. A press on a thumb only
+ *   focuses it and changes nothing.
+ * - `'drag'`: a pointer move while pressed, whether the press started on a thumb
+ *   or on the area.
+ * - `'keyboard'`: an arrow (with or without Shift), Page Up / Page Down, Home or
+ *   End key on a focused thumb.
+ */
+export type SliderAreaChangeReason = 'track-press' | 'drag' | 'keyboard'
 
 type ThumbAlignment = 'contain' | 'overflow'
 
@@ -46,8 +59,10 @@ export interface SliderAreaRootProps extends PrimitiveProps, FormFieldProps {
 }
 
 export type SliderAreaRootEmits = {
+  /** Event handler called before the slider area value changes; `details.cancel()` vetoes the change. */
+  'beforeUpdate:modelValue': [payload: number[][], details: ChangeEventDetails<SliderAreaChangeReason>]
   /** Event handler called when the slider area value changes */
-  'update:modelValue': [payload: number[][] | undefined]
+  'update:modelValue': [payload: number[][], details: ChangeEventDetails<SliderAreaChangeReason>]
   /** Event handler called when the value changes at the end of an interaction. */
   'valueCommit': [payload: number[][]]
 }
@@ -71,9 +86,10 @@ export const [injectSliderAreaRootContext, provideSliderAreaRootContext]
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
 import { computed, ref, toRaw, toRefs } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState, useControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { ARROW_KEYS, hasMinStepsBetweenValues, linearScale, PAGE_KEYS } from '../Slider/utils'
 import { getClosestThumbIndex, snapToStep } from './utils'
@@ -103,44 +119,90 @@ const emits = defineEmits<SliderAreaRootEmits>()
 defineSlots<{
   default?: (props: {
     /** Current slider area values */
-    modelValue: typeof modelValue.value
+    modelValue: number[][] | null
   }) => any
 }>()
+const emit = emits as (event: string, ...args: any[]) => void
 
 const { minX, maxX, minY, maxY, stepX, stepY, minXStepsBetweenThumbs, minYStepsBetweenThumbs, disabled, thumbAlignment, dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const isFormControl = useFormControl(currentElement)
-const { CollectionSlot, getItems } = useCollection({ isProvider: true })
+const { getItems } = useCollection({ isProvider: true })
+useCollectionSlot(currentElement)
 
 // Thumb indexes come from the collection's DOM order, so look thumbs up by that same order.
 function getThumbElements(): HTMLElement[] {
   return getItems(true).map(item => item.ref)
 }
 
-const modelValue = useVModel(props, 'modelValue', emits, {
+function valuesEqual(a: number[][] | null | undefined, b: number[][] | null | undefined): boolean {
+  if (a === b)
+    return true
+  if (!a || !b || a.length !== b.length)
+    return false
+  return a.every((v, i) => v[0] === b[i][0] && v[1] === b[i][1])
+}
+
+// What v2 did before writing the model (`valueCommit` for a keyboard step, then
+// focusing the moved thumb). It runs from the `update:` phase: after
+// `beforeUpdate:modelValue` could cancel, before `update:modelValue`. It
+// belongs to the value it was proposed with: another change made from a
+// `beforeUpdate` listener (a form reset) does not run it.
+let pending: { value: number[][], commit: boolean, focusIndex: number } | null = null
+function flushPending(value: unknown) {
+  if (!pending || pending.value !== value)
+    return
+  const { commit, focusIndex } = pending
+  pending = null
+  if (commit)
+    emits('valueCommit', value as number[][])
+  getThumbElements()[focusIndex]?.focus()
+}
+
+const { state: modelValue, setState, isControlled } = useControllableState<number[][] | null | undefined, SliderAreaChangeReason>({
+  prop: () => props.modelValue,
   defaultValue: props.defaultValue,
-  passive: (props.modelValue === undefined) as false,
-}) as Ref<number[][] | null>
+  name: 'modelValue',
+  emit: (event: string, ...args: any[]) => {
+    if (event === 'update:modelValue')
+      flushPending(args[0])
+    emit(event, ...args)
+  },
+  isEqual: valuesEqual,
+})
+
+// A native reset of the owning form puts the value back to `defaultValue`.
+function onFormReset(event: Event) { resetControllableState(isControlled, event) }
+const bindFormReset = formResetBinder(onFormReset)
 
 const currentModelValue = computed(() => Array.isArray(modelValue.value) ? [...modelValue.value] : [])
 
 const valueIndexToChangeRef = ref(0)
-const valuesBeforeSlideStartRef = ref(currentModelValue.value)
 const rectRef = ref<DOMRect>()
-const offsetPosition = ref<{ x: number, y: number }>()
+
+/** One pressed pointer's slide. */
+interface PointerSlide {
+  /** The values when the pointer pressed, to tell on release whether its slide changed them. */
+  start: number[][]
+  /** The thumb the pointer drives. */
+  index: number
+  /** Whether a change this pointer made was accepted: another pointer's change is not its to commit. */
+  changed: boolean
+  /** Where on its thumb the pointer grabbed it (`contain` mode), measured on its first move. */
+  offset?: { x: number, y: number }
+}
+// One entry per pressed pointer, so a second pointer pressing or lifting
+// leaves the first one's grab and commit as they were. The browser can release
+// capture before `pointerup` arrives, so either one ends a pointer's slide, once.
+const slides = new Map<number, PointerSlide>()
 
 // Determine axis directions
 const isSlidingFromLeft = computed(() => {
   return (dir.value !== 'rtl' && !props.invertedX) || (dir.value !== 'ltr' && props.invertedX)
 })
 const isSlidingFromTop = computed(() => !props.invertedY)
-
-function valuesEqual(a: number[][] | null | undefined, b: number[][]): boolean {
-  if (!a || a.length !== b.length)
-    return false
-  return a.every((v, i) => v[0] === b[i][0] && v[1] === b[i][1])
-}
 
 function getPointFromPointerEvent(event: PointerEvent, slideStart?: boolean): number[] {
   const rect = rectRef.value || currentElement.value!.getBoundingClientRect()
@@ -151,12 +213,16 @@ function getPointFromPointerEvent(event: PointerEvent, slideStart?: boolean): nu
   const thumbHeight = thumbAlignment.value === 'contain' && thumb ? thumb.clientHeight : 0
 
   // Calculate grab offset on first slideMove after a thumb-initiated drag
-  if (!offsetPosition.value && !slideStart && thumbAlignment.value === 'contain' && thumb) {
+  const slide = slides.get(event.pointerId)
+  let offsetPosition = slide?.offset
+  if (!offsetPosition && !slideStart && thumbAlignment.value === 'contain' && thumb) {
     const thumbRect = thumb.getBoundingClientRect()
-    offsetPosition.value = {
+    offsetPosition = {
       x: event.clientX - thumbRect.left,
       y: event.clientY - thumbRect.top,
     }
+    if (slide)
+      slide.offset = offsetPosition
   }
 
   const inputX: [number, number] = [0, rect.width - thumbWidth]
@@ -169,34 +235,33 @@ function getPointFromPointerEvent(event: PointerEvent, slideStart?: boolean): nu
 
   const posX = slideStart
     ? event.clientX - rect.left - thumbWidth / 2
-    : event.clientX - rect.left - (offsetPosition.value?.x ?? 0)
+    : event.clientX - rect.left - (offsetPosition?.x ?? 0)
   const posY = slideStart
     ? event.clientY - rect.top - thumbHeight / 2
-    : event.clientY - rect.top - (offsetPosition.value?.y ?? 0)
+    : event.clientY - rect.top - (offsetPosition?.y ?? 0)
 
   return [scaleX(posX), scaleY(posY)]
 }
 
-function handleSlideStart(event: PointerEvent) {
+function handleSlideStart(event: PointerEvent): boolean {
   const point = getPointFromPointerEvent(event, true)
   const closestIndex = getClosestThumbIndex(currentModelValue.value, point, minX.value, maxX.value, minY.value, maxY.value)
   if (closestIndex === -1)
-    return
-  updateValues(point, closestIndex)
+    return false
+  return updateValues(point, closestIndex, { reason: 'track-press', event })
 }
 
-function handleSlideMove(event: PointerEvent) {
+function handleSlideMove(event: PointerEvent): boolean {
   const point = getPointFromPointerEvent(event)
-  updateValues(point, valueIndexToChangeRef.value)
+  return updateValues(point, valueIndexToChangeRef.value, { reason: 'drag', event })
 }
 
-function handleSlideEnd() {
-  rectRef.value = undefined
-  offsetPosition.value = undefined
-  if (disabled.value)
+// Commits each pointer's slide when it ends, as the Slider does, if that slide changed its thumb.
+function handleSlideEnd(slide: PointerSlide) {
+  if (disabled.value || !slide.changed)
     return
-  const prevValue = valuesBeforeSlideStartRef.value[valueIndexToChangeRef.value]
-  const nextValue = currentModelValue.value[valueIndexToChangeRef.value]
+  const prevValue = slide.start[slide.index]
+  const nextValue = currentModelValue.value[slide.index]
   const hasChanged = prevValue?.[0] !== nextValue?.[0] || prevValue?.[1] !== nextValue?.[1]
   if (hasChanged)
     emits('valueCommit', toRaw(currentModelValue.value))
@@ -211,7 +276,7 @@ function clampAxis(nextValue: number, axisIndex: number, atIndex: number, minGap
   return nextValue
 }
 
-function updateValues(point: number[], atIndex: number, { commit } = { commit: false }) {
+function updateValues(point: number[], atIndex: number, options: { commit?: boolean, reason?: SliderAreaChangeReason | BaseChangeReason, event?: Event } = {}): boolean {
   const nextX = snapToStep(point[0], minX.value, maxX.value, stepX.value)
   const nextY = snapToStep(point[1], minY.value, maxY.value, stepY.value)
 
@@ -221,16 +286,27 @@ function updateValues(point: number[], atIndex: number, { commit } = { commit: f
   const nextValues = [...currentModelValue.value]
   nextValues[atIndex] = [finalX, finalY]
 
+  const previousIndex = valueIndexToChangeRef.value
   valueIndexToChangeRef.value = atIndex
 
-  const hasChanged = !valuesEqual(modelValue.value, nextValues)
-  if (hasChanged && commit)
-    emits('valueCommit', nextValues)
+  if (valuesEqual(modelValue.value, nextValues))
+    return false
 
-  if (hasChanged) {
-    getThumbElements()[valueIndexToChangeRef.value]?.focus()
-    modelValue.value = nextValues
+  // A `beforeUpdate` listener can make a change of its own: put the enclosing
+  // change's pending work back once this one is done.
+  const enclosing = pending
+  pending = { value: nextValues, commit: !!options.commit, focusIndex: atIndex }
+  let changed: boolean
+  try {
+    changed = setState(nextValues, options.reason ?? 'imperative-action', options.event)
   }
+  finally {
+    pending = enclosing
+  }
+  // Cancelled: no thumb moved or took focus, so the keyboard stays on the thumb it was on.
+  if (!changed)
+    valueIndexToChangeRef.value = previousIndex
+  return changed
 }
 
 type StepAxis = 'x' | 'y'
@@ -268,16 +344,16 @@ function handleStepKeyDown(event: KeyboardEvent) {
     ? [value[0] + offset, value[1]]
     : [value[0], value[1] + offset]
 
-  updateValues(point, atIndex, { commit: true })
+  updateValues(point, atIndex, { commit: true, reason: 'keyboard', event })
 }
 
 // Home/End always go to the X axis min/max, whatever the reading direction or inversion.
-function handleBoundaryKey(boundaryValue: number) {
+function handleBoundaryKey(boundaryValue: number, event: KeyboardEvent) {
   const atIndex = valueIndexToChangeRef.value
   const value = currentModelValue.value[atIndex]
   if (!value)
     return
-  updateValues([boundaryValue, value[1]], atIndex, { commit: true })
+  updateValues([boundaryValue, value[1]], atIndex, { commit: true, reason: 'keyboard', event })
 }
 
 function handleKeyDown(event: KeyboardEvent) {
@@ -285,11 +361,11 @@ function handleKeyDown(event: KeyboardEvent) {
     return
 
   if (event.key === 'Home') {
-    handleBoundaryKey(minX.value)
+    handleBoundaryKey(minX.value, event)
     event.preventDefault()
   }
   else if (event.key === 'End') {
-    handleBoundaryKey(maxX.value)
+    handleBoundaryKey(maxX.value, event)
     event.preventDefault()
   }
   else if (PAGE_KEYS.concat(ARROW_KEYS).includes(event.key)) {
@@ -298,11 +374,21 @@ function handleKeyDown(event: KeyboardEvent) {
   }
 }
 
-// The browser can release capture before `pointerup` arrives, so either one ends a pointer's slide, once.
-const slidingPointerIds = new Set<number>()
+function startPointerSlide(pointerId: number): PointerSlide {
+  const slide: PointerSlide = { start: currentModelValue.value, index: valueIndexToChangeRef.value, changed: false }
+  slides.set(pointerId, slide)
+  return slide
+}
+
 function endSlide(event: PointerEvent) {
-  if (slidingPointerIds.delete(event.pointerId))
-    handleSlideEnd()
+  const slide = slides.get(event.pointerId)
+  if (!slide)
+    return
+  slides.delete(event.pointerId)
+  // The area is measured once per gesture, and read again once no pointer is left pressed.
+  if (!slides.size)
+    rectRef.value = undefined
+  handleSlideEnd(slide)
 }
 
 function handlePointerDown(event: PointerEvent) {
@@ -311,18 +397,18 @@ function handlePointerDown(event: PointerEvent) {
 
   const target = event.target as HTMLElement
   target.setPointerCapture(event.pointerId)
-  slidingPointerIds.add(event.pointerId)
   event.preventDefault()
 
-  valuesBeforeSlideStartRef.value = currentModelValue.value
+  const slide = startPointerSlide(event.pointerId)
 
   const matchedThumb = getThumbElements().find(thumb => thumb.contains(target))
   if (matchedThumb) {
     matchedThumb.focus()
   }
-  else {
-    handleSlideStart(event)
+  else if (handleSlideStart(event)) {
+    slide.changed = true
   }
+  slide.index = valueIndexToChangeRef.value
 }
 
 function handlePointerMove(event: PointerEvent) {
@@ -331,11 +417,15 @@ function handlePointerMove(event: PointerEvent) {
   const target = event.target as HTMLElement
   if (target.hasPointerCapture(event.pointerId)) {
     // Touch and pen keep the capture of a press made while disabled, so such a slide starts on its first move.
-    if (!slidingPointerIds.has(event.pointerId)) {
-      slidingPointerIds.add(event.pointerId)
-      valuesBeforeSlideStartRef.value = currentModelValue.value
-    }
-    handleSlideMove(event)
+    const slide = slides.get(event.pointerId) ?? startPointerSlide(event.pointerId)
+    // Another pointer may have moved the active thumb since; this pointer drives its own.
+    // A move that changes nothing focuses nothing, so the keyboard stays where it was.
+    const focusedIndex = valueIndexToChangeRef.value
+    valueIndexToChangeRef.value = slide.index
+    if (handleSlideMove(event))
+      slide.changed = true
+    else
+      valueIndexToChangeRef.value = focusedIndex
   }
 }
 
@@ -362,34 +452,32 @@ provideSliderAreaRootContext({
 </script>
 
 <template>
-  <CollectionSlot>
-    <Primitive
-      v-bind="$attrs"
-      :ref="forwardRef"
-      :as-child="asChild"
-      :as="as"
-      :dir="dir"
-      :aria-disabled="disabled"
-      :data-disabled="disabled ? '' : undefined"
-      :style="{
-        ['--reka-slider-area-thumb-transform' as any]: `translate(${!isSlidingFromLeft && thumbAlignment === 'overflow' ? '50%' : '-50%'}, ${!isSlidingFromTop && thumbAlignment === 'overflow' ? '50%' : '-50%'})`,
-      }"
-      @keydown="handleKeyDown"
-      @pointerdown="handlePointerDown"
-      @pointermove="handlePointerMove"
-      @pointerup="handlePointerUp"
-      @lostpointercapture="endSlide"
-    >
-      <slot :model-value="modelValue" />
+  <component
+    :is="renderAs(as, asChild)"
+    :ref="forwardRef"
+    v-bind="$attrs"
+    :dir="dir"
+    :aria-disabled="disabled"
+    :data-disabled="disabled ? '' : undefined"
+    :style="{
+      ['--reka-slider-area-thumb-transform' as any]: `translate(${!isSlidingFromLeft && thumbAlignment === 'overflow' ? '50%' : '-50%'}, ${!isSlidingFromTop && thumbAlignment === 'overflow' ? '50%' : '-50%'})`,
+    }"
+    @keydown="handleKeyDown"
+    @pointerdown="handlePointerDown"
+    @pointermove="handlePointerMove"
+    @pointerup="handlePointerUp"
+    @lostpointercapture="endSlide"
+    @vue:mounted="bindFormReset"
+  >
+    <slot :model-value="modelValue ?? null" />
 
-      <VisuallyHiddenInput
-        v-if="isFormControl && name"
-        type="hidden"
-        :value="JSON.stringify(modelValue)"
-        :name="name"
-        :required="required"
-        :disabled="disabled"
-      />
-    </Primitive>
-  </CollectionSlot>
+    <VisuallyHiddenInput
+      v-if="isFormControl && name"
+      type="hidden"
+      :value="JSON.stringify(modelValue)"
+      :name="name"
+      :required="required"
+      :disabled="disabled"
+    />
+  </component>
 </template>

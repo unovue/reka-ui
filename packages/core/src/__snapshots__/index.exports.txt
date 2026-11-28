@@ -594,7 +594,7 @@ useTooltip
 useTree
 withDefault
 
-# types (989)
+# types (990)
 AcceptableInputValue
 AcceptableValue
 AccordionChangeReason
@@ -1253,6 +1253,7 @@ SeparatorState
 SingleOrMultipleProps
 SingleOrMultipleType
 SliderAreaAreaProps
+SliderAreaChangeReason
 SliderAreaRegionProps
 SliderAreaRootEmits
 SliderAreaRootProps

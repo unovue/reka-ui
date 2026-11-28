@@ -8,6 +8,7 @@ export {
 } from './SliderAreaRegion.vue'
 export {
   injectSliderAreaRootContext,
+  type SliderAreaChangeReason,
   default as SliderAreaRoot,
   type SliderAreaRootEmits,
   type SliderAreaRootProps,
