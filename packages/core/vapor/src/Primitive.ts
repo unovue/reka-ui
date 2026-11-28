@@ -33,9 +33,36 @@ const ON_RE = /^on[A-Z]/
 const WHITESPACE_RE = /\s+/
 const BOOLEAN_PROPS = new Set(['disabled', 'checked', 'selected', 'multiple', 'readonly', 'readOnly', 'required', 'indeterminate'])
 const OPTION_SUFFIX_RE = /(?:Once|Passive|Capture)$/
+// Vue renders `true` as an empty attribute only for these (`isSpecialBooleanAttr`), and as "true"
+// otherwise, e.g. `disabled="true"` on a `span`, where `disabled` is not a property.
+const SPECIAL_BOOLEAN_ATTRS = new Set(['itemscope', 'allowfullscreen', 'formnovalidate', 'ismap', 'nomodule', 'novalidate', 'readonly'])
+
+// As in `src/Primitive/Primitive.ts`: custom element names (they contain a `-`) may also use `_` and `.`,
+// other tag names may not.
+const CUSTOM_ELEMENT_ONLY_CHAR = /[_.]/
+
+function isSafeTag(as: string) {
+  if (!TAG_NAME.test(as) || BLOCKED_TAG.test(as))
+    return false
+  return as.includes('-') || !CUSTOM_ELEMENT_ONLY_CHAR.test(as)
+}
+
+// Created on first use so the production build drops it together with the warning
+let warnedTags: Set<string> | undefined
 
 function safeTag(as: unknown) {
-  return typeof as === 'string' && (!TAG_NAME.test(as) || BLOCKED_TAG.test(as)) ? 'div' : as
+  if (typeof as !== 'string' || isSafeTag(as))
+    return as
+  // Dev-only guard as in `src/` (eslint.config.mjs turns this rule off for `packages/core/src` only)
+  // eslint-disable-next-line node/prefer-global/process
+  if (process.env.NODE_ENV !== 'production') {
+    warnedTags ??= new Set()
+    if (!warnedTags.has(as)) {
+      warnedTags.add(as)
+      console.warn(`[Reka UI] Primitive: ignored unsafe \`as\` value ${JSON.stringify(as)} and rendered a \`div\` instead. Use a plain tag name that doesn't run or load code (not \`script\`, \`iframe\`, \`object\`, …).`)
+    }
+  }
+  return 'div'
 }
 
 function withAriaDisabled(tag: unknown, attrs: Record<string, any>) {
@@ -212,7 +239,7 @@ export function adopt(el: Element, getProps: () => Record<string, any>, { overri
       else if (!(BOOLEAN_PROPS.has(attr) && setLive(attr, value))) {
         if (attr === 'value')
           setLive(attr, value)
-        el.setAttribute(attr, value === true ? (attr.startsWith('aria-') ? 'true' : '') : String(value))
+        el.setAttribute(attr, value === true ? (SPECIAL_BOOLEAN_ATTRS.has(attr) ? '' : 'true') : String(value))
       }
     }
     applyClass(props.class)

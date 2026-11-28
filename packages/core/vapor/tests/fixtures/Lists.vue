@@ -169,6 +169,36 @@ const combo = ref<any>()
     </ComboboxPortal>
   </ComboboxRoot>
   <span id="search">{{ search }}</span>
+
+  <!-- stays mounted while closed: hidden, not removed -->
+  <ComboboxRoot :unmount-on-hide="false">
+    <ComboboxAnchor>
+      <ComboboxInput
+        id="kept-input"
+        aria-label="Search kept fruit"
+      />
+      <ComboboxTrigger
+        id="kept-trigger"
+        aria-label="Open kept"
+      >
+        v
+      </ComboboxTrigger>
+    </ComboboxAnchor>
+    <ComboboxPortal>
+      <ComboboxContent id="kept-content">
+        <ComboboxViewport>
+          <ComboboxItem
+            v-for="f in fruits"
+            :id="`kept-${f}`"
+            :key="f"
+            :value="f"
+          >
+            {{ f }}
+          </ComboboxItem>
+        </ComboboxViewport>
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>
   <!-- methods ComboboxRoot adds to its exposed instance after mount -->
   <button
     id="combo-highlight"

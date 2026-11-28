@@ -1,7 +1,7 @@
 // Copy of src/shared/useTriggerId.ts with the three VDOM-instance reads swapped for Vapor-safe ones
 // (generic instance, root node from `instance.block`, no `$forceUpdate` in Vapor).
 import type { ComputedRef, Ref } from 'vue'
-import { onActivated, onBeforeMount, onBeforeUnmount, onBeforeUpdate, onDeactivated, onMounted, onUpdated, ref, shallowRef, toRaw, useAttrs, watch } from 'vue'
+import { nextTick, onActivated, onBeforeMount, onBeforeUnmount, onBeforeUpdate, onDeactivated, onMounted, onUpdated, ref, shallowRef, toRaw, useAttrs, watch } from 'vue'
 import { rendersForeignId } from '@/shared/usePartId'
 import { forceUpdate, getGenericInstance, hasDeactivatedAncestor, instanceElement } from './internals'
 
@@ -121,6 +121,18 @@ function syncRenderedTriggerId(context: { triggerId: string }, element: Readonly
   }
   onMounted(syncRendered)
   onUpdated(syncRendered)
+  // An `asChild` Primitive applies the attrs to its child element by hand, after this component
+  // mounted and without an update here: follow the element's own `id`.
+  if (typeof MutationObserver !== 'undefined') {
+    watch(element, (el, _, onCleanup) => {
+      if (!el)
+        return
+      const observer = new MutationObserver(syncRendered)
+      observer.observe(el, { attributes: true, attributeFilter: ['id'] })
+      onCleanup(() => observer.disconnect())
+    }, { immediate: true, flush: 'post' })
+  }
+  return syncRendered
 }
 
 /**
@@ -146,15 +158,23 @@ export function useTriggerId(
   const attrs = useAttrs()
   let consumerId = attrs.id
   setTriggerId(context, consumerId, generate)
-  onBeforeUpdate(() => {
+  const syncConsumerId = () => {
     if (attrs.id === consumerId)
       return
     consumerId = attrs.id
     if (typeof consumerId === 'string' && consumerId)
       context.triggerId = consumerId
-  })
-  if (rendered)
-    syncRenderedTriggerId(context, element)
+  }
+  onBeforeUpdate(syncConsumerId)
+  const syncRendered = rendered ? syncRenderedTriggerId(context, element) : undefined
+  // A Vapor component does not update when only a fallthrough attribute changes (the child that
+  // renders it patches it), so the update hook above never sees a new consumer `id`. Vapor attrs are
+  // reactive: watch them. The new id reaches the element with the render the context change causes.
+  watch(() => attrs.id, () => {
+    syncConsumerId()
+    if (syncRendered)
+      nextTick(syncRendered)
+  }, { flush: 'post' })
 }
 
 /**

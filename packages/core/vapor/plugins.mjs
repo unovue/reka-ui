@@ -534,6 +534,13 @@ const PATCHES = {
   [src('shared/formReset.ts')]: [
     ['vnode => bind(vnodeElement(vnode),', 'vnode => vnode && bind(vnodeElement(vnode),'],
   ],
+  // `vShowOnComponents` turns ComboboxContent's `v-show` into a `display: none` style that reaches this
+  // component through `$attrs`, and the `:style` below (bound after `v-bind="$attrs"`) sets `display: flex`
+  // over it. VDOM's `v-show` writes `el.style.display` after props, so it wins there. Fold the same
+  // condition (`present`, which ComboboxContent passes with the `v-show` value) into the display.
+  [src('Combobox/ComboboxContentImpl.vue')]: [
+    ['display: (props.hideWhenEmpty && surface.state.value.empty) ? \'none\' : \'flex\',', 'display: (!props.present || (props.hideWhenEmpty && surface.state.value.empty)) ? \'none\' : \'flex\','],
+  ],
   [src('ScrollArea/ScrollAreaVirtualizer.vue')]: [
     [/\/\/ not a computed: slots aren't reactive[^\n]*\nfunction getVirtualizedItems\(\) \{[\s\S]*?\n\}\n/, `function rowAttrs(item: VirtualItem) {
   const start = item.start - scrollMargin.value

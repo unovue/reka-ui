@@ -149,6 +149,7 @@
     "Combobox/ComboboxContentImpl.vue": {
       "exposeElement": 1,
       "getCurrentInstance": 1,
+      "patches": 1,
       "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
@@ -1556,7 +1557,7 @@
   "totals": {
     "exposeElement": 291,
     "getCurrentInstance": 30,
-    "patches": 16,
+    "patches": 17,
     "presenceAttrs": 8,
     "renderAs": 130,
     "sfcs": 291,
