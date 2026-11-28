@@ -4,7 +4,7 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { Translate, TranslationKey } from '@/shared/translations'
 import { computed, toValue } from 'vue'
 import { clamp, createPartSurface, useControllableState } from '@/shared'
-import { defaultTranslate } from '@/shared/translations'
+import { messagesTranslate, paginationMessages } from '@/shared/translations'
 import { getRange, transform } from './utils'
 
 /**
@@ -211,7 +211,7 @@ export function usePagination(props: UsePaginationProps): UsePaginationReturn {
     siblingCount,
     disabled,
     showEdges,
-    t: props.translate ?? defaultTranslate,
+    t: props.translate ?? messagesTranslate(paginationMessages),
   }
 
   return {

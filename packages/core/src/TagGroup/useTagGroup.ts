@@ -6,6 +6,7 @@ import type { AcceptableValue, Direction } from '@/shared/types'
 import { computed, nextTick, ref, shallowReactive, toValue } from 'vue'
 import { compare, createPartSurface, getActiveElement, selectionState, useControllableState, useTranslations, useTypeahead, valueComparator } from '@/shared'
 import { compareDocumentOrder } from '@/shared/documentOrder'
+import { tagGroupMessages } from '@/shared/translations'
 import { resolveDirection } from '@/shared/useDirection'
 
 /**
@@ -223,7 +224,7 @@ export function getTagGroupItemDeleteSurface(
 ): PartSurface<TagGroupItemDeleteState> {
   const id = options.id ?? `${itemContext.id}-delete`
   const disabled = computed(() => Boolean(itemContext.disabled.value || toValue(options.disabled)))
-  const t = useTranslations()
+  const t = useTranslations(tagGroupMessages)
 
   return createPartSurface<TagGroupItemDeleteState>(
     () => ({

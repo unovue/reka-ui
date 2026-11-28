@@ -10,6 +10,7 @@ import { computed } from 'vue'
 import { getCollectionComponents, useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { useForwardElement, useSize, useTranslations } from '@/shared'
+import { sliderAreaThumbMessages } from '@/shared/translations'
 import { convertValueToPercentage, getLabel, getThumbInBoundsOffset } from '../Slider/utils'
 import { injectSliderAreaRootContext } from './SliderAreaRoot.vue'
 
@@ -21,7 +22,7 @@ const props = withDefaults(defineProps<SliderAreaThumbProps>(), {
   as: 'div',
 })
 
-const t = useTranslations()
+const t = useTranslations(sliderAreaThumbMessages)
 
 const rootContext = injectSliderAreaRootContext()
 const { forwardRef, currentElement, expose } = useForwardElement()
