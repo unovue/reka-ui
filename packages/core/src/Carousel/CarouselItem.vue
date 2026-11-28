@@ -7,7 +7,7 @@ export interface CarouselItemProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { onBeforeUnmount, watch } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectCarouselRootContext } from './CarouselRoot.vue'
 import { getCarouselItemSurface } from './useCarousel'
 
@@ -22,7 +22,8 @@ defineSlots<{
   }) => any
 }>()
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectCarouselRootContext()
 
 // Registered in DOM order once mounted: the index, `aria-label` and snap styles derive from it.

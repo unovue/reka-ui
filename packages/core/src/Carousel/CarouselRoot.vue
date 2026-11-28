@@ -5,7 +5,7 @@ import type { CarouselAlign, CarouselContainScroll, CarouselItemSnapStyle, Carou
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails, Translate } from '@/shared'
 import type { DataOrientation, Direction } from '@/shared/types'
-import { createRekaContext, useDirection, useForwardExpose, useId } from '@/shared'
+import { createRekaContext, useDirection, useForwardElement, useId } from '@/shared'
 
 export interface CarouselResolvedOptions {
   loop: boolean
@@ -235,7 +235,8 @@ defineSlots<{
 }>()
 
 const dir = useDirection(toRef(props, 'dir'))
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const context = useCarouselContext(props, emits, dir, useId(undefined, 'reka-carousel'))
 provideCarouselRootContext(context)
