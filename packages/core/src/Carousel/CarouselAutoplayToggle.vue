@@ -6,7 +6,7 @@ export interface CarouselAutoplayToggleProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
-import { disabledAttr, useForwardExpose } from '@/shared'
+import { disabledAttr, useForwardElement } from '@/shared'
 import { injectCarouselRootContext } from './CarouselRoot.vue'
 import { getCarouselAutoplayToggleSurface } from './useCarousel'
 
@@ -19,7 +19,8 @@ defineSlots<{
   }) => any
 }>()
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectCarouselRootContext()
 
 // APG rotation control: its label names the action it takes next, so it has no pressed state.

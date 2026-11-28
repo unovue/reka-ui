@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { createRekaContext, useForwardExpose, useId } from '@/shared'
+import { createRekaContext, useForwardElement, useId } from '@/shared'
 
 export interface CarouselIndicatorGroupProps extends PrimitiveProps {}
 
@@ -20,7 +20,8 @@ import { injectCarouselRootContext } from './CarouselRoot.vue'
 
 withDefaults(defineProps<CarouselIndicatorGroupProps>(), { as: 'div' })
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectCarouselRootContext()
 
 const id = useId(undefined, 'reka-carousel-tabs')

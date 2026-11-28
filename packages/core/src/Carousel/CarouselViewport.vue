@@ -7,7 +7,7 @@ export interface CarouselViewportProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { mergeProps, watch } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectCarouselRootContext } from './CarouselRoot.vue'
 import { useCarouselViewport } from './useCarouselViewport'
 
@@ -19,7 +19,8 @@ defineOptions({
 
 withDefaults(defineProps<CarouselViewportProps>(), { as: 'div' })
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectCarouselRootContext()
 
 watch(currentElement, (el) => {
