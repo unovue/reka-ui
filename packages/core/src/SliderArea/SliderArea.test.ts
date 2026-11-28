@@ -730,6 +730,32 @@ describe('given a SliderAreaRoot whose change is cancelled', () => {
     wrapper.unmount()
   })
 
+  it('commits both key steps when a beforeUpdate listener makes another one', async () => {
+    let nested = false
+    const wrapper = mount(defineComponent({
+      components: { SliderAreaRoot, SliderAreaThumb },
+      methods: {
+        onBefore() {
+          if (nested)
+            return
+          nested = true
+          this.$el.querySelector('[role="slider"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }))
+        },
+      },
+      template: `
+        <SliderAreaRoot :default-value="[[40, 40]]" @before-update:model-value="onBefore">
+          <SliderAreaThumb />
+        </SliderAreaRoot>`,
+    }), { attachTo: document.body })
+    const root = wrapper.findComponent(SliderAreaRoot)
+
+    await wrapper.find('[role="slider"]').trigger('keydown', { key: 'ArrowRight' })
+
+    expect(root.emitted('update:modelValue')!.map(([value]) => value)).toEqual([[[40, 39]], [[41, 40]]])
+    expect(root.emitted('valueCommit')).toEqual([[[[40, 39]]], [[[41, 40]]]])
+    wrapper.unmount()
+  })
+
   it('emits no valueCommit for a key step cancelled after a nested reset', async () => {
     const wrapper = mount(defineComponent({
       components: { SliderAreaRoot, SliderAreaThumb },

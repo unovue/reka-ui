@@ -292,9 +292,17 @@ function updateValues(point: number[], atIndex: number, options: { commit?: bool
   if (valuesEqual(modelValue.value, nextValues))
     return false
 
+  // A `beforeUpdate` listener can make a change of its own: put the enclosing
+  // change's pending work back once this one is done.
+  const enclosing = pending
   pending = { value: nextValues, commit: !!options.commit, focusIndex: atIndex }
-  const changed = setState(nextValues, options.reason ?? 'imperative-action', options.event)
-  pending = null
+  let changed: boolean
+  try {
+    changed = setState(nextValues, options.reason ?? 'imperative-action', options.event)
+  }
+  finally {
+    pending = enclosing
+  }
   // Cancelled: no thumb moved or took focus, so the keyboard stays on the thumb it was on.
   if (!changed)
     valueIndexToChangeRef.value = previousIndex
