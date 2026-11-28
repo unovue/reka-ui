@@ -54,9 +54,10 @@ export function withDefault<T extends ComponentOptionsBase<{}, {}, {}, any, any,
     inheritAttrs: false,
     name: `${WrappedComponent.__name ?? ''}Wrapper`,
     setup(_, ctx) {
+      const { forwardRef } = useForwardExpose()
+
       return () => {
         const optionProps = typeof options?.props === 'function' ? options?.props(ctx.attrs) : options?.props
-        const { forwardRef } = useForwardExpose()
 
         const mergedProps = mergeProps(optionProps, ctx.attrs)
         return h(WrappedComponent, { ...mergedProps, ref: forwardRef }, ctx.slots)
