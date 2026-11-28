@@ -169,6 +169,18 @@ describe('bounds changing during a drag', () => {
     expect(wrapper.emitted('valueCommit')).toBeUndefined()
   })
 
+  it('leaves the model alone when the bounds change after the slider is disabled mid-drag', async () => {
+    const { wrapper, slider, values } = mountDragged()
+
+    await fireEvent.pointerDown(slider, { clientX: 50, pointerId: 1 })
+    await fireEvent.pointerMove(slider, { clientX: 85, pointerId: 1 })
+    await wrapper.setProps({ disabled: true })
+    await wrapper.setProps({ max: 60 })
+
+    expect(values()).toEqual([85])
+    expect(wrapper.emitted<[number[]]>('update:modelValue')!.map(([value]) => value)).toEqual([[85]])
+  })
+
   it('lets beforeUpdate cancel the move into range', async () => {
     const onBeforeUpdate = vi.fn((_value: number[], details: ChangeEventDetails<SliderChangeReason>) => details.cancel())
     const { wrapper, slider, values } = mountDragged()

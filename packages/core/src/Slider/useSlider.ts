@@ -370,7 +370,9 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     // A standalone drag can start without the root's pointerdown.
     valuesBeforeSlideStart = currentModelValue.value
     const start = () => watch(() => [min.value, max.value], () => {
-      clampModelToBounds()
+      // A slider disabled mid-drag takes no more changes from it.
+      if (!disabled.value)
+        clampModelToBounds()
     })
     stopBoundsWatch = scope ? scope.run(start) : start()
   }
