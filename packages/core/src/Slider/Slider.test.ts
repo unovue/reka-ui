@@ -949,6 +949,23 @@ describe('given a slider pressed by several pointers', () => {
     }
   })
 
+  it('keeps the other pointer on its thumb when one pointer drags past it', async () => {
+    const { value, wrapper, thumbs: [first, second] } = mountControlled([20, 80])
+    try {
+      await fireEvent.pointerDown(first, { clientX: 20, pointerId: 1 })
+      await fireEvent.pointerDown(second, { clientX: 80, pointerId: 2 })
+      await fireEvent.pointerMove(first, { clientX: 90, pointerId: 1 })
+      expect(value.value).toEqual([80, 90])
+      // The second pointer still holds the thumb at 80, now the first value.
+      await fireEvent.pointerMove(second, { clientX: 70, pointerId: 2 })
+
+      expect(value.value).toEqual([70, 90])
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
   it('commits a slide only for the pointer that made it', async () => {
     const { wrapper, root, thumbs: [thumb] } = mountControlled([40])
     try {

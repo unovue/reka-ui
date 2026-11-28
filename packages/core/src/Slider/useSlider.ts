@@ -336,6 +336,7 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     const changed = setState(nextValues, options.reason ?? 'imperative-action', options.event)
     if (changed) {
       flushPending() // no listeners to hook: run the side effects now
+      followSortedThumbs(atIndex, valueIndexToChangeRef.value)
     }
     else {
       // Cancelled in `beforeUpdate`: the values did not move, so the thumb
@@ -399,6 +400,22 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     // call or a slide without a pointer goes with the one slide that is open.
     const [[openKey, open]] = slides
     return key === null || openKey === null ? open : undefined
+  }
+  /**
+   * A thumb moved from `from` to `to` in the sorted values, passing the thumbs
+   * in between: every open slide keeps driving the thumb it held.
+   */
+  function followSortedThumbs(from: number, to: number) {
+    if (from === to)
+      return
+    slides.forEach((slide) => {
+      if (slide.index === from)
+        slide.index = to
+      else if (from < to && slide.index > from && slide.index <= to)
+        slide.index--
+      else if (from > to && slide.index >= to && slide.index < from)
+        slide.index++
+    })
   }
   function openSlide(event?: Event): PointerSlide {
     const existing = getSlide(event)
