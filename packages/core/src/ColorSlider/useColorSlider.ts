@@ -7,6 +7,7 @@ import { computed, toValue } from 'vue'
 import { createPartSurface, translationKey, useControllableState, useTranslations } from '@/shared'
 import { colorToHex, convertToSpace, getChannelColorSpace, getChannelRange, getChannelValue, getSliderBackgroundStyle, isEqualColor, normalizeColor, setChannelValue } from '@/shared/color'
 import { createChangeEndTracker } from '@/shared/color/changeEnd'
+import { colorChannelMessages } from '@/shared/translations'
 import { resolveDirection } from '@/shared/useDirection'
 
 type Inputs = Pick<ColorSliderRootProps, 'orientation' | 'dir' | 'disabled' | 'inverted' | 'channel' | 'colorSpace' | 'step' | 'modelValue' | 'defaultValue'>
@@ -147,7 +148,7 @@ export function useColorSlider(props: UseColorSliderProps): UseColorSliderReturn
     changeEnd.commit()
   }
 
-  const t = useTranslations()
+  const t = useTranslations(colorChannelMessages)
   const context: ColorSliderRootContext = {
     t,
     color,

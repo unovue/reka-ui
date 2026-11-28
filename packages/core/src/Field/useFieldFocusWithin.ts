@@ -3,6 +3,7 @@ import type { FieldRootContext } from './FieldRoot.vue'
 import type { FieldControlBinding } from './useFieldBinding'
 import { inject, nextTick, provide, watch } from 'vue'
 import { getActiveElement } from '@/shared'
+import { getFieldRuntime } from './useFieldBinding'
 
 export interface FieldFocusWithin {
   /** Whether focus is currently inside the control's own element (not an extension). */
@@ -67,7 +68,12 @@ export function provideFieldFocusExtension(extension: FieldFocusExtension) {
 export function useFieldFocusWithin(field: FieldFocusTarget | null, element: Ref<HTMLElement | undefined>, ownExtension?: FieldFocusExtension): FieldFocusWithin | null {
   if (!field)
     return null
+  // A field target only exists inside a `FieldRoot`, which installed the runtime.
+  return getFieldRuntime()!.focusWithin(field, element, ownExtension)
+}
 
+/** The body of `useFieldFocusWithin`, installed by `FieldRoot` (see `installFieldRuntime`). @internal */
+export function trackFieldFocusWithin(field: FieldFocusTarget, element: Ref<HTMLElement | undefined>, ownExtension?: FieldFocusExtension): FieldFocusWithin {
   const extension = ownExtension ?? inject(FIELD_FOCUS_EXTENSION, null)
   // Where focus is: outside the control, in its element, or in an extension.
   let focus: 'out' | 'element' | 'extension' = 'out'
@@ -119,7 +125,7 @@ export function useFieldFocusWithin(field: FieldFocusTarget | null, element: Ref
     stopFollowing()
     unwatchRemovals()
     focus = 'out'
-    field!.onBlur()
+    field.onBlur()
   }
 
   function moveTo(next: Node | null) {
@@ -143,7 +149,7 @@ export function useFieldFocusWithin(field: FieldFocusTarget | null, element: Ref
       return
     handledEvents.add(event)
     if (focus === 'out')
-      field!.onFocus()
+      field.onFocus()
     focus = 'element'
     stopFollowing()
     watchRemovals()
@@ -167,7 +173,7 @@ export function useFieldFocusWithin(field: FieldFocusTarget | null, element: Ref
     const extensionElement = extensionElementOf(target)
     if (!extensionElement)
       return
-    field!.onFocus()
+    field.onFocus()
     focus = 'extension'
     follow(extensionElement)
   }
@@ -220,7 +226,7 @@ export function useFieldFocusWithin(field: FieldFocusTarget | null, element: Ref
       // browser fires `focusout` for a removed element, so focus can't still be inside it.
       if (focus !== 'out') {
         focus = 'out'
-        field!.context.reportControlState({ focused: false })
+        field.context.reportControlState({ focused: false })
       }
     })
   }, { flush: 'sync', immediate: true })

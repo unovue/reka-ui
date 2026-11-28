@@ -62,6 +62,7 @@ export const [injectPaginationRootContext, providePaginationRootContext]
 import { watch } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { useUntrackedAttrs } from '@/shared/splitWrapperAttrs'
+import { paginationMessages } from '@/shared/translations'
 import { usePagination } from './usePagination'
 
 const props = withDefaults(defineProps<PaginationRootProps>(), {
@@ -87,7 +88,7 @@ const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
 // The composable owns the page model (`useControllableState`) and its emits.
-const t = useTranslations()
+const t = useTranslations(paginationMessages)
 const { page, modelPage, pageCount, setPage, context } = usePagination({
   page: () => props.page,
   defaultPage: props.defaultPage,

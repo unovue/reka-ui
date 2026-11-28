@@ -4,6 +4,7 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { Direction } from '@/shared/types'
 import { computed, ref, toRaw, toValue, watch } from 'vue'
 import { createPartSurface, getterRef, translationKey, useControllableState, useTranslations } from '@/shared'
+import { editableMessages } from '@/shared/translations'
 import { resolveDirection } from '@/shared/useDirection'
 
 /**
@@ -331,7 +332,7 @@ export function useEditable(props: UseEditableProps = {}): UseEditableReturn {
     }
   }
 
-  const t = useTranslations()
+  const t = useTranslations(editableMessages)
   const context: EditableRootContext = {
     t,
     id,
