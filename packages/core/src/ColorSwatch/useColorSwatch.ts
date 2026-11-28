@@ -4,6 +4,7 @@ import type { Color } from '@/shared/color'
 import { computed, toValue } from 'vue'
 import { createPartSurface, fieldRef, useTranslations } from '@/shared'
 import { colorToString, getColorContrast, getColorName, normalizeColor } from '@/shared/color'
+import { colorSwatchMessages } from '@/shared/translations'
 
 export interface UseColorSwatchProps {
   color?: MaybeRefOrGetter<string | Color | undefined>
@@ -85,7 +86,7 @@ function deriveColorSwatch(color: string | Color | undefined, customLabel: strin
  * @lifecycle pure
  */
 export function useColorSwatch(props: UseColorSwatchProps = {}): UseColorSwatchReturn {
-  const t = useTranslations()
+  const t = useTranslations(colorSwatchMessages)
   const info = computed(() => deriveColorSwatch(toValue(props.color), toValue(props.label), t))
   const root = createPartSurface<ColorSwatchState>(() => {
     const { label, colorString, alpha } = info.value

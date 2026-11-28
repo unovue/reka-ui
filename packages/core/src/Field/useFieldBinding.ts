@@ -3,6 +3,7 @@ import type { FieldControlRegistration, FieldDataAttributes, FieldRootContext } 
 import { inject, onBeforeUnmount, onMounted, provide } from 'vue'
 import { injectFieldRootContext } from './fieldRootContext'
 import { isProgrammaticChange } from './pendingFieldInput'
+import { trackFieldFocusWithin } from './useFieldFocusWithin'
 
 export interface UseFieldBindingOptions extends Omit<FieldControlRegistration, 'id'> {
   /** The control's own `id` prop. The field's generated id is used when it's unset. */
@@ -101,6 +102,23 @@ export function provideFieldControlOwner(context: FieldRootContext | null) {
 }
 
 /**
+ * What only a control inside a Field runs: the binding below and the focus
+ * tracking of `useFieldFocusWithin`. `FieldRoot`, the only provider of a field
+ * context, installs it, so a bundle without a `FieldRoot` leaves it out.
+ */
+let fieldRuntime: { bind: typeof bindField, focusWithin: typeof trackFieldFocusWithin } | undefined
+
+/** @internal */
+export function getFieldRuntime() {
+  return fieldRuntime
+}
+
+/** Called by `FieldRoot`. @internal */
+export function installFieldRuntime() {
+  fieldRuntime ??= { bind: bindField, focusWithin: trackFieldFocusWithin }
+}
+
+/**
  * Optional participation of a Reka control in an ancestor `FieldRoot`: the
  * binding the components use. The public composable built on it is
  * `useFieldControl`.
@@ -118,7 +136,10 @@ export function useFieldBinding(options: UseFieldBindingOptions): FieldControlBi
   const context = ownField ?? options.groupField
   if (!context)
     return null
+  return fieldRuntime!.bind(context, ownField, options)
+}
 
+function bindField(context: FieldRootContext, ownField: FieldRootContext | null, options: UseFieldBindingOptions): FieldControlBinding {
   const { id: ownId, participates: ownParticipates = () => true, groupField: _groupField, ...registration } = options
   // A part reading its group's field is never that field's control.
   const participates = ownField ? ownParticipates : never

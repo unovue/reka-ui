@@ -8,6 +8,7 @@ import { createEventHook, tryOnScopeDispose } from '@vueuse/core'
 import { computed, isRef, nextTick, ref, toValue } from 'vue'
 import { useListboxRoot } from '@/Listbox/useListbox'
 import { createPartSurface, defineReactiveIds, disclosureState, getActiveElement, getElementByIdFrom, useComposing, useControllableState, useFilter, useTranslations } from '@/shared'
+import { comboboxMessages } from '@/shared/translations'
 import { getComboboxItemLabel } from './comboboxItems'
 import { useComboboxContentPositioning } from './useComboboxContentPositioning'
 
@@ -155,7 +156,7 @@ export function getComboboxTriggerSurface(
   disabled?: MaybeRefOrGetter<boolean | undefined>,
 ): PartSurface<ComboboxTriggerState> {
   const isDisabled = computed(() => toValue(disabled) || context.disabled.value || false)
-  const t = useTranslations()
+  const t = useTranslations(comboboxMessages)
   let pointerType: string | undefined
   // The open state when the press began: focusing the input on mousedown can
   // open the popup first (`openOnFocus`), and the press must not then close it.

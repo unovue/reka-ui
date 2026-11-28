@@ -6,6 +6,7 @@ import { computed, nextTick, ref, toValue } from 'vue'
 import { createPartSurface, getterRef, translationKey, useControllableState, useTranslations } from '@/shared'
 import { colorToHex, convertToSpace, getAreaBackgroundStyle, getChannelColorSpace, getChannelRange, getChannelValue, isEqualColor, normalizeColor, setChannelValues } from '@/shared/color'
 import { createChangeEndTracker } from '@/shared/color/changeEnd'
+import { colorAreaInputMessages } from '@/shared/translations'
 import { resolveDirection } from '@/shared/useDirection'
 import { convertValueToPercentage, linearScale } from './utils'
 
@@ -154,7 +155,7 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
       thumbRef.value?.focus()
   }
 
-  const t = useTranslations()
+  const t = useTranslations(colorAreaInputMessages)
   const context: ColorAreaRootContext = {
     t,
     color: workingColor,

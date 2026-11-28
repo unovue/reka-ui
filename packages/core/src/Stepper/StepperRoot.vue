@@ -66,6 +66,7 @@ const stepperObserver = new SharedMutationObserver({ childList: true, subtree: t
 
 <script setup lang="ts">
 import { computed, shallowRef } from 'vue'
+import { stepperMessages } from '@/shared/translations'
 
 const props = withDefaults(defineProps<StepperRootProps>(), {
   orientation: 'horizontal',
@@ -106,7 +107,7 @@ defineSlots<{
 // owns the step model (`useControllableState`), the step navigation and the
 // next/previous-trigger watchers.
 const dir = useDirection(() => props.dir)
-const t = useTranslations()
+const t = useTranslations(stepperMessages)
 
 const {
   modelValue,

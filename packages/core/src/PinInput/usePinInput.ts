@@ -4,6 +4,7 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { Direction } from '@/shared/types'
 import { computed, nextTick, ref, shallowRef, toValue, triggerRef, watch } from 'vue'
 import { createPartSurface, getActiveElement, useArrowNavigation, useComposing, useControllableState, useTranslations } from '@/shared'
+import { pinInputMessages } from '@/shared/translations'
 import { resolveDirection } from '@/shared/useDirection'
 
 /**
@@ -243,7 +244,7 @@ export function usePinInput(props: UsePinInputProps = {}): UsePinInputReturn {
     props.emit?.('complete', committedMountedValues.value)
   }, { deep: true, flush: 'post' })
 
-  const t = useTranslations()
+  const t = useTranslations(pinInputMessages)
   const context: PinInputRootContext<PinInputType> = {
     modelValue,
     t,

@@ -3,10 +3,10 @@ import type { Granularity } from './comparators'
 import type { DateInputType, DateStep, DateValue, HourCycle } from './types'
 import type { Translate } from '@/shared/translations'
 import { defu } from 'defu'
-import { hasInjectionContext, nextTick, watch } from 'vue'
+import { nextTick, watch } from 'vue'
 import { toCalendar, toIsoString } from '@/date/temporal'
 import { getActiveElement } from '@/shared/getActiveElement'
-import { defaultTranslate } from '@/shared/translations'
+import { dateMessages } from '@/shared/translations'
 import { useTranslations } from '@/shared/useTranslations'
 
 /**
@@ -44,7 +44,7 @@ export function withCellTriggerTabindex<T extends Record<string, unknown>>(attrs
  * @internal
  */
 export function useDateTranslations(): Translate {
-  return hasInjectionContext() ? useTranslations() : defaultTranslate
+  return useTranslations(dateMessages)
 }
 
 export function getOptsByGranularity(granularity: Granularity, hourCycle: HourCycle, isTimeValue: boolean = false) {
