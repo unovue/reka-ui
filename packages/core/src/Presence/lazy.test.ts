@@ -110,7 +110,8 @@ describe('item indicators', () => {
     beforeEach(() => {
       exit = undefined
       Element.prototype.getAnimations = function (this: Element) {
-        return (exit && exit.target === this && exit.playState === 'running' ? [exit] : []) as unknown as Animation[]
+        // The exit runs once the closed state is rendered, as the styles of `data-ending-style` start it.
+        return (exit && exit.target === this && exit.playState === 'running' && this.hasAttribute('data-ending-style') ? [exit] : []) as unknown as Animation[]
       }
     })
     afterEach(() => {

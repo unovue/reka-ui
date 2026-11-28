@@ -79,6 +79,12 @@ export function getRunningAnimations(node: Element): Animation[] {
   })
 }
 
+/** What a restyle in place can change about an animation: its name and timing. */
+function timingKey(animation: Animation): string {
+  const name = (animation as Partial<CSSAnimation>).animationName ?? ''
+  return `${name} ${JSON.stringify(animation.effect?.getTiming?.())}`
+}
+
 // Ported from Base UI's `useTransitionStatus` + `useAnimationsFinished`.
 /**
  * Mount/unmount state of a presence-managed node that waits for its CSS
@@ -103,6 +109,14 @@ export class PresenceController {
   private frame: number | undefined
   // A close whose rendered state has not been checked for animations yet.
   private exitPending = false
+  // The animations already running when the close came, with their timing then.
+  // One the closed state restyles is cancelled and replaced, or (a CSS animation
+  // whose direction, duration, ... changes) updated in place, so a run still here
+  // with the same timing is one the close did not touch: an enter that a Vue
+  // `<Transition>` around the part drives with its own classes, which would
+  // otherwise play on to full opacity before that `<Transition>` can start its
+  // leave. The exit does not wait for them.
+  private preExisting: Map<Animation, string> | undefined
 
   constructor(
     /** The owner's state; `'mounted'` or `'unmounted'` when this is created. */
@@ -143,7 +157,7 @@ export class PresenceController {
     const element = this.node.value
     if (!element || !supportsAnimations(element))
       return done()
-    const running = getRunningAnimations(element)
+    const running = this.runningAnimations(element)
     if (!running.length)
       return done()
     const recheck = () => {
@@ -153,6 +167,15 @@ export class PresenceController {
     // `.then(noop)` so the joined promise does not resolve to (and retain) the
     // finished Animation objects (Base UI #5719).
     Promise.all(running.map(animation => animation.finished.then(noop))).then(recheck, recheck)
+  }
+
+  /** The running animations of `element` that the current run waits for. */
+  private runningAnimations(element: Element) {
+    const running = getRunningAnimations(element)
+    const preExisting = this.preExisting
+    return preExisting?.size
+      ? running.filter(animation => preExisting.get(animation) !== timingKey(animation))
+      : running
   }
 
   // Nothing animates on the server: the immediate watcher still runs during
@@ -168,6 +191,7 @@ export class PresenceController {
   }
 
   private finishExit() {
+    this.preExisting = undefined
     this.dispatch(this.state.value === 'unmountSuspended' ? 'ANIMATION_END' : 'UNMOUNT')
     this.transitionStatus.value = undefined
     this.dispatchCustomEvent('after-leave')
@@ -181,7 +205,7 @@ export class PresenceController {
   private settlePendingExit() {
     this.dispatchCustomEvent('leave')
     const element = this.node.value
-    if (element && supportsAnimations(element) && getRunningAnimations(element).length)
+    if (element && supportsAnimations(element) && this.runningAnimations(element).length)
       return false
     this.finishExit()
     return true
@@ -200,6 +224,7 @@ export class PresenceController {
     const isInitial = prevPresent === undefined
 
     if (currentPresent) {
+      this.preExisting = undefined
       // Base UI stamps the starting style only when an unmounted popup opens:
       // not on the initial render (unless `appear`), and not when reopening
       // mid-exit (the exit transition reverses from wherever it is).
@@ -235,6 +260,14 @@ export class PresenceController {
       this.transitionStatus.value = undefined
       return
     }
+
+    // Read before the closed state renders (this watcher runs before the node's
+    // own part re-renders): see `preExisting`.
+    const element = this.node.value
+    const preExisting = element && supportsAnimations(element) ? getRunningAnimations(element) : []
+    this.preExisting = preExisting.length
+      ? new Map(preExisting.map(animation => [animation, timingKey(animation)]))
+      : undefined
 
     if (supportsAnimations())
       this.transitionStatus.value = 'ending'
