@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import Fixture from './fixtures/ReferencedIds.vue'
+import MenuFixture from './fixtures/ReferencedIdsMenu.vue'
 import { exposed, mount, until } from './utils'
 
 // Mirrors src/shared/useReferencedId.test.ts: the referring part follows a consumer id on the part it references.
@@ -58,5 +59,44 @@ describe('referenced ids (Vapor)', () => {
     await until(() => expect(attr('select-group', 'aria-labelledby')).toBe('my-group-label'))
     expect(attr('select-item', 'aria-labelledby')).toBe('my-item-text')
     expect(attr('step-trigger', 'aria-labelledby')).toContain('step-title')
+  })
+  it('follows a consumer id on a trigger that changes after mount', async () => {
+    await mount(Fixture)
+    // PopoverContent loads its modal / non-modal part asynchronously, so it is not in the DOM right after mount
+    await until(() => expect(attr('popover-content', 'aria-labelledby')).toBe('my-trigger'))
+    exposed<{ triggerId: string }>().triggerId = 'next-trigger'
+    await until(() => expect(find('popover-trigger').id).toBe('next-trigger'))
+    await until(() => expect(attr('popover-content', 'aria-labelledby')).toBe('next-trigger'))
+  })
+
+  it('follows a consumer id on a content that changes after mount', async () => {
+    await mount(Fixture)
+    // The trigger points at the content, which loads asynchronously (see above)
+    await until(() => expect(attr('popover-trigger', 'aria-controls')).toBe('my-content'))
+    expect(attr('tab', 'aria-controls')).toBe('my-panel')
+    exposed<{ contentId: string }>().contentId = 'next-content'
+    exposed<{ panelId: string }>().panelId = 'next-panel'
+    await until(() => expect(find('popover-content').id).toBe('next-content'))
+    await until(() => expect(attr('popover-trigger', 'aria-controls')).toBe('next-content'))
+    await until(() => expect(find('panel').id).toBe('next-panel'))
+    await until(() => expect(attr('tab', 'aria-controls')).toBe('next-panel'))
+  })
+
+  // DropdownMenu and Menubar keep their ids on the context (useTriggerId / useContentId), not in a part id
+  it('follows a consumer id on a menu trigger and content that changes after mount', async () => {
+    await mount(MenuFixture)
+    await until(() => expect(attr('dd-content', 'aria-labelledby')).toBe('dd-trigger'))
+    expect(attr('dd-trigger', 'aria-controls')).toBe('dd-content')
+    await until(() => expect(attr('mb-content', 'aria-labelledby')).toBe('mb-trigger'))
+    const state = exposed<{ triggerId: string, contentId: string, mbTriggerId: string }>()
+    state.triggerId = 'dd-next-trigger'
+    state.contentId = 'dd-next-content'
+    state.mbTriggerId = 'mb-next-trigger'
+    await until(() => expect(find('dd-trigger').id).toBe('dd-next-trigger'))
+    await until(() => expect(attr('dd-content', 'aria-labelledby')).toBe('dd-next-trigger'))
+    await until(() => expect(find('dd-content').id).toBe('dd-next-content'))
+    await until(() => expect(attr('dd-trigger', 'aria-controls')).toBe('dd-next-content'))
+    await until(() => expect(find('mb-trigger').id).toBe('mb-next-trigger'))
+    await until(() => expect(attr('mb-content', 'aria-labelledby')).toBe('mb-next-trigger'))
   })
 })
