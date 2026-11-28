@@ -5,7 +5,8 @@ import { defineComponent, nextTick } from 'vue'
 import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger } from '.'
 
 // Optimisation-pinning: an item is its own collapsible root and its trigger renders its own
-// element, so neither mounts a `CollapsibleRoot` or a `CollapsibleTrigger` in between.
+// element, so neither mounts a `CollapsibleRoot` or a `CollapsibleTrigger` in between, and its
+// content renders its own element too, without a `CollapsibleContent` or a `Presence`.
 
 function countComponents(items: number) {
   const created: string[] = []
@@ -37,11 +38,13 @@ function countComponents(items: number) {
 }
 
 describe('accordion component counts', () => {
-  it('mounts six components per item', () => {
+  it('mounts four components per item', () => {
     const five = countComponents(5)
     const ten = countComponents(10)
-    // Item, header, trigger, content, and the content's CollapsibleContent and Presence.
-    expect((ten.length - five.length) / 5).toBe(6)
+    // Item, header, trigger and content.
+    expect((ten.length - five.length) / 5).toBe(4)
+    expect(ten).not.toContain('CollapsibleContent')
+    expect(ten).not.toContain('Presence')
     expect(ten).not.toContain('CollapsibleRoot')
     expect(ten).not.toContain('CollapsibleTrigger')
   })

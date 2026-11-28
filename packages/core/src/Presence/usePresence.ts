@@ -1,6 +1,6 @@
 import type { Ref, ShallowRef } from 'vue'
 import { isClient } from '@vueuse/shared'
-import { nextTick, shallowRef } from 'vue'
+import { getCurrentScope, nextTick, onScopeDispose, shallowRef, watch } from 'vue'
 
 /**
  * Where a presence-managed element is in its enter/exit lifecycle (#2827):
@@ -262,5 +262,64 @@ export class PresenceController {
       this.cancelPending()
       this.finishExit()
     }
+  }
+}
+
+// Read-only: they are only spread into an element's props.
+const STARTING_ATTRS: Readonly<Record<string, string>> = { [STARTING_STYLE_ATTR]: '' }
+const ENDING_ATTRS: Readonly<Record<string, string>> = { [ENDING_STYLE_ATTR]: '' }
+const NO_ATTRS: Readonly<Record<string, string>> = {}
+
+/**
+ * What the `Presence` component does for its child, for a part that renders the
+ * presence-managed element itself and keeps it mounted (`Presence` with
+ * `force-mount`): the same state, the same watcher and the same lifecycle
+ * attributes, without a component instance in between. Call it after the part's
+ * own `present` watchers, as their component would have run them before the
+ * `Presence` child's.
+ *
+ * @internal
+ * @lifecycle setup
+ */
+export function usePresenceState(
+  present: () => boolean,
+  element: Readonly<Ref<HTMLElement | null | undefined>>,
+  options: Omit<UsePresenceOptions, 'appear'> = {},
+): {
+  /** The `present` slot prop of `Presence`: the element is shown, or still exiting. */
+  isPresent: () => boolean
+  /** `data-starting-style` / `data-ending-style`, as `Presence` adds them to its child. */
+  statusAttrs: () => Readonly<Record<string, string>>
+} {
+  // As in `Presence`: a popper positioning wrapper is not the animated node, its first child is.
+  const observed = (): HTMLElement | undefined => {
+    const el = element.value
+    if (!el)
+      return undefined
+    return (el.hasAttribute('data-reka-popper-content-wrapper') ? el.firstElementChild : el) as HTMLElement | undefined
+  }
+  const node = { get value() { return observed() } } as Readonly<Ref<HTMLElement | undefined>>
+  const state = shallowRef<PresenceState>(present() ? 'mounted' : 'unmounted')
+  let controller: PresenceController | undefined
+  const scope = getCurrentScope()
+  watch([present, observed], ([isPresent, el], [prevPresent, prevEl]) => {
+    if (isPresent !== prevPresent) {
+      if (!controller && isPresent) {
+        controller = new PresenceController(state, node, options)
+        const created = controller
+        scope?.run(() => onScopeDispose(() => created.cancelPending()))
+      }
+      controller?.onPresentChange(isPresent, prevPresent)
+    }
+    if (el !== prevEl)
+      controller?.onNodeChange(el)
+  }, { immediate: true })
+
+  return {
+    isPresent: () => state.value !== 'unmounted',
+    statusAttrs: () => {
+      const status = controller?.transitionStatus.value
+      return status === 'starting' ? STARTING_ATTRS : status === 'ending' ? ENDING_ATTRS : NO_ATTRS
+    },
   }
 }

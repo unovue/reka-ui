@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { CollapsibleContent, CollapsibleRoot } from '.'
 
@@ -44,4 +44,77 @@ describe('collapsible content rendered as a child component', () => {
       wrapper.unmount()
     })
   }
+
+  it('opens when found after switching from its own element to a child component', async () => {
+    const open = ref(false)
+    const asChild = ref(false)
+    const wrapper = mount(defineComponent({
+      components: { CollapsibleRoot, CollapsibleContent, DeclaresEvents },
+      setup: () => ({ open, asChild }),
+      template: `
+<CollapsibleRoot v-model:open="open" :unmount-on-hide="false">
+  <CollapsibleContent :as-child="asChild" class="content"><DeclaresEvents v-if="asChild">Panel</DeclaresEvents><template v-else>Panel</template></CollapsibleContent>
+</CollapsibleRoot>`,
+    }), { attachTo: document.body })
+    await nextTick()
+    asChild.value = true
+    await nextTick()
+    await nextTick()
+
+    wrapper.find('.content').element.dispatchEvent(new Event('beforematch', { bubbles: true }))
+    await frame()
+    await nextTick()
+
+    expect(open.value).toBe(true)
+    wrapper.unmount()
+  })
+
+  describe('a child that renders a positioning wrapper', () => {
+    afterEach(() => {
+      // @ts-expect-error restoring jsdom's missing implementation
+      delete Element.prototype.getAnimations
+    })
+
+    // A popper content root is a positioning wrapper; the animated node is its first child, so
+    // closing waits for that child's exit animation, not the wrapper's.
+    const Positioned = defineComponent({
+      setup: (_, { slots }) => () => h('div', { 'data-reka-popper-content-wrapper': '' }, [
+        h('div', { 'data-testid': 'animated' }, slots.default?.()),
+      ]),
+    })
+
+    it('waits for the exit animation of the wrapper\'s first child', async () => {
+      let finish!: () => void
+      const finished = new Promise<void>((resolve) => { finish = resolve })
+      let animating = false
+      Element.prototype.getAnimations = function (this: Element) {
+        return animating && this.getAttribute('data-testid') === 'animated'
+          ? [{ playState: 'running', finished } as unknown as Animation]
+          : []
+      }
+      const open = ref(true)
+      const wrapper = mount(defineComponent({
+        components: { CollapsibleRoot, CollapsibleContent, Positioned },
+        setup: () => ({ open }),
+        template: `
+          <CollapsibleRoot v-model:open="open">
+            <CollapsibleContent as-child><Positioned>Panel</Positioned></CollapsibleContent>
+          </CollapsibleRoot>`,
+      }), { attachTo: document.body })
+      await frame()
+
+      animating = true
+      open.value = false
+      await frame()
+      await frame()
+      expect(wrapper.text()).toContain('Panel')
+
+      animating = false
+      finish()
+      await frame()
+      await frame()
+      expect(wrapper.text()).not.toContain('Panel')
+      wrapper.unmount()
+    })
+  })
 })
