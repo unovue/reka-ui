@@ -1,6 +1,6 @@
-import type { Component, FunctionalComponent, VNode } from 'vue'
+import type { Component, ComponentInternalInstance, FunctionalComponent, VNode } from 'vue'
 import type { AsTag } from './Primitive'
-import { createVNode, h } from 'vue'
+import { camelize, capitalize, createVNode, getCurrentInstance, h } from 'vue'
 import { ariaDisabledAttr, isNativeDisabledTag } from '../shared/disabledAttr'
 import { isSelfClosingTag, resolveRenderTag } from './useRender'
 
@@ -19,22 +19,47 @@ import { isSelfClosingTag, resolveRenderTag } from './useRender'
  */
 
 /**
- * A bare element vnode for `<component :is>`, which clones it with the bound
- * props and children (Vue's `<component :is="vnode"/>` path) and so renders the
- * element directly.
- *
- * A plain tag string would not do: `<component :is="'button'">` first looks the
- * name up as a component (`resolveDynamicComponent`), so an app that registered
- * a global `Button` (or `Label`, `Input`, …) would get that component instead
- * of the element. `Primitive` renders through `h(tag)` and never resolves.
- *
- * Created per render, not cached: the vnode records the rendering instance and
- * its scope id, which the clone carries over (a shared vnode would hold on to
- * the first part that rendered it). Only the clone reads it, so it is garbage
- * right after the render.
+ * Whether `<component :is="tag">` would resolve `tag` to a component, as
+ * `resolveDynamicComponent` does: the rendering component's own `name`, then
+ * its local and the app's global components, under the tag, its camelized and
+ * its capitalized form (`button`, `Button`).
  */
-function elementType(tag: string): VNode {
-  return createVNode(tag)
+function resolvesToComponent(instance: ComponentInternalInstance, tag: string): boolean {
+  const type = instance.type as { name?: string, displayName?: string, components?: Record<string, unknown> }
+  const selfName = typeof instance.type === 'function' ? type.displayName || type.name : type.name
+  const local = (instance as { components?: Record<string, unknown> | null }).components || type.components
+  const global = instance.appContext.components
+  const camelized = camelize(tag)
+  for (const name of [tag, camelized, capitalize(camelized)]) {
+    if (name === selfName || (local && Object.hasOwn(local, name)) || Object.hasOwn(global, name))
+      return true
+  }
+  return false
+}
+
+/**
+ * What `<component :is>` gets for a tag name: the name itself, which the
+ * template compiles to an ordinary element block. Its patch stays optimized, so
+ * a re-render of the part diffs only its dynamic bindings, and the components
+ * in its slot (a list's items) update only when their own props or slots
+ * change. As for any element in a template, hydration applies its dynamic
+ * attributes to the element the server rendered.
+ *
+ * When the name would resolve to a component (an app that registered a global
+ * `Button`, `Label`, `Input`, …, or a part named after its tag), a bare element
+ * vnode instead, which `<component :is>` clones with the bound props and
+ * children and so renders the element without resolving it. A cloned vnode
+ * patches in full (`BAIL`), and every component in its slot re-renders with it,
+ * so only that case takes it. `Primitive` renders through `h(tag)` and never
+ * resolves.
+ *
+ * The element vnode is created per render, not cached: it records the
+ * rendering instance and its scope id, which the clone carries over (a shared
+ * vnode would hold on to the first part that rendered it).
+ */
+function elementType(tag: string): string | VNode {
+  const instance = getCurrentInstance()
+  return instance && resolvesToComponent(instance, tag) ? createVNode(tag) : tag
 }
 
 /**
@@ -69,7 +94,7 @@ export function renderAs(
   as: AsTag | Component | undefined,
   asChild?: boolean,
   defaultTagName: AsTag = 'div',
-): Component | VNode {
+): Component | VNode | string {
   const tag = resolveRenderTag(as, asChild, defaultTagName)
   if (typeof tag !== 'string')
     return tag
@@ -99,7 +124,9 @@ export function rendersOwnElement(
  *     </template>
  *   </component>
  *
- * Every tag name renders the element directly.
+ * Every tag name renders the element directly, through a bare element vnode:
+ * an optimized patch of an element does not re-render a conditional
+ * `#default` like the one above, so these parts keep the full patch.
  * @internal
  */
 export function renderAsEmpty(
@@ -108,7 +135,7 @@ export function renderAsEmpty(
   defaultTagName: AsTag = 'div',
 ): Component | VNode {
   const tag = resolveRenderTag(as, asChild, defaultTagName)
-  return typeof tag === 'string' ? elementType(tag) : tag
+  return typeof tag === 'string' ? createVNode(tag) : tag
 }
 
 /**
@@ -160,6 +187,10 @@ function controlType(tag: string): FunctionalComponent {
  * `disabled="false"` and adds `aria-disabled="true"` when disabled, the way `Primitive` does for
  * the parts it renders. A component or custom element gets the boolean unchanged; `asChild`
  * renders `Slot`, which does the same for the child it lands on.
+ *
+ * The element is a bare element vnode, as before `renderAs` rendered a tag
+ * name: hydration then leaves the server's attributes on it, which a trigger
+ * relies on to keep the id the server rendered (see `useTriggerId`).
  * @internal
  */
 export function renderAsControl(
@@ -172,5 +203,5 @@ export function renderAsControl(
     return tag
   if (isSelfClosingTag(tag))
     return emptyType(tag)
-  return isNativeDisabledTag(tag) || tag.includes('-') ? elementType(tag) : controlType(tag)
+  return isNativeDisabledTag(tag) || tag.includes('-') ? createVNode(tag) : controlType(tag)
 }
