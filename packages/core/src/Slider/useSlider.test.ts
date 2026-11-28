@@ -75,6 +75,19 @@ describe('useSlider — model', () => {
     expect(emit.mock.calls.at(-1)).toEqual(['valueCommit', [20, 60]])
   })
 
+  it('clamps the model to bounds that change during a standalone drag, and only then', async () => {
+    const max = ref(100)
+    const s = useSlider({ defaultValue: [50], max })
+    s.moveSlide(85)
+    max.value = 60
+    await nextTick()
+    expect(s.modelValue.value).toEqual([60])
+    s.endSlide()
+    max.value = 40
+    await nextTick()
+    expect(s.modelValue.value).toEqual([60])
+  })
+
   it('a bare updateValues() reports "imperative-action" and snaps to the step', () => {
     const onUpdate = vi.fn()
     const s = useSlider({ defaultValue: [0], step: 5, onUpdate })
