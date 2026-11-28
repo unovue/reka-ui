@@ -1,11 +1,11 @@
 import type { MaybeRefOrGetter, Ref } from 'vue'
-import type { CarouselRootContext, CarouselRootEmits, CarouselRootProps } from './CarouselRoot.vue'
+import type { CarouselRootContext, CarouselRootProps } from './CarouselRoot.vue'
 import type { CarouselSurface } from './surface'
 import type { CarouselItemSnapStyle, CarouselSnap } from './utils'
+import type { BaseChangeReason } from '@/shared'
 import type { DataOrientation, Direction } from '@/shared/types'
-import { useVModel } from '@vueuse/core'
 import { computed, nextTick, ref, shallowRef, toValue, watch } from 'vue'
-import { chunk, useTranslations } from '@/shared'
+import { chunk, useControllableState, useTranslations } from '@/shared'
 import { compareDocumentOrder } from './dom'
 import { createSurface } from './surface'
 import { compactStyle, getFixedGroupSize, getSnapsByPosition, stepIndex } from './utils'
@@ -27,6 +27,48 @@ export interface CarouselAutoScrollOptions {
   /** Stop for good on the first press, drag, key or wheel gesture. @defaultValue true */
   stopOnInteraction?: boolean
 }
+
+/**
+ * Why the current snap changed (`update:modelValue`), besides `'imperative-action'`
+ * (the slot's `scrollTo`, `scrollPrev` and `scrollNext`):
+ * - `'next-press'` / `'prev-press'`: `CarouselNext` / `CarouselPrevious`.
+ * - `'indicator-press'`: a `CarouselIndicator`.
+ * - `'keyboard'`: the arrow keys, Home or End on the viewport.
+ * - `'drag'`: a mouse or pen drag on the track, and the momentum after a `dragFree` release.
+ * - `'swipe'`: a swipe in `fade` mode.
+ * - `'wheel'`: a mouse wheel page (`wheel`).
+ * - `'scroll'`: a native scroll of the track (touch, trackpad, scrollbar, a scroll before hydration).
+ * - `'autoplay'` / `'auto-scroll'`: the `autoplay` timer, or the `autoScroll` track passing a snap.
+ * - `'missing'`: the current snap is gone (slides removed, a resize) and the last one takes over.
+ */
+export type CarouselChangeReason
+  = | 'next-press'
+    | 'prev-press'
+    | 'indicator-press'
+    | 'keyboard'
+    | 'drag'
+    | 'swipe'
+    | 'wheel'
+    | 'scroll'
+    | 'autoplay'
+    | 'auto-scroll'
+    | 'missing'
+
+/**
+ * Why rotation started or stopped (`update:playing`), besides `'imperative-action'`
+ * (the slot's `play` and `stop`):
+ * - `'toggle-press'`: `CarouselAutoplayToggle`.
+ * - `'interaction'`: a press, drag, key or wheel gesture, with `stopOnInteraction`.
+ * - `'keyboard-focus'`: keyboard focus entered the carousel.
+ * - `'reduced-motion'`: the user prefers reduced motion.
+ * - `'end-reached'`: `autoplay` with `stopOnLastSnap` on the last snap, or `autoScroll` at the end of a track that does not loop.
+ */
+export type CarouselPlayingChangeReason
+  = | 'toggle-press'
+    | 'interaction'
+    | 'keyboard-focus'
+    | 'reduced-motion'
+    | 'end-reached'
 
 type CarouselContentState = { orientation: DataOrientation }
 type CarouselItemState = { index: number | undefined, active: boolean, inView: boolean | undefined, orientation: DataOrientation }
@@ -83,11 +125,11 @@ export function getCarouselNavigationSurface(context: CarouselRootContext, kind:
       'onClick': (event: MouseEvent) => {
         if (event.defaultPrevented || disabled())
           return
-        context.reportInteraction()
+        context.reportInteraction(event)
         if (kind === 'previous')
-          context.scrollPrev()
+          context.scrollPrev('prev-press', event)
         else
-          context.scrollNext()
+          context.scrollNext('next-press', event)
       },
     }),
     () => ({ disabled: disabled(), orientation: context.orientation.value }),
@@ -125,8 +167,8 @@ export function getCarouselIndicatorSurface(context: CarouselRootContext, index:
       'onClick': (event: MouseEvent) => {
         if (event.defaultPrevented || isActive())
           return
-        context.reportInteraction()
-        context.changeModelValue(toValue(index))
+        context.reportInteraction(event)
+        context.changeModelValue(toValue(index), 'indicator-press', event)
       },
     }),
     () => ({ active: isActive(), orientation: context.orientation.value }),
@@ -143,7 +185,7 @@ export function getCarouselAutoplayToggleSurface(context: CarouselRootContext): 
       'onClick': (event: MouseEvent) => {
         if (event.defaultPrevented || !context.rotationEnabled.value)
           return
-        context.setPlaying(!context.playing.value)
+        context.setPlaying(!context.playing.value, 'toggle-press', event)
       },
     }),
     () => ({ state: playing() ? 'playing' : 'paused', disabled: !context.rotationEnabled.value }),
@@ -290,20 +332,23 @@ export function getCarouselItemSurface(context: CarouselRootContext, element: Re
  */
 export function useCarouselContext(
   props: CarouselRootProps,
-  emits: ((event: 'update:modelValue', value: CarouselRootEmits['update:modelValue'][0]) => void)
-    & ((event: 'update:playing', value: CarouselRootEmits['update:playing'][0]) => void)
-    & ((event: 'settle', value: CarouselRootEmits['settle'][0]) => void),
+  /** The root's `emit`: the `beforeUpdate:*` / `update:*` model emits and `settle`. */
+  emits: (event: any, ...args: any[]) => void,
   dir: Ref<Direction>,
   baseId: string,
 ): CarouselRootContext {
-  const modelValue = useVModel(props, 'modelValue', emits, {
+  const { state: modelValue, setState: setModelValue } = useControllableState<number, CarouselChangeReason>({
+    prop: () => props.modelValue,
     defaultValue: props.defaultValue ?? 0,
-    passive: (props.modelValue === undefined) as false,
-  }) as Ref<number>
-  const playing = useVModel(props, 'playing', emits, {
+    name: 'modelValue',
+    emit: emits,
+  })
+  const { state: playing, setState: setPlayingState } = useControllableState<boolean, CarouselPlayingChangeReason>({
+    prop: () => props.playing,
     defaultValue: props.defaultPlaying ?? true,
-    passive: (props.playing === undefined) as false,
-  }) as Ref<boolean>
+    name: 'playing',
+    emit: emits,
+  })
 
   const orientation = computed<DataOrientation>(() => props.orientation ?? 'horizontal')
   const options = computed(() => ({
@@ -365,12 +410,14 @@ export function useCarouselContext(
   // The index a controlled parent hasn't written back yet: a second step in the
   // same tick starts from it, instead of repeating the first one.
   let requested: number | undefined
-  /** Returns `false` when the index is unchanged or out of range. */
-  function changeModelValue(index: number) {
+  /** Returns `false` when the index is unchanged, out of range or the change is cancelled. */
+  function changeModelValue(index: number, reason?: CarouselChangeReason | BaseChangeReason, event?: Event) {
     const count = snapCount.value
     if ((count > 0 && (index < 0 || index >= count)) || index === (requested ?? modelValue.value))
       return false
-    modelValue.value = index
+    // `force`: a step back to the current index, after a step a controlled parent hasn't written back yet, is a change.
+    if (!setModelValue(index, reason, event, { force: true }))
+      return false
     if (modelValue.value !== index) {
       requested = index
       nextTick(() => requested = undefined)
@@ -382,27 +429,26 @@ export function useCarouselContext(
   // Once mounted only: before, the slides are still registering.
   watch(snapCount, (count) => {
     if (mounted.value && count > 0 && modelValue.value >= count)
-      changeModelValue(count - 1)
+      changeModelValue(count - 1, 'missing')
   })
 
-  function scrollStep(step: 1 | -1) {
+  function scrollStep(step: 1 | -1, reason?: CarouselChangeReason | BaseChangeReason, event?: Event) {
     const target = getStepTarget(requested ?? modelValue.value, snaps.value, measured.value, loopActive.value, step, options.value.loop)
-    return target === undefined ? false : changeModelValue(target)
+    return target === undefined ? false : changeModelValue(target, reason, event)
   }
 
-  /** Returns `false` when the state is unchanged. */
-  function setPlaying(value: boolean) {
+  /** Returns `false` when the state is unchanged or the change is cancelled. */
+  function setPlaying(value: boolean, reason?: CarouselPlayingChangeReason | BaseChangeReason, event?: Event) {
     if (value === playing.value)
       return false
-    playing.value = value
-    return true
+    return setPlayingState(value, reason, event)
   }
 
   return {
     baseId,
     contentId: `${baseId}-content`,
     t: useTranslations(),
-    modelValue: computed(() => modelValue.value),
+    modelValue,
     changeModelValue,
     orientation,
     dir,
@@ -410,7 +456,7 @@ export function useCarouselContext(
     autoplay,
     autoScroll,
     rotationEnabled,
-    playing: computed(() => playing.value),
+    playing,
     setPlaying,
     paused: ref(false),
     held: ref(false),
@@ -446,17 +492,17 @@ export function useCarouselContext(
     loopFits,
     canScrollPrev: computed(() => snapCount.value > 1 && (options.value.loop || modelValue.value > 0)),
     canScrollNext: computed(() => snapCount.value > 1 && (options.value.loop || modelValue.value < snapCount.value - 1)),
-    scrollPrev: () => scrollStep(-1),
-    scrollNext: () => scrollStep(1),
+    scrollPrev: (reason, event) => scrollStep(-1, reason, event),
+    scrollNext: (reason, event) => scrollStep(1, reason, event),
     dragging: ref(false),
     viewportElement: ref(),
     rootElement: ref(),
     notifySettle: index => emits('settle', index),
     contentElement: ref(),
-    reportInteraction() {
+    reportInteraction(event) {
       const stops = autoplay.value?.stopOnInteraction || autoScroll.value?.stopOnInteraction
       if (stops && playing.value)
-        setPlaying(false)
+        setPlaying(false, 'interaction', event)
     },
   }
 }

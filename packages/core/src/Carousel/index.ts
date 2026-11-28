@@ -40,6 +40,8 @@ export {
 export {
   type CarouselAutoplayOptions,
   type CarouselAutoScrollOptions,
+  type CarouselChangeReason,
+  type CarouselPlayingChangeReason,
 } from './useCarousel'
 export {
   type CarouselAlign,

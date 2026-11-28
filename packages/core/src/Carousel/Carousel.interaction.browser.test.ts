@@ -14,6 +14,9 @@ function mountCarousel(props: Record<string, unknown> = {}, slide: (i: number) =
   const model = ref(unref(props.modelValue as number | undefined) ?? (props.defaultValue as number | undefined) ?? 0)
   const playing = ref<boolean>()
   const settled: number[] = []
+  // `details.reason` of each `update:modelValue` and `update:playing`.
+  const reasons: string[] = []
+  const playingReasons: string[] = []
   const wrapper = mount(defineComponent({
     setup: () => () => [h('div', { 'data-testid': 'outside', 'style': { height: '20px' } }), h(CarouselRoot, {
       'aria-label': 'Interaction',
@@ -21,8 +24,14 @@ function mountCarousel(props: Record<string, unknown> = {}, slide: (i: number) =
       ...Object.fromEntries(Object.entries(props).map(([key, value]) => [key, unref(value)])),
       'data-testid': 'root',
       'style': { width: `${SIZE}px`, margin: '20px' },
-      'onUpdate:modelValue': (value: number) => model.value = value,
-      'onUpdate:playing': (value: boolean) => playing.value = value,
+      'onUpdate:modelValue': (value: number, details: { reason: string }) => {
+        model.value = value
+        reasons.push(details.reason)
+      },
+      'onUpdate:playing': (value: boolean, details: { reason: string }) => {
+        playing.value = value
+        playingReasons.push(details.reason)
+      },
       'onSettle': (value: number) => settled.push(value),
     }, () => [
       h(CarouselAutoplayToggle, { 'data-testid': 'toggle' }, () => 'Toggle'),
@@ -39,7 +48,7 @@ function mountCarousel(props: Record<string, unknown> = {}, slide: (i: number) =
   const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)!
   const viewport = get('viewport')
   const scroll = () => vertical ? viewport.scrollTop : Math.abs(viewport.scrollLeft)
-  return { wrapper, get, viewport, model, playing, scroll, settled }
+  return { wrapper, get, viewport, model, playing, scroll, settled, reasons, playingReasons }
 }
 
 /** Parks the real mouse outside the carousel: the previous test may have left it over this one, which pauses rotation. */
@@ -115,6 +124,78 @@ describe('given a Carousel dragged in a real browser', () => {
     await settled(viewport)
     expect(model.value).toBeGreaterThanOrEqual(2)
     expect(scroll()).toBeCloseTo(model.value * SIZE, 0)
+  })
+})
+
+describe('given a Carousel that reports why it moved, in a real browser', () => {
+  it('reports drag for a pen drag', async () => {
+    const { viewport, model, reasons } = mountCarousel()
+    await measured(viewport)
+    const box = viewport.getBoundingClientRect()
+    const y = box.top + 40
+    pointerGesture(viewport, 'pen', [[box.right - 20, y], [box.right - 60, y], [box.left + 40, y]])
+    await settled(viewport)
+    expect(model.value).toBe(1)
+    expect(reasons).toEqual(['drag'])
+  })
+
+  it('reports drag for the momentum of a dragFree release', async () => {
+    const { viewport, model, reasons } = mountCarousel({ dragFree: true })
+    await measured(viewport)
+    const box = viewport.getBoundingClientRect()
+    const y = box.top + 40
+    await commands.mouseDrag(box.right - 10, y, box.left + 10, y, 3)
+    await settled(viewport)
+    expect(model.value).toBeGreaterThan(0)
+    expect(new Set(reasons)).toEqual(new Set(['drag']))
+  })
+
+  it('reports swipe in fade mode', async () => {
+    const { viewport, model, reasons } = mountCarousel({ fade: true })
+    await measured(viewport).catch(() => {})
+    const box = viewport.getBoundingClientRect()
+    const y = box.top + 40
+    pointerGesture(viewport, 'touch', [[box.right - 20, y], [box.right - 60, y], [box.left + 20, y]])
+    await expect.poll(() => model.value).toBe(1)
+    expect(reasons).toEqual(['swipe'])
+  })
+
+  it('reports scroll for a native scroll', async () => {
+    const { viewport, model, reasons } = mountCarousel()
+    await measured(viewport)
+    viewport.scrollTo({ left: SIZE * 2, behavior: 'instant' })
+    await expect.poll(() => model.value).toBe(2)
+    expect(new Set(reasons)).toEqual(new Set(['scroll']))
+  })
+
+  it('reports auto-scroll, then end-reached at the end of the track', async () => {
+    const { playing, reasons, playingReasons } = mountCarousel({ autoScroll: { speed: 3000 } })
+    await mouseAway()
+    await expect.poll(() => playing.value, { timeout: 3000 }).toBe(false)
+    expect(new Set(reasons)).toEqual(new Set(['auto-scroll']))
+    expect(playingReasons).toEqual(['end-reached'])
+  })
+
+  it('keeps its place when beforeUpdate cancels a drag', async () => {
+    document.body.innerHTML = ''
+    const updates: number[] = []
+    mount(defineComponent({
+      setup: () => () => h(CarouselRoot, {
+        'aria-label': 'Cancelled',
+        'style': { width: `${SIZE}px` },
+        'onBeforeUpdate:modelValue': (_value: number, details: { cancel: () => void }) => details.cancel(),
+        'onUpdate:modelValue': (value: number) => updates.push(value),
+      }, () => h(CarouselViewport, { 'data-testid': 'viewport' }, () =>
+        h(CarouselContent, () => Array.from({ length: COUNT }, (_, i) => h(CarouselItem, { key: i, style: { width: `${SIZE}px`, height: '100px' } }, () => `Slide ${i + 1}`))))),
+    }), { attachTo: document.body })
+    const viewport = document.querySelector<HTMLElement>('[data-testid="viewport"]')!
+    await measured(viewport)
+    const box = viewport.getBoundingClientRect()
+    const y = box.top + 40
+    pointerGesture(viewport, 'pen', [[box.right - 20, y], [box.right - 60, y], [box.left + 40, y]])
+    await settled(viewport)
+    expect(updates).toEqual([])
+    expect(Math.abs(viewport.scrollLeft)).toBeCloseTo(0, 0)
   })
 })
 

@@ -148,19 +148,29 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the current snap changes. Call <code>details.cancel()</code> to keep the current one.</p>\n',
+    'type': '[value: number, details: ChangeEventDetails&lt;CarouselChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'beforeUpdate:playing',
+    'description': '<p>Event handler called before rotation starts or stops. Call <code>details.cancel()</code> to keep the current state.</p>\n',
+    'type': '[value: boolean, details: ChangeEventDetails&lt;CarouselPlayingChangeReason, Event&gt;]'
+  },
+  {
     'name': 'settle',
     'description': '<p>Event handler called once the slides rest on the current snap after a change: after the scroll, drag or fade that moved them.</p>\n',
     'type': '[value: number]'
   },
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the current snap changes.</p>\n',
-    'type': '[value: number]'
+    'description': '<p>Event handler called when the current snap changes. <code>details.reason</code> tells what moved it.</p>\n',
+    'type': '[value: number, details: ChangeEventDetails&lt;CarouselChangeReason, Event&gt;]'
   },
   {
     'name': 'update:playing',
-    'description': '<p>Event handler called when rotation starts or stops.</p>\n',
-    'type': '[value: boolean]'
+    'description': '<p>Event handler called when rotation starts or stops. <code>details.reason</code> tells what started or stopped it.</p>\n',
+    'type': '[value: boolean, details: ChangeEventDetails&lt;CarouselPlayingChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -256,9 +266,11 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `beforeUpdate:modelValue` | Event handler called before the current snap changes. Call `details.cancel()` to keep the current one. | `[value: number, details: ChangeEventDetails<CarouselChangeReason, Event>]` |
+| `beforeUpdate:playing` | Event handler called before rotation starts or stops. Call `details.cancel()` to keep the current state. | `[value: boolean, details: ChangeEventDetails<CarouselPlayingChangeReason, Event>]` |
 | `settle` | Event handler called once the slides rest on the current snap after a change: after the scroll, drag or fade that moved them. | `[value: number]` |
-| `update:modelValue` | Event handler called when the current snap changes. | `[value: number]` |
-| `update:playing` | Event handler called when rotation starts or stops. | `[value: boolean]` |
+| `update:modelValue` | Event handler called when the current snap changes. `details.reason` tells what moved it. | `[value: number, details: ChangeEventDetails<CarouselChangeReason, Event>]` |
+| `update:playing` | Event handler called when rotation starts or stops. `details.reason` tells what started or stopped it. | `[value: boolean, details: ChangeEventDetails<CarouselPlayingChangeReason, Event>]` |
 
 **Slots**
 
