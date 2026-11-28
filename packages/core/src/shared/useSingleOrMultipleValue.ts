@@ -1,8 +1,7 @@
 import type { Ref } from 'vue'
 import type { AcceptableValue, SingleOrMultipleProps } from './types'
-import { useVModel } from '@vueuse/core'
 import { isEqual } from 'ohash'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { isValueEqualOrExist } from './isValueEqualOrExist'
 
 /**
@@ -44,10 +43,16 @@ export function useSingleOrMultipleValue<P extends SingleOrMultipleProps, Name e
   emits: (name: Name, ...args: any[]) => void,
 ) {
   const type = computed(() => getDefaultType(props))
-  const modelValue = useVModel(props, 'modelValue', emits, {
-    defaultValue: getDefaultValue(props),
-    passive: (props.modelValue === undefined) as false,
-    deep: true,
+  // Uncontrolled until the parent passes a value; from then on the parent's
+  // `modelValue` wins, so an update the parent refuses doesn't change the UI.
+  const internal = ref(props.modelValue === undefined ? getDefaultValue(props) : props.modelValue)
+  watch(() => props.modelValue, v => internal.value = v)
+  const modelValue = computed({
+    get: () => props.modelValue === undefined ? internal.value : props.modelValue,
+    set: (v) => {
+      internal.value = v
+      emits('update:modelValue' as Name, v)
+    },
   }) as Ref<AcceptableValue | AcceptableValue[] | undefined>
 
   function changeModelValue(value: AcceptableValue) {

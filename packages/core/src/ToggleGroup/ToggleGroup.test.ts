@@ -3,7 +3,7 @@ import { renderToString } from '@vue/server-renderer'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { createSSRApp, defineComponent, h, nextTick } from 'vue'
+import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
 import ToggleGroup from './story/_ToggleGroup.vue'
 import ToggleGroupItem from './ToggleGroupItem.vue'
 import ToggleGroupRoot from './ToggleGroupRoot.vue'
@@ -235,5 +235,53 @@ describe('ssr: pre-mount tab stop', () => {
     expect(error.mock.calls.flat().join('\n')).not.toContain('Hydration completed but contains mismatches')
     warn.mockRestore()
     error.mockRestore()
+  })
+})
+
+describe('given a parent that starts undefined and refuses to clear the value', () => {
+  function mountFixture(type: 'single' | 'multiple') {
+    const value = ref<string | string[] | undefined>(undefined)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ToggleGroupRoot, {
+          type,
+          'modelValue': value.value,
+          'onUpdate:modelValue': (v: string | string[] | undefined) => {
+            if (v && v.length)
+              value.value = v
+          },
+        }, () => [
+          h(ToggleGroupItem, { value: 'a' }, () => 'A'),
+          h(ToggleGroupItem, { value: 'b' }, () => 'B'),
+        ])
+      },
+    }), { attachTo: document.body })
+    return { value, wrapper, triggers: wrapper.findAll('button') }
+  }
+
+  it('keeps the item on in single mode', async () => {
+    const { value, wrapper, triggers } = mountFixture('single')
+    await triggers[0].trigger('click')
+    await triggers[0].trigger('click')
+    expect(value.value).toBe('a')
+    expect(triggers[0].attributes('data-state')).toBe('on')
+
+    await triggers[1].trigger('click')
+    expect(value.value).toBe('b')
+    expect(triggers.map(t => t.attributes('data-state'))).toEqual(['off', 'on'])
+    wrapper.unmount()
+  })
+
+  it('keeps the last item on in multiple mode', async () => {
+    const { value, wrapper, triggers } = mountFixture('multiple')
+    await triggers[0].trigger('click')
+    await triggers[0].trigger('click')
+    expect(value.value).toEqual(['a'])
+    expect(triggers[0].attributes('data-state')).toBe('on')
+
+    await triggers[1].trigger('click')
+    expect(value.value).toEqual(['a', 'b'])
+    expect(triggers.map(t => t.attributes('data-state'))).toEqual(['on', 'on'])
+    wrapper.unmount()
   })
 })
