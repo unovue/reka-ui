@@ -1317,7 +1317,8 @@
       "slotProps": 1
     },
     "Tabs/utils.ts": {
-      "getCurrentInstance": 1
+      "getCurrentInstance": 1,
+      "patches": 1
     },
     "TagsInput/TagsInputClear.vue": {
       "exposeElement": 1,
@@ -1559,7 +1560,7 @@
   "totals": {
     "exposeElement": 291,
     "getCurrentInstance": 30,
-    "patches": 17,
+    "patches": 18,
     "presenceAttrs": 8,
     "renderAs": 131,
     "sfcs": 291,
