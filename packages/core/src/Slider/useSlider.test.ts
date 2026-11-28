@@ -8,6 +8,7 @@ import { defineComponent, h, mergeProps, nextTick, ref } from 'vue'
 import { SliderRange, SliderRoot, SliderThumb, SliderTrack } from '.'
 import * as Reka from '../index'
 import { useSlider } from './useSlider'
+import { hasMinStepsBetweenValues } from './utils'
 
 globalThis.ResizeObserver = class ResizeObserver {
   observe() {}
@@ -458,5 +459,18 @@ describe('useSlider lean surfaces', () => {
     expect(slider.track).toBe(slider.track)
     expect(slider.range).toBe(slider.range)
     expect(slider.range.attrs.value.style).toMatchObject({ left: '20%', right: '40%' })
+  })
+})
+
+describe('hasMinStepsBetweenValues', () => {
+  it('accepts a decimal gap off by floating-point error', () => {
+    expect(hasMinStepsBetweenValues([0.4, 0.5, 0.6], 0.1)).toBe(true)
+  })
+
+  it('never accepts a gap short of the minimum by more than float error, at any magnitude', () => {
+    expect(hasMinStepsBetweenValues([1e15, 1e15], 1)).toBe(false)
+    expect(hasMinStepsBetweenValues([1e15, 1e15 + 0.5], 1)).toBe(false)
+    expect(hasMinStepsBetweenValues([1e15, 1e15 + 1], 1)).toBe(true)
+    expect(hasMinStepsBetweenValues([0.4, 0.49], 0.1)).toBe(false)
   })
 })
