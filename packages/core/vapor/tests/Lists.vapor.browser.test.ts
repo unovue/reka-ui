@@ -92,6 +92,22 @@ describe('select, listbox, combobox (Vapor)', () => {
     await until(() => expect(document.getElementById('combo-content')).toBeNull())
   })
 
+  it('combobox: with unmountOnHide=false the closed content stays in the DOM, hidden', async () => {
+    await mount(Fixture)
+    const content = byId('kept-content')
+    expect(content.dataset.state).toBe('closed')
+    expect(content.style.display).toBe('none')
+    await userEvent.click(byId('kept-trigger'))
+    await until(() => expect(content.dataset.state).toBe('open'))
+    expect(content.style.display).not.toBe('none')
+    expect(content.checkVisibility()).toBe(true)
+    await userEvent.keyboard('{Escape}')
+    await until(() => expect(content.dataset.state).toBe('closed'))
+    expect(byId('kept-content')).toBe(content)
+    expect(content.style.display).toBe('none')
+    expect(content.checkVisibility()).toBe(false)
+  })
+
   it('combobox: the exposed highlight methods work on a template ref', async () => {
     await mount(Fixture)
     await userEvent.click(byId('combo-trigger'))
