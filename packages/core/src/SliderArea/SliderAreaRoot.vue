@@ -180,11 +180,21 @@ const bindFormReset = formResetBinder(onFormReset)
 const currentModelValue = computed(() => Array.isArray(modelValue.value) ? [...modelValue.value] : [])
 
 const valueIndexToChangeRef = ref(0)
-const valuesBeforeSlideStartRef = ref(currentModelValue.value)
 const rectRef = ref<DOMRect>()
-// Each pressed pointer keeps the point of the thumb it grabbed, so one pointer
-// ending its slide leaves another one's grab where it was.
-const offsetPositions = new Map<number, { x: number, y: number }>()
+
+/** One pressed pointer's slide. */
+interface PointerSlide {
+  /** The values when the pointer pressed, to tell on release whether its slide changed them. */
+  start: number[][]
+  /** The thumb the pointer drives. */
+  index: number
+  /** Where on its thumb the pointer grabbed it (`contain` mode), measured on its first move. */
+  offset?: { x: number, y: number }
+}
+// One entry per pressed pointer, so a second pointer pressing or lifting
+// leaves the first one's grab and commit as they were. The browser can release
+// capture before `pointerup` arrives, so either one ends a pointer's slide, once.
+const slides = new Map<number, PointerSlide>()
 
 // Determine axis directions
 const isSlidingFromLeft = computed(() => {
@@ -201,14 +211,16 @@ function getPointFromPointerEvent(event: PointerEvent, slideStart?: boolean): nu
   const thumbHeight = thumbAlignment.value === 'contain' && thumb ? thumb.clientHeight : 0
 
   // Calculate grab offset on first slideMove after a thumb-initiated drag
-  let offsetPosition = offsetPositions.get(event.pointerId)
+  const slide = slides.get(event.pointerId)
+  let offsetPosition = slide?.offset
   if (!offsetPosition && !slideStart && thumbAlignment.value === 'contain' && thumb) {
     const thumbRect = thumb.getBoundingClientRect()
     offsetPosition = {
       x: event.clientX - thumbRect.left,
       y: event.clientY - thumbRect.top,
     }
-    offsetPositions.set(event.pointerId, offsetPosition)
+    if (slide)
+      slide.offset = offsetPosition
   }
 
   const inputX: [number, number] = [0, rect.width - thumbWidth]
@@ -242,12 +254,12 @@ function handleSlideMove(event: PointerEvent) {
   updateValues(point, valueIndexToChangeRef.value, { reason: 'drag', event })
 }
 
-// Commits each pointer's slide when it ends, as the Slider does.
-function handleSlideEnd() {
+// Commits each pointer's slide when it ends, as the Slider does, if that slide changed its thumb.
+function handleSlideEnd(slide: PointerSlide) {
   if (disabled.value)
     return
-  const prevValue = valuesBeforeSlideStartRef.value[valueIndexToChangeRef.value]
-  const nextValue = currentModelValue.value[valueIndexToChangeRef.value]
+  const prevValue = slide.start[slide.index]
+  const nextValue = currentModelValue.value[slide.index]
   const hasChanged = prevValue?.[0] !== nextValue?.[0] || prevValue?.[1] !== nextValue?.[1]
   if (hasChanged)
     emits('valueCommit', toRaw(currentModelValue.value))
@@ -351,16 +363,21 @@ function handleKeyDown(event: KeyboardEvent) {
   }
 }
 
-// The browser can release capture before `pointerup` arrives, so either one ends a pointer's slide, once.
-const slidingPointerIds = new Set<number>()
+function startPointerSlide(pointerId: number): PointerSlide {
+  const slide: PointerSlide = { start: currentModelValue.value, index: valueIndexToChangeRef.value }
+  slides.set(pointerId, slide)
+  return slide
+}
+
 function endSlide(event: PointerEvent) {
-  if (!slidingPointerIds.delete(event.pointerId))
+  const slide = slides.get(event.pointerId)
+  if (!slide)
     return
-  offsetPositions.delete(event.pointerId)
+  slides.delete(event.pointerId)
   // The area is measured once per gesture, and read again once no pointer is left pressed.
-  if (!slidingPointerIds.size)
+  if (!slides.size)
     rectRef.value = undefined
-  handleSlideEnd()
+  handleSlideEnd(slide)
 }
 
 function handlePointerDown(event: PointerEvent) {
@@ -369,10 +386,9 @@ function handlePointerDown(event: PointerEvent) {
 
   const target = event.target as HTMLElement
   target.setPointerCapture(event.pointerId)
-  slidingPointerIds.add(event.pointerId)
   event.preventDefault()
 
-  valuesBeforeSlideStartRef.value = currentModelValue.value
+  const slide = startPointerSlide(event.pointerId)
 
   const matchedThumb = getThumbElements().find(thumb => thumb.contains(target))
   if (matchedThumb) {
@@ -381,6 +397,7 @@ function handlePointerDown(event: PointerEvent) {
   else {
     handleSlideStart(event)
   }
+  slide.index = valueIndexToChangeRef.value
 }
 
 function handlePointerMove(event: PointerEvent) {
@@ -389,11 +406,11 @@ function handlePointerMove(event: PointerEvent) {
   const target = event.target as HTMLElement
   if (target.hasPointerCapture(event.pointerId)) {
     // Touch and pen keep the capture of a press made while disabled, so such a slide starts on its first move.
-    if (!slidingPointerIds.has(event.pointerId)) {
-      slidingPointerIds.add(event.pointerId)
-      valuesBeforeSlideStartRef.value = currentModelValue.value
-    }
+    const slide = slides.get(event.pointerId) ?? startPointerSlide(event.pointerId)
+    // Another pointer may have moved the active thumb since; this pointer drives its own.
+    valueIndexToChangeRef.value = slide.index
     handleSlideMove(event)
+    slide.index = valueIndexToChangeRef.value
   }
 }
 

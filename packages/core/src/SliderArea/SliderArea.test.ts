@@ -343,8 +343,10 @@ describe('given default SliderArea', () => {
       await root.trigger('pointerup', { pointerId: 2 })
     })
 
-    it('should end the slide for each pointer', async () => {
-      expect(wrapper.emitted('valueCommit')).toEqual([[[[50, 50]]], [[[90, 90]]]])
+    it('should end the slide for each pointer, committing the slides that changed the value', async () => {
+      // The first pointer's slide (50 → 10) was undone by the second pointer's press (→ 50), so
+      // only the second one, which left the thumb at 90, commits.
+      expect(wrapper.emitted('valueCommit')).toEqual([[[[90, 90]]]])
     })
   })
 
@@ -906,6 +908,59 @@ describe('given a contained SliderArea thumb dragged while a second pointer pres
     expect(value.value).toEqual([[60, 60]])
     await thumb.trigger('pointermove', { clientX: 72, clientY: 72, pointerId: 1 })
     expect(value.value).toEqual([[70, 70]])
+    wrapper.unmount()
+  })
+
+  it('keeps each pointer on the thumb it pressed', async () => {
+    const value = ref([[10, 10], [90, 90]])
+    const wrapper = mount(defineComponent({
+      components: { SliderAreaRoot, SliderAreaArea, SliderAreaThumb },
+      setup: () => ({ value }),
+      template: `
+        <SliderAreaRoot v-model="value">
+          <SliderAreaArea />
+          <SliderAreaThumb />
+          <SliderAreaThumb />
+        </SliderAreaRoot>`,
+    }), { attachTo: document.body })
+    const root = wrapper.findComponent(SliderAreaRoot)
+    const [first, second] = wrapper.findAll('[role="slider"]')
+    vi.spyOn(root.element, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 100))
+
+    await first.trigger('pointerdown', { clientX: 10, clientY: 10, pointerId: 1 })
+    await first.trigger('focus')
+    await second.trigger('pointerdown', { clientX: 90, clientY: 90, pointerId: 2 })
+    await second.trigger('focus')
+    await first.trigger('pointermove', { clientX: 20, clientY: 20, pointerId: 1 })
+    await second.trigger('pointermove', { clientX: 80, clientY: 80, pointerId: 2 })
+
+    expect(value.value).toEqual([[20, 20], [80, 80]])
+    wrapper.unmount()
+  })
+
+  it('commits the first pointer\'s slide when a second pointer pressed and lifted during it', async () => {
+    const value = ref([[40, 40]])
+    const wrapper = mount(defineComponent({
+      components: { SliderAreaRoot, SliderAreaArea, SliderAreaThumb },
+      setup: () => ({ value }),
+      template: `
+        <SliderAreaRoot v-model="value">
+          <SliderAreaArea />
+          <SliderAreaThumb />
+        </SliderAreaRoot>`,
+    }), { attachTo: document.body })
+    const root = wrapper.findComponent(SliderAreaRoot)
+    const thumb = wrapper.find('[role="slider"]')
+    vi.spyOn(root.element, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 100))
+
+    await thumb.trigger('pointerdown', { clientX: 40, clientY: 40, pointerId: 1 })
+    await thumb.trigger('pointermove', { clientX: 50, clientY: 50, pointerId: 1 })
+    await thumb.trigger('pointerdown', { clientX: 50, clientY: 50, pointerId: 2 })
+    await thumb.trigger('pointerup', { pointerId: 2 })
+    expect(root.emitted('valueCommit')).toBeUndefined()
+    await thumb.trigger('pointerup', { pointerId: 1 })
+
+    expect(root.emitted('valueCommit')).toEqual([[[[50, 50]]]])
     wrapper.unmount()
   })
 })
