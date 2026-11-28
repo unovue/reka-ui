@@ -147,15 +147,17 @@ function valuesEqual(a: number[][] | null | undefined, b: number[][] | null | un
 
 // What v2 did before writing the model (`valueCommit` for a keyboard step, then
 // focusing the moved thumb). It runs from the `update:` phase: after
-// `beforeUpdate:modelValue` could cancel, before `update:modelValue`.
-let pending: { commit: number[][] | null, focusIndex: number } | null = null
-function flushPending() {
-  if (!pending)
+// `beforeUpdate:modelValue` could cancel, before `update:modelValue`. It
+// belongs to the value it was proposed with: another change made from a
+// `beforeUpdate` listener (a form reset) does not run it.
+let pending: { value: number[][], commit: boolean, focusIndex: number } | null = null
+function flushPending(value: unknown) {
+  if (!pending || pending.value !== value)
     return
   const { commit, focusIndex } = pending
   pending = null
   if (commit)
-    emits('valueCommit', commit)
+    emits('valueCommit', value as number[][])
   getThumbElements()[focusIndex]?.focus()
 }
 
@@ -165,7 +167,7 @@ const { state: modelValue, setState, isControlled } = useControllableState<numbe
   name: 'modelValue',
   emit: (event: string, ...args: any[]) => {
     if (event === 'update:modelValue')
-      flushPending()
+      flushPending(args[0])
     emit(event, ...args)
   },
   isEqual: valuesEqual,
@@ -270,14 +272,18 @@ function updateValues(point: number[], atIndex: number, options: { commit?: bool
   const nextValues = [...currentModelValue.value]
   nextValues[atIndex] = [finalX, finalY]
 
+  const previousIndex = valueIndexToChangeRef.value
   valueIndexToChangeRef.value = atIndex
 
   if (valuesEqual(modelValue.value, nextValues))
     return
 
-  pending = { commit: options.commit ? nextValues : null, focusIndex: atIndex }
-  setState(nextValues, options.reason ?? 'imperative-action', options.event)
+  pending = { value: nextValues, commit: !!options.commit, focusIndex: atIndex }
+  const changed = setState(nextValues, options.reason ?? 'imperative-action', options.event)
   pending = null
+  // Cancelled: no thumb moved or took focus, so the keyboard stays on the thumb it was on.
+  if (!changed)
+    valueIndexToChangeRef.value = previousIndex
 }
 
 type StepAxis = 'x' | 'y'

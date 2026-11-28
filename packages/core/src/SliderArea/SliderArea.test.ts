@@ -692,6 +692,75 @@ describe('given a SliderAreaRoot, its change details', () => {
   })
 })
 
+describe('given a SliderAreaRoot whose change is cancelled', () => {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn().mockImplementation(id => id)
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.setPointerCapture = vi.fn()
+
+  it('keeps the keyboard on the focused thumb after a cancelled press on the area', async () => {
+    const wrapper = mount(defineComponent({
+      components: { SliderAreaRoot, SliderAreaArea, SliderAreaThumb },
+      template: `
+        <SliderAreaRoot :default-value="[[10, 10], [90, 90]]" @before-update:model-value="(_, details) => details.reason === 'track-press' && details.cancel()">
+          <SliderAreaArea />
+          <SliderAreaThumb />
+          <SliderAreaThumb />
+        </SliderAreaRoot>`,
+    }), { attachTo: document.body })
+    const root = wrapper.findComponent(SliderAreaRoot)
+    vi.spyOn(root.element, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 100))
+    const [first, second] = wrapper.findAll('[role="slider"]')
+    ;(first.element as HTMLElement).focus()
+    await first.trigger('focus')
+
+    // Closest to the second thumb, and cancelled.
+    await root.trigger('pointerdown', { clientX: 85, clientY: 85, pointerId: 1 })
+    await root.trigger('pointerup', { pointerId: 1 })
+    await first.trigger('keydown', { key: 'ArrowRight' })
+
+    expect(first.attributes('aria-valuenow')).toBe('11')
+    expect(second.attributes('aria-valuenow')).toBe('90')
+    wrapper.unmount()
+  })
+
+  it('emits no valueCommit for a key step cancelled after a nested reset', async () => {
+    const wrapper = mount(defineComponent({
+      components: { SliderAreaRoot, SliderAreaThumb },
+      methods: {
+        onBefore(_: unknown, details: { reason: string, cancel: () => void }) {
+          if (details.reason === 'keyboard' && (this as any).resetOnStep) {
+            ;(this.$refs.form as HTMLFormElement).reset()
+            details.cancel()
+          }
+        },
+      },
+      data: () => ({ resetOnStep: false }),
+      template: `
+        <form ref="form">
+          <SliderAreaRoot :default-value="[[20, 30]]" @before-update:model-value="onBefore">
+            <SliderAreaThumb />
+          </SliderAreaRoot>
+        </form>`,
+    }), { attachTo: document.body })
+    const root = wrapper.findComponent(SliderAreaRoot)
+    const thumb = wrapper.find('[role="slider"]')
+    await thumb.trigger('keydown', { key: 'ArrowRight' })
+    expect(root.emitted('valueCommit')).toEqual([[[[21, 30]]]])
+    await wrapper.setData({ resetOnStep: true })
+
+    await thumb.trigger('keydown', { key: 'ArrowRight' })
+
+    expect(root.emitted('valueCommit')).toHaveLength(1)
+    expect(thumb.attributes('aria-valuenow')).toBe('20')
+    wrapper.unmount()
+  })
+})
+
 describe('given a SliderAreaRoot in a form that is reset', () => {
   globalThis.ResizeObserver = class ResizeObserver {
     observe() {}
