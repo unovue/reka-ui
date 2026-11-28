@@ -214,16 +214,27 @@ export interface UseSliderReturn {
    * when the change was not cancelled. Returns `false` when unchanged or cancelled.
    */
   updateValues: (value: number, atIndex: number, options?: { commit?: boolean, reason?: SliderChangeReason | BaseChangeReason, event?: Event }) => boolean
-  /** A pointer press at `value` on the track: moves the closest thumb. */
+  /**
+   * A pointer press at `value` on the track: moves the closest thumb. Each
+   * pointer (by the event's `pointerId`) has its own slide; a call without a
+   * pointer event drives the one slide that is open.
+   */
   startSlide: (value: number, event?: Event) => void
   /**
-   * A pointer move at `value` while pressed. From the first `startSlide` /
-   * `moveSlide` until `endSlide`, every value is kept within `min` / `max`,
-   * including when they change mid-drag.
+   * A pointer move at `value` while pressed: moves the thumb this pointer
+   * drives. From the first `startSlide` / `moveSlide` until the last pointer's
+   * `endSlide`, every value is kept within `min` / `max`, including when they
+   * change mid-drag.
    */
   moveSlide: (value: number, event?: Event) => void
-  /** The pointer was released: emits `valueCommit` when the drag changed the value. */
-  endSlide: () => void
+  /** The pointer was released: emits `valueCommit` when this pointer's slide changed the value. */
+  endSlide: (event?: Event) => void
+  /**
+   * The thumb index the slide of the event's pointer drives (it follows a
+   * crossing), or `undefined` when that pointer has no slide.
+   * @internal
+   */
+  getSlideIndex: (event?: Event) => number | undefined
   /** The orientation geometry (edges, direction) the thumb and range surfaces position against. */
   orientation: SliderOrientation
   /** The slider element surface: `aria-disabled`, the thumb transform, and the keyboard and pointer-down handlers. */
@@ -309,7 +320,6 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
   })
 
   const currentModelValue = computed(() => Array.isArray(modelValue.value) ? [...modelValue.value] : [])
-  let valuesBeforeSlideStart = currentModelValue.value
 
   function updateValues(value: number, atIndex: number, options: { commit?: boolean, reason?: SliderChangeReason | BaseChangeReason, event?: Event, clampAll?: boolean } = {}): boolean {
     // Steps count from `min`, so a fractional `min` needs its digits kept too.
@@ -332,6 +342,7 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     const changed = setState(nextValues, options.reason ?? 'imperative-action', options.event)
     if (changed) {
       flushPending() // no listeners to hook: run the side effects now
+      followSortedThumbs(atIndex, valueIndexToChangeRef.value)
     }
     else {
       // Cancelled in `beforeUpdate`: the values did not move, so the thumb
@@ -343,20 +354,93 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     return changed
   }
 
+  /**
+   * Every value clamped to `min` / `max`. When the clamp moved a value and the
+   * thumbs end up closer than `minStepsBetweenThumbs`, they are pushed apart
+   * inside the range, each as little as it takes, the way a drag keeps them
+   * apart. A range too narrow to fit that spacing keeps the clamped values:
+   * every value stays within the bounds, and a move that would bring two
+   * thumbs closer still is refused until the range is wide enough again.
+   */
   function clampToBounds(values: number[]) {
-    return values.map(value => clamp(value, min.value, max.value))
+    const clamped = values.map(value => clamp(value, min.value, max.value))
+    const gap = minStepsBetweenThumbs.value * step.value
+    if (isSameValues(values, clamped) || hasMinStepsBetweenValues(clamped, gap))
+      return clamped
+    // Push up from `min`, then down from `max`. Rounded to the digits of the
+    // bounds and the gap, so the gap is not lost to floating point.
+    const decimalCount = Math.max(getDecimalCount(min.value), getDecimalCount(max.value), getDecimalCount(step.value), getDecimalCount(gap))
+    const spaced = [...clamped]
+    for (let i = 1; i < spaced.length; i++)
+      spaced[i] = Math.max(spaced[i], roundValue(spaced[i - 1] + gap, decimalCount))
+    for (let i = spaced.length - 1; i >= 0; i--)
+      spaced[i] = Math.min(spaced[i], i === spaced.length - 1 ? max.value : roundValue(spaced[i + 1] - gap, decimalCount))
+    return spaced[0] >= min.value ? spaced : clamped
+  }
+
+  /** One pressed pointer's slide. */
+  interface PointerSlide {
+    /** The values its slide started from, to tell on release whether it changed them. */
+    start: number[]
+    /** The thumb this pointer drives. */
+    index: number
+    /** Whether a change made during this slide was accepted: another pointer's change is not its to commit. */
+    changed: boolean
+    /** The bounds when the slide started: a press that moves nothing, under unchanged bounds, changes nothing. */
+    bounds: [number, number]
+  }
+  // One entry per pressed pointer (by `pointerId`), so a second pointer
+  // pressing or lifting leaves the first one's slide as it was. A call
+  // without a pointer event uses `null`.
+  const slides = new Map<number | null, PointerSlide>()
+  function slideKey(event?: Event): number | null {
+    const pointerId = (event as PointerEvent | undefined)?.pointerId
+    return typeof pointerId === 'number' ? pointerId : null
+  }
+  function getSlide(event?: Event): PointerSlide | undefined {
+    const key = slideKey(event)
+    const slide = slides.get(key)
+    if (slide || slides.size !== 1)
+      return slide
+    // A standalone caller may pass the pointer event to some calls only: a
+    // call or a slide without a pointer goes with the one slide that is open.
+    const [[openKey, open]] = slides
+    return key === null || openKey === null ? open : undefined
+  }
+  /**
+   * A thumb moved from `from` to `to` in the sorted values, passing the thumbs
+   * in between: every open slide keeps driving the thumb it held.
+   */
+  function followSortedThumbs(from: number, to: number) {
+    if (from === to)
+      return
+    slides.forEach((slide) => {
+      if (slide.index === from)
+        slide.index = to
+      else if (from < to && slide.index > from && slide.index <= to)
+        slide.index--
+      else if (from > to && slide.index >= to && slide.index < from)
+        slide.index++
+    })
+  }
+  function openSlide(event?: Event): PointerSlide {
+    const existing = getSlide(event)
+    if (existing)
+      return existing
+    const slide: PointerSlide = { start: currentModelValue.value, index: valueIndexToChangeRef.value, changed: false, bounds: [min.value, max.value] }
+    if (!slides.size)
+      trackBounds()
+    slides.set(slideKey(event), slide)
+    return slide
   }
 
   // Outside a drag the model is never clamped: a programmatic value outside the
   // bounds stays as it is. During one, the values the slider shows, emits and
   // commits stay within the current bounds, so a bounds change moves them.
-  // Started by the drag, in the caller's scope, and stopped by `endSlide`, so
-  // an idle slider holds no watcher.
+  // Started by the first pointer's slide, in the caller's scope, and stopped
+  // when the last one ends, so an idle slider holds no watcher.
   const scope = getCurrentScope()
   let stopBoundsWatch: WatchHandle | undefined
-  // The bounds when the drag started: a press that moves nothing, under
-  // unchanged bounds, changes nothing.
-  let dragBounds: [number, number] | undefined
   /** `true` when the model was out of bounds and the move into range was accepted. */
   function clampModelToBounds(): boolean {
     const values = currentModelValue.value
@@ -366,45 +450,76 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
   function trackBounds() {
     if (stopBoundsWatch || (scope && !scope.active))
       return
-    dragBounds = [min.value, max.value]
-    // A standalone drag can start without the root's pointerdown.
-    valuesBeforeSlideStart = currentModelValue.value
     const start = () => watch(() => [min.value, max.value], () => {
-      // A slider disabled mid-drag takes no more changes from it.
-      if (!disabled.value)
-        clampModelToBounds()
+      // A slider disabled mid-drag takes no more changes from it. A move into
+      // range happens during every open slide, so each one commits it.
+      if (!disabled.value && clampModelToBounds())
+        slides.forEach(slide => slide.changed = true)
     })
     stopBoundsWatch = scope ? scope.run(start) : start()
+  }
+
+  /**
+   * `updateValues` with every value kept in bounds. A move that brings the
+   * values into range before the bounds watcher runs takes the watcher's
+   * clamp with it, so every open slide counts it, as the watcher would.
+   */
+  function slideTo(slide: PointerSlide, value: number, atIndex: number, reason: SliderChangeReason, event?: Event): boolean {
+    const values = currentModelValue.value
+    const clamps = !isSameValues(values, clampToBounds(values))
+    const changed = updateValues(value, atIndex, { reason, event, clampAll: true })
+    if (changed && clamps)
+      slides.forEach(open => open.changed = true)
+    else if (changed)
+      slide.changed = true
+    return changed
   }
 
   function startSlide(value: number, event?: Event) {
     if (disabled.value)
       return
-    trackBounds()
+    const slide = openSlide(event)
     const closestIndex = getClosestValueIndex(currentModelValue.value, value)
-    updateValues(value, closestIndex, { reason: 'track-press', event, clampAll: true })
+    slideTo(slide, value, closestIndex, 'track-press', event)
+    slide.index = valueIndexToChangeRef.value
   }
 
   function moveSlide(value: number, event?: Event) {
     if (disabled.value)
       return
-    trackBounds()
-    updateValues(value, valueIndexToChangeRef.value, { reason: 'drag', event, clampAll: true })
+    const slide = openSlide(event)
+    // Another pointer may have moved the active thumb since; this pointer drives its own.
+    const focusedIndex = valueIndexToChangeRef.value
+    valueIndexToChangeRef.value = slide.index
+    // An accepted crossing moves `slide.index` with its thumb (`followSortedThumbs`).
+    // A move that changes nothing keeps it: onto another thumb's value it
+    // would otherwise pick whichever equal thumb comes first. It focuses
+    // nothing either, so the keyboard stays where it was.
+    if (!slideTo(slide, value, slide.index, 'drag', event))
+      valueIndexToChangeRef.value = focusedIndex
   }
 
-  function endSlide() {
-    const boundsChanged = !!dragBounds && (dragBounds[0] !== min.value || dragBounds[1] !== max.value)
-    stopBoundsWatch?.()
-    stopBoundsWatch = undefined
-    dragBounds = undefined
+  function endSlide(event?: Event) {
+    const slide = getSlide(event)
+    if (!slide)
+      return
+    slides.forEach((open, key) => open === slide && slides.delete(key))
+    // Bounds are tracked until the last pointer lifts.
+    if (!slides.size) {
+      stopBoundsWatch?.()
+      stopBoundsWatch = undefined
+    }
     if (disabled.value)
       return
+    const boundsChanged = slide.bounds[0] !== min.value || slide.bounds[1] !== max.value
     // A bounds change and the release can land in one tick, before the watcher
     // runs. A controlled model can still hold the old values after an accepted
     // move into range, so that move counts as a change on its own.
     const clamped = boundsChanged && clampModelToBounds()
+    if (clamped)
+      slides.forEach(open => open.changed = true)
     // Every thumb: a bounds change can move one that was not dragged.
-    if (clamped || !isSameValues(currentModelValue.value, valuesBeforeSlideStart)) {
+    if (clamped || (slide.changed && !isSameValues(currentModelValue.value, slide.start))) {
       // Still clamped: `beforeUpdate` can veto the model's move into range.
       const committed = clampToBounds(currentModelValue.value)
       props.onValueCommit?.(committed)
@@ -481,13 +596,20 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     }),
     () => partState(context),
   )
-  // Records where a drag started, so `endSlide` can tell whether it changed anything.
-  // A press on a thumb starts a drag too, before any value moves.
-  function onPointerdown() {
+  // Records where a pointer's slide started, so `endSlide` can tell whether it
+  // changed anything. A press on a thumb starts a slide too, before any value
+  // moves. This runs after a press on the track: a press the model already
+  // shows becomes part of the starting values, as it always has; one a
+  // controlled parent has not rendered yet still counts as this slide's change.
+  function onPointerdown(event?: Event) {
     if (disabled.value)
       return
-    valuesBeforeSlideStart = currentModelValue.value
-    trackBounds()
+    const slide = openSlide(event)
+    if (!isSameValues(currentModelValue.value, slide.start)) {
+      slide.start = currentModelValue.value
+      slide.changed = false
+    }
+    slide.index = valueIndexToChangeRef.value
   }
   // Built on first read: the Root SFC never reads them (Track and Range build their own).
   let track: PartSurface<SliderTrackState> | undefined
@@ -505,6 +627,7 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     startSlide,
     moveSlide,
     endSlide,
+    getSlideIndex: event => getSlide(event)?.index,
     orientation: orientationContext,
     root,
     get track() {

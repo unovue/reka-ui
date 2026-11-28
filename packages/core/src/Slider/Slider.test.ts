@@ -575,8 +575,11 @@ describe('given default Slider', () => {
           await fireEvent.pointerUp(sliderImpl.element, { pointerId: 2 })
         })
 
-        it('should end the slide for each pointer', async () => {
+        it('should end the slide for each pointer, committing the slides that changed the value', async () => {
           expect(onSlideEnd).toHaveBeenCalledTimes(2)
+          // jsdom lays the track out at zero width, so every pointer position maps to 0. The first
+          // pointer's slide (50 → 0) commits; the second pointer's press and move change nothing.
+          expect(wrapper.emitted('valueCommit')).toEqual([[[0]]])
         })
       })
     })
@@ -885,5 +888,223 @@ describe('given a range slider whose first thumb is removed', () => {
     finally {
       wrapper.unmount()
     }
+  })
+})
+
+describe('given a slider pressed by several pointers', () => {
+  function mountControlled(initial: number[], props: Record<string, unknown> = {}) {
+    const value = ref(initial)
+    const max = ref(100)
+    const wrapper = mount(defineComponent(() => () => h(
+      SliderRoot,
+      { 'modelValue': value.value, 'onUpdate:modelValue': (v: number[] | undefined) => { value.value = v! }, 'max': max.value, 'thumbAlignment': 'overflow', ...props },
+      () => initial.map((_, key) => h(SliderThumb, { key })),
+    )), { attachTo: document.body })
+    const root = wrapper.findComponent(SliderRoot)
+    const slider = wrapper.get('[data-slider-impl]').element
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 20))
+    const thumbs = wrapper.findAll('[role="slider"]').map(thumb => thumb.element as HTMLElement)
+    return { value, max, wrapper, root, slider, thumbs }
+  }
+
+  it('keeps the first pointer\'s grab offset on a contained thumb', async () => {
+    const { value, wrapper, thumbs: [thumb] } = mountControlled([40], { thumbAlignment: 'contain' })
+    // A 120px track with a 20px thumb: in `contain` mode the thumb's left edge is at its value in px.
+    vi.spyOn(wrapper.get('[data-slider-impl]').element, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 120, 20))
+    Object.defineProperty(thumb, 'clientWidth', { value: 20 })
+    vi.spyOn(thumb, 'getBoundingClientRect').mockImplementation(() => new DOMRect(value.value[0], 0, 20, 20))
+    try {
+      // The first pointer grabs the thumb 2px in from its edge and drags it 10px.
+      await fireEvent.pointerDown(thumb, { clientX: 42, pointerId: 1 })
+      await fireEvent.pointerMove(thumb, { clientX: 42, pointerId: 1 })
+      await fireEvent.pointerMove(thumb, { clientX: 52, pointerId: 1 })
+      expect(value.value).toEqual([50])
+
+      // A second pointer presses the thumb and lifts while the first one is still down.
+      await fireEvent.pointerDown(thumb, { clientX: 55, pointerId: 2 })
+      await fireEvent.pointerUp(thumb, { pointerId: 2 })
+
+      await fireEvent.pointerMove(thumb, { clientX: 62, pointerId: 1 })
+      expect(value.value).toEqual([60])
+      await fireEvent.pointerMove(thumb, { clientX: 72, pointerId: 1 })
+      expect(value.value).toEqual([70])
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('keeps a stationary pointer\'s grab when another pointer drags its thumb past it', async () => {
+    const { value, wrapper, thumbs } = mountControlled([20, 80], { thumbAlignment: 'contain' })
+    // A 120px track with 20px thumbs: in `contain` mode a thumb's left edge is at its value in px.
+    vi.spyOn(wrapper.get('[data-slider-impl]').element, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 120, 20))
+    thumbs.forEach((thumb, index) => {
+      Object.defineProperty(thumb, 'clientWidth', { value: 20 })
+      vi.spyOn(thumb, 'getBoundingClientRect').mockImplementation(() => new DOMRect(value.value[index], 0, 20, 20))
+    })
+    const [first, second] = thumbs
+    try {
+      // The first pointer holds the first thumb 2px in from its edge and does not move.
+      await fireEvent.pointerDown(first, { clientX: 22, pointerId: 1 })
+      await fireEvent.pointerDown(second, { clientX: 82, pointerId: 2 })
+      await fireEvent.pointerMove(second, { clientX: 82, pointerId: 2 })
+      await fireEvent.pointerMove(second, { clientX: 12, pointerId: 2 })
+      expect(value.value).toEqual([10, 20])
+
+      await fireEvent.pointerMove(first, { clientX: 22, pointerId: 1 })
+      expect(value.value).toEqual([10, 20])
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('keeps each pointer on the thumb it pressed', async () => {
+    const { value, wrapper, thumbs: [first, second] } = mountControlled([10, 90])
+    try {
+      await fireEvent.pointerDown(first, { clientX: 10, pointerId: 1 })
+      await fireEvent.pointerDown(second, { clientX: 90, pointerId: 2 })
+      await fireEvent.pointerMove(first, { clientX: 20, pointerId: 1 })
+      await fireEvent.pointerMove(second, { clientX: 80, pointerId: 2 })
+
+      expect(value.value).toEqual([20, 80])
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('keeps the other pointer on its thumb when one pointer drags past it', async () => {
+    const { value, wrapper, thumbs: [first, second] } = mountControlled([20, 80])
+    try {
+      await fireEvent.pointerDown(first, { clientX: 20, pointerId: 1 })
+      await fireEvent.pointerDown(second, { clientX: 80, pointerId: 2 })
+      await fireEvent.pointerMove(first, { clientX: 90, pointerId: 1 })
+      expect(value.value).toEqual([80, 90])
+      // The second pointer still holds the thumb at 80, now the first value.
+      await fireEvent.pointerMove(second, { clientX: 70, pointerId: 2 })
+
+      expect(value.value).toEqual([70, 90])
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('commits a slide only for the pointer that made it', async () => {
+    const { wrapper, root, thumbs: [thumb] } = mountControlled([40])
+    try {
+      await fireEvent.pointerDown(thumb, { clientX: 40, pointerId: 1 })
+      await fireEvent.pointerDown(thumb, { clientX: 40, pointerId: 2 })
+      await fireEvent.pointerMove(thumb, { clientX: 50, pointerId: 2 })
+      await fireEvent.pointerUp(thumb, { pointerId: 1 })
+      expect(root.emitted('valueCommit')).toBeUndefined()
+      await fireEvent.pointerUp(thumb, { pointerId: 2 })
+
+      expect(root.emitted('valueCommit')).toEqual([[[50]]])
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('commits the first pointer\'s slide when a second pointer pressed and lifted during it', async () => {
+    const { wrapper, root, thumbs: [thumb] } = mountControlled([40])
+    try {
+      await fireEvent.pointerDown(thumb, { clientX: 40, pointerId: 1 })
+      await fireEvent.pointerMove(thumb, { clientX: 50, pointerId: 1 })
+      await fireEvent.pointerDown(thumb, { clientX: 50, pointerId: 2 })
+      await fireEvent.pointerUp(thumb, { pointerId: 2 })
+      expect(root.emitted('valueCommit')).toBeUndefined()
+      await fireEvent.pointerUp(thumb, { pointerId: 1 })
+
+      expect(root.emitted('valueCommit')).toEqual([[[50]]])
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('keeps the keyboard on the focused thumb when another pointer\'s move changes nothing', async () => {
+    const { value, wrapper, thumbs: [first, second] } = mountControlled([10, 90])
+    try {
+      await fireEvent.pointerDown(first, { clientX: 10, pointerId: 1 })
+      await fireEvent.pointerDown(second, { clientX: 90, pointerId: 2 })
+      // Within the same step: nothing changes, and the second thumb keeps focus.
+      await fireEvent.pointerMove(first, { clientX: 10.2, pointerId: 1 })
+      await fireEvent.keyDown(second, { key: 'ArrowRight' })
+
+      expect(value.value).toEqual([10, 91])
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('keeps the values within the bounds until the last pointer lifts', async () => {
+    const { value, max, wrapper, root, thumbs: [first, second] } = mountControlled([20, 80])
+    try {
+      await fireEvent.pointerDown(first, { clientX: 20, pointerId: 1 })
+      await fireEvent.pointerDown(second, { clientX: 80, pointerId: 2 })
+      await fireEvent.pointerMove(second, { clientX: 85, pointerId: 2 })
+      await fireEvent.pointerUp(first, { pointerId: 1 })
+      // The second pointer is still dragging.
+      max.value = 60
+      await nextTick()
+
+      expect(value.value).toEqual([20, 60])
+      await fireEvent.pointerUp(second, { pointerId: 2 })
+      expect(root.emitted('valueCommit')).toEqual([[[20, 60]]])
+
+      // Once every pointer has lifted, the bounds are no longer tracked.
+      max.value = 40
+      await nextTick()
+      expect(value.value).toEqual([20, 60])
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+})
+
+describe('given a range slider whose bounds narrow during a drag below minStepsBetweenThumbs', () => {
+  function mountSpaced(defaultValue: number[]) {
+    const wrapper = mount(SliderRoot, {
+      props: { defaultValue, minStepsBetweenThumbs: 10, thumbAlignment: 'overflow' },
+      slots: { default: () => defaultValue.map((_, key) => h(SliderThumb, { key })) },
+    })
+    const slider = wrapper.get('[data-slider-impl]').element
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 20))
+    const values = () => wrapper.findAll('[role="slider"]').map(thumb => Number(thumb.attributes('aria-valuenow')))
+    return { wrapper, slider, values }
+  }
+
+  it.each([
+    { defaultValue: [50, 80], bounds: { max: 55 }, expected: [45, 55] },
+    { defaultValue: [20, 50], bounds: { min: 45 }, expected: [45, 55] },
+    { defaultValue: [10, 15, 90], bounds: { min: 40, max: 60 }, expected: [40, 50, 60] },
+  ])('pushes the thumbs apart inside the new range ($bounds)', async ({ defaultValue, bounds, expected }) => {
+    const { wrapper, slider, values } = mountSpaced(defaultValue)
+
+    await fireEvent.pointerDown(slider, { clientX: defaultValue[0], pointerId: 1 })
+    await wrapper.setProps(bounds)
+
+    expect(values()).toEqual(expected)
+    await fireEvent.pointerUp(slider, { pointerId: 1 })
+    expect(wrapper.emitted('valueCommit')).toEqual([[expected]])
+  })
+
+  it('keeps the clamped values when the range is too narrow for the spacing', async () => {
+    const { wrapper, slider, values } = mountSpaced([10, 50, 90])
+
+    await fireEvent.pointerDown(slider, { clientX: 10, pointerId: 1 })
+    await wrapper.setProps({ min: 45, max: 60 })
+    expect(values()).toEqual([45, 50, 60])
+
+    // A move that would break the spacing further is refused, without throwing.
+    await fireEvent.pointerMove(slider, { clientX: 55, pointerId: 1 })
+    expect(values()).toEqual([45, 50, 60])
+    await fireEvent.pointerUp(slider, { pointerId: 1 })
+    expect(wrapper.emitted('valueCommit')).toEqual([[[45, 50, 60]]])
   })
 })

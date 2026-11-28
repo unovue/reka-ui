@@ -141,7 +141,7 @@ const resolvedDisabled = () => ownField ? ownField.disabled(props.disabled) : pr
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` / `valueCommit` emits
 // live in the composable (`modelValue === undefined` → uncontrolled).
-const { modelValue, root, orientation: orientationGeometry, startSlide, moveSlide, endSlide, context, isControlled, updateValues } = useSlider({
+const { modelValue, root, orientation: orientationGeometry, startSlide, moveSlide, endSlide, getSlideIndex, context, isControlled, updateValues } = useSlider({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   disabled: resolvedDisabled,
@@ -183,7 +183,7 @@ const attrs = useAttrs()
 // Held for the emit recreated in a watcher, where there's no current instance.
 const instance = getCurrentInstance()
 const SLIDE_EVENTS = { props: {}, emits: ['slideStart', 'slideMove', 'slideEnd'] }
-const ownSlideListeners = { onSlideStart: startSlide, onSlideMove: moveSlide, onSlideEnd: () => endSlide() }
+const ownSlideListeners = { onSlideStart: startSlide, onSlideMove: moveSlide, onSlideEnd: endSlide }
 function createSlideEmit() {
   return createWrapperEmit(() => {
     const split = splitWrapperAttrs(attrs, SLIDE_EVENTS)
@@ -197,6 +197,7 @@ const pointer = useSliderPointer({
   context,
   orientation: orientationGeometry,
   emit: (key, ...args) => emitSlide(key, ...args),
+  getSlideIndex,
 })
 
 // Switching orientation remounts the element (see `:key`), which starts a new

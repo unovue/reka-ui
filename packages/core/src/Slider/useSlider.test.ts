@@ -8,6 +8,7 @@ import { defineComponent, h, mergeProps, nextTick, ref } from 'vue'
 import { SliderRange, SliderRoot, SliderThumb, SliderTrack } from '.'
 import * as Reka from '../index'
 import { useSlider } from './useSlider'
+import { hasMinStepsBetweenValues } from './utils'
 
 globalThis.ResizeObserver = class ResizeObserver {
   observe() {}
@@ -86,6 +87,89 @@ describe('useSlider — model', () => {
     max.value = 40
     await nextTick()
     expect(s.modelValue.value).toEqual([60])
+  })
+
+  it('keeps a slide per pointer: its own thumb, its own commit, and the bounds until the last one ends', async () => {
+    const emit = vi.fn()
+    const max = ref(100)
+    const s = useSlider({ defaultValue: [20, 80], max, emit })
+    const pointer = (pointerId: number) => new PointerEvent('pointermove', { pointerId })
+    s.startSlide(20, pointer(1))
+    s.startSlide(80, pointer(2))
+    s.moveSlide(30, pointer(1))
+    s.moveSlide(85, pointer(2))
+    expect(s.modelValue.value).toEqual([30, 85])
+    s.endSlide(pointer(1))
+    expect(emit.mock.calls.filter(call => call[0] === 'valueCommit')).toEqual([['valueCommit', [30, 85]]])
+    max.value = 60
+    await nextTick()
+    expect(s.modelValue.value).toEqual([30, 60])
+    s.endSlide(pointer(2))
+    expect(emit.mock.calls.filter(call => call[0] === 'valueCommit').at(-1)).toEqual(['valueCommit', [30, 60]])
+  })
+
+  it('pushes thumbs apart within bounds that narrow during a drag, and keeps the clamped values when they cannot fit', async () => {
+    const max = ref(100)
+    const min = ref(0)
+    const s = useSlider({ defaultValue: [50, 80], min, max, minStepsBetweenThumbs: 2, step: 5 })
+    s.startSlide(50)
+    max.value = 55
+    await nextTick()
+    expect(s.modelValue.value).toEqual([45, 55])
+    min.value = 50
+    await nextTick()
+    expect(s.modelValue.value).toEqual([50, 55])
+    s.endSlide()
+  })
+
+  it('keeps a pointer on its thumb after a move that changes nothing onto another thumb\'s value', () => {
+    const s = useSlider({ defaultValue: [20, 80] })
+    const pointer = (pointerId: number) => new PointerEvent('pointermove', { pointerId })
+    s.startSlide(20, pointer(1))
+    s.startSlide(80, pointer(2))
+    s.moveSlide(80, pointer(1))
+    s.moveSlide(80, pointer(2))
+    s.moveSlide(70, pointer(1))
+    s.moveSlide(90, pointer(2))
+    expect(s.modelValue.value).toEqual([70, 90])
+  })
+
+  it('commits a bounds clamp for every open slide when a move brings the values into range first', () => {
+    const emit = vi.fn()
+    const max = ref(100)
+    const s = useSlider({ defaultValue: [20, 80], max, emit })
+    const pointer = (pointerId: number) => new PointerEvent('pointermove', { pointerId })
+    s.startSlide(20, pointer(1))
+    s.startSlide(80, pointer(2))
+    // The move lands before the bounds watcher runs.
+    max.value = 60
+    s.moveSlide(20, pointer(1))
+    expect(s.modelValue.value).toEqual([20, 60])
+    s.endSlide(pointer(1))
+    s.endSlide(pointer(2))
+    expect(emit.mock.calls.filter(call => call[0] === 'valueCommit')).toEqual([['valueCommit', [20, 60]], ['valueCommit', [20, 60]]])
+  })
+
+  it('keeps a fractional minStepsBetweenThumbs apart when the bounds narrow', async () => {
+    const max = ref(10)
+    const s = useSlider({ defaultValue: [5, 10], max, minStepsBetweenThumbs: 0.5 })
+    s.startSlide(5)
+    max.value = 1
+    await nextTick()
+    expect(s.modelValue.value).toEqual([0.5, 1])
+    s.endSlide()
+  })
+
+  it('accepts spacing at decimal steps after the bounds narrow', async () => {
+    const max = ref(1)
+    const s = useSlider({ defaultValue: [0.7, 0.8, 0.9], max, step: 0.1, minStepsBetweenThumbs: 1 })
+    s.startSlide(0.7)
+    max.value = 0.6
+    await nextTick()
+    expect(s.modelValue.value).toEqual([0.4, 0.5, 0.6])
+    s.moveSlide(0.3)
+    expect(s.modelValue.value).toEqual([0.3, 0.5, 0.6])
+    s.endSlide()
   })
 
   it('a standalone drag compares the release with the values when it started', () => {
@@ -375,5 +459,18 @@ describe('useSlider lean surfaces', () => {
     expect(slider.track).toBe(slider.track)
     expect(slider.range).toBe(slider.range)
     expect(slider.range.attrs.value.style).toMatchObject({ left: '20%', right: '40%' })
+  })
+})
+
+describe('hasMinStepsBetweenValues', () => {
+  it('accepts a decimal gap off by floating-point error', () => {
+    expect(hasMinStepsBetweenValues([0.4, 0.5, 0.6], 0.1)).toBe(true)
+  })
+
+  it('never accepts a gap short of the minimum by more than float error, at any magnitude', () => {
+    expect(hasMinStepsBetweenValues([1e15, 1e15], 1)).toBe(false)
+    expect(hasMinStepsBetweenValues([1e15, 1e15 + 0.5], 1)).toBe(false)
+    expect(hasMinStepsBetweenValues([1e15, 1e15 + 1], 1)).toBe(true)
+    expect(hasMinStepsBetweenValues([0.4, 0.49], 0.1)).toBe(false)
   })
 })
