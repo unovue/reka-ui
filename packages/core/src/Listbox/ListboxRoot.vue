@@ -191,7 +191,7 @@ import { useCollection } from '@/Collection'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
-import { formResetBinder } from '@/shared/formReset'
+import { formResetBinder, injectFormResetOwner } from '@/shared/formReset'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -299,10 +299,11 @@ provideListboxRootContext(context)
 useAgentRegistration('listbox', context, props, currentElement)
 
 // A native reset of the owning form puts the value back to `defaultValue`.
+// Inside a color swatch picker the reset is the picker's, which owns the value.
 // Read off the composable's return here: a closure over that object would keep
 // all of it alive for the life of the component.
 const { isControlled } = listbox
-function onFormReset(event: Event) { resetControllableState(isControlled, event) }
+const onFormReset = injectFormResetOwner() ?? ((event: Event) => { resetControllableState(isControlled, event) })
 if (field)
   provideListboxFieldContext({ field, contentElement: fieldContent! })
 // Only shadow an ancestor listbox's wiring; otherwise providing nothing already reads as `null`.

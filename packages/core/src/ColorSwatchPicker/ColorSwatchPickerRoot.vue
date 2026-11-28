@@ -22,6 +22,8 @@ export type ColorSwatchPickerRootEmits = Omit<ListboxRootEmits, 'update:modelVal
 <script setup lang="ts">
 import { computed, mergeProps } from 'vue'
 import { ListboxContent, ListboxRoot } from '@/Listbox'
+import { provideFormResetOwner } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { useColorSwatchPicker } from './useColorSwatchPicker'
 
 const props = withDefaults(defineProps<ColorSwatchPickerRootProps>(), {
@@ -36,7 +38,7 @@ const props = withDefaults(defineProps<ColorSwatchPickerRootProps>(), {
 
 const emits = defineEmits<ColorSwatchPickerRootEmits>()
 
-const { listboxProps } = useColorSwatchPicker({
+const { listboxProps, isControlled } = useColorSwatchPicker({
   modelValue: () => props.modelValue,
   defaultValue: () => props.defaultValue,
   multiple: () => props.multiple,
@@ -44,6 +46,10 @@ const { listboxProps } = useColorSwatchPicker({
   selectionBehavior: () => props.selectionBehavior,
   emit: emits,
 })
+
+// A native reset of the owning form puts the value back to `defaultValue`.
+// The inner `ListboxRoot` binds it on the element they share.
+provideFormResetOwner((event: Event) => { resetControllableState(isControlled, event) })
 
 // The model has one update channel so cancellation cannot be bypassed by forwarding.
 const forwardedProps = useForwardPropsEmits(props, emits)

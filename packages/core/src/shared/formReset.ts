@@ -95,7 +95,22 @@ function bind(element: Element | null | undefined, handler: FormResetHandler, re
  * @internal
  */
 export function formResetBinder(handler: FormResetHandler | null | undefined, field = false): ((vnode: VNode) => void) | undefined {
-  return handler ? vnode => bind(vnode.el as Element | null, handler, field ? fields : controls) : undefined
+  return handler ? vnode => bind(vnodeElement(vnode), handler, field ? fields : controls) : undefined
+}
+
+/**
+ * The element a part renders. An `asChild` part with a hidden input renders a
+ * fragment (its child, then the input), whose `el` is the opening text anchor:
+ * its element is the first one in the fragment, the child the attrs land on.
+ */
+function vnodeElement(vnode: VNode): Element | null {
+  let node = vnode.el as Node | null
+  if (node?.nodeType === 1)
+    return node as Element
+  const end = vnode.component ? vnode.component.subTree.anchor : vnode.anchor
+  while (node && node !== end && node.nodeType !== 1)
+    node = node.nextSibling
+  return node?.nodeType === 1 ? node as Element : null
 }
 
 /**
