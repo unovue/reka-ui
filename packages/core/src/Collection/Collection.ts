@@ -342,12 +342,18 @@ export function getCollectionMeta<M>(item: CollectionEntry | undefined): M | und
 }
 
 /**
- * The wrapper components, defined once per collection key (not per
- * `useCollection()` call). They read the nearest provider themselves.
+ * The wrapper components, defined once per collection key. They read the
+ * nearest provider themselves.
  */
 const components = new Map<string, { CollectionSlot: Component, CollectionItem: Component }>()
 
-function getCollectionComponents(key: string) {
+/**
+ * The `CollectionSlot` and `CollectionItem` wrapper components of the
+ * collection `key`: the component form of `useCollectionSlot` and
+ * `useCollectionItem`. Kept apart from `useCollection` so that a family
+ * using the composables does not bundle the wrappers.
+ */
+export function getCollectionComponents(key = ''): { CollectionSlot: Component, CollectionItem: Component } {
   let entry = components.get(key)
   if (entry)
     return entry
@@ -394,8 +400,6 @@ export interface UseCollectionReturn<ItemData = {}> {
   readonly reactiveItems: Readonly<Ref<CollectionEntry<ItemData>[]>>
   /** The number of registered items with an element, tracked. */
   readonly itemMapSize: Readonly<Ref<number>>
-  CollectionSlot: Component
-  CollectionItem: Component
 }
 
 /**
@@ -410,7 +414,6 @@ export interface UseCollectionReturn<ItemData = {}> {
 export function useCollection<ItemData = {}>(options: { key?: string, isProvider?: boolean } = {}): UseCollectionReturn<ItemData> {
   const { key = '', isProvider = false } = options
   const context = isProvider ? provideCollection(key) : (injectCollection(key) ?? (emptyContext ??= new CollectionContextImpl()))
-  const { CollectionSlot, CollectionItem } = getCollectionComponents(key)
 
   return {
     getItems: context.getItems as UseCollectionReturn<ItemData>['getItems'],
@@ -421,7 +424,5 @@ export function useCollection<ItemData = {}>(options: { key?: string, isProvider
     get itemMapSize() {
       return context.getItemMapSize()
     },
-    CollectionSlot,
-    CollectionItem,
   }
 }

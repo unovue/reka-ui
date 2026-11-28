@@ -5,6 +5,7 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { DataOrientation, Direction } from '@/shared/types'
 import { computed, getCurrentScope, ref, toValue, watch } from 'vue'
 import { clamp, createPartSurface, fieldRef, getDecimalCount, getterRef, useControllableState, useTranslations } from '@/shared'
+import { sliderMessages } from '@/shared/translations'
 import { resolveDirection } from '@/shared/useDirection'
 import {
   ARROW_KEYS,
@@ -570,7 +571,7 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     }
   }
 
-  const t = useTranslations()
+  const t = useTranslations(sliderMessages)
   const context: SliderRootContext = {
     t,
     modelValue,

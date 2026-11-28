@@ -3,6 +3,7 @@ import type { NumberFieldRootContext } from './NumberFieldRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import { computed, mergeProps, ref, shallowRef, toValue, watch } from 'vue'
 import { clamp, createPartSurface, getActiveElement, getterRef, isNullish, snapValueToStep, useComposing, useControllableState, useTranslations } from '@/shared'
+import { numberFieldMessages } from '@/shared/translations'
 import { resetControllableState } from '@/shared/useControllableState'
 import { handleDecimalOperation, useNumberFormatter, useNumberParser } from './utils'
 
@@ -399,7 +400,7 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
     set: value => setModelValue(value),
   })
 
-  const t = useTranslations()
+  const t = useTranslations(numberFieldMessages)
   const context: NumberFieldRootContext = {
     modelValue: contextModelValue,
     t,

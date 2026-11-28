@@ -168,6 +168,7 @@ import { renderAs } from '@/Primitive/renderAs'
 import { isEqual } from '@/shared/compare'
 import { formResetBinder } from '@/shared/formReset'
 import { provideFieldRootContext } from './fieldRootContext'
+import { installFieldRuntime } from './useFieldBinding'
 import { createValidityState, useFieldValidation } from './useFieldValidation'
 
 const props = withDefaults(defineProps<FieldRootProps>(), {
@@ -493,6 +494,8 @@ onMounted(() => {
 })
 onBeforeUnmount(() => unregisterFromForm?.())
 
+// The controls bind to this field through the runtime it installs.
+installFieldRuntime()
 provideFieldRootContext({
   fieldId,
   getControlId,

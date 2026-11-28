@@ -5,6 +5,7 @@ import type { ToastStore } from './useToastStore'
 import type { SwipeDirection } from './utils'
 import { useCollection } from '@/Collection'
 import { createRekaContext, useTranslations } from '@/shared'
+import { toastMessages } from '@/shared/translations'
 
 export interface ToastProviderContext {
   label: Readonly<Ref<string>>
@@ -121,7 +122,7 @@ const props = withDefaults(defineProps<ToastProviderProps>(), {
   swipeThreshold: 50,
 })
 useCollection({ isProvider: true })
-const t = useTranslations()
+const t = useTranslations(toastMessages)
 
 if (props.label && typeof props.label === 'string' && !props.label.trim()) {
   const error = 'Invalid prop `label` supplied to `ToastProvider`. Expected non-empty `string`.'
