@@ -135,6 +135,51 @@ describe('renderAs', () => {
     expect(mount(Direct, { global: { components: { Div } } }).element.tagName).toBe('DIV')
   })
 
+  it('renders a part named after its tag as the element', () => {
+    const DivPart = defineComponent({
+      name: 'Div',
+      setup: () => ({ renderAs }),
+      template: `<component :is="renderAs(undefined, false)" data-self><slot /></component>`,
+    })
+    expect(mount(DivPart, { slots: { default: () => 'text' } }).html()).toBe('<div data-self="">text</div>')
+  })
+
+  it('renders the element, not a component registered locally under the tag name', () => {
+    const Span = defineComponent({ render: () => h('i', 'local Span') })
+    const Part = defineComponent({
+      components: { Span },
+      setup: () => ({ renderAs }),
+      template: `<component :is="renderAs('span', false)"><slot /></component>`,
+    })
+    expect(mount(Part, { slots: { default: () => 'text' } }).html()).toBe('<span>text</span>')
+  })
+
+  // Every component in the slot of a part would re-render with any component
+  // around it: a long list re-rendered all its items on each update of the
+  // popup holding it.
+  it('keeps the components in its slot from re-rendering with the components around them', async () => {
+    let renders = 0
+    const Leaf = defineComponent({
+      setup: (_, { slots }) => () => {
+        renders++
+        return h('i', slots.default?.())
+      },
+    })
+    const n = ref(0)
+    const Panel = defineComponent({
+      setup: () => ({ n }),
+      template: `<div :data-n="n"><slot /></div>`,
+    })
+    const wrapper = mount(defineComponent({
+      components: { Direct, Panel, Leaf },
+      template: `<Direct><Panel><Leaf>x</Leaf></Panel></Direct>`,
+    }))
+    n.value++
+    await nextTick()
+    expect(wrapper.html()).toContain('data-n="1"')
+    expect(renders).toBe(1)
+  })
+
   it('is one component instance per part (two with asChild)', () => {
     const count = (vnodeRoot: ComponentInternalInstance) => {
       let n = 0
