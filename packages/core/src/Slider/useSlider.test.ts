@@ -88,6 +88,39 @@ describe('useSlider — model', () => {
     expect(s.modelValue.value).toEqual([60])
   })
 
+  it('keeps a slide per pointer: its own thumb, its own commit, and the bounds until the last one ends', async () => {
+    const emit = vi.fn()
+    const max = ref(100)
+    const s = useSlider({ defaultValue: [20, 80], max, emit })
+    const pointer = (pointerId: number) => new PointerEvent('pointermove', { pointerId })
+    s.startSlide(20, pointer(1))
+    s.startSlide(80, pointer(2))
+    s.moveSlide(30, pointer(1))
+    s.moveSlide(85, pointer(2))
+    expect(s.modelValue.value).toEqual([30, 85])
+    s.endSlide(pointer(1))
+    expect(emit.mock.calls.filter(call => call[0] === 'valueCommit')).toEqual([['valueCommit', [30, 85]]])
+    max.value = 60
+    await nextTick()
+    expect(s.modelValue.value).toEqual([30, 60])
+    s.endSlide(pointer(2))
+    expect(emit.mock.calls.filter(call => call[0] === 'valueCommit').at(-1)).toEqual(['valueCommit', [30, 60]])
+  })
+
+  it('pushes thumbs apart within bounds that narrow during a drag, and keeps the clamped values when they cannot fit', async () => {
+    const max = ref(100)
+    const min = ref(0)
+    const s = useSlider({ defaultValue: [50, 80], min, max, minStepsBetweenThumbs: 2, step: 5 })
+    s.startSlide(50)
+    max.value = 55
+    await nextTick()
+    expect(s.modelValue.value).toEqual([45, 55])
+    min.value = 50
+    await nextTick()
+    expect(s.modelValue.value).toEqual([50, 55])
+    s.endSlide()
+  })
+
   it('a standalone drag compares the release with the values when it started', () => {
     const emit = vi.fn()
     const s = useSlider({ defaultValue: [20, 80], emit })

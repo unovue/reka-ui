@@ -22,14 +22,23 @@ export function useSliderPointer(options: UseSliderPointerOptions) {
   // A removed slider still gets the events its element is sent, with no element or
   // thumbs left to measure. Its `emit` would have returned before anything read them.
   const instance = getCurrentInstance()
-  let offsetPosition: number | undefined
+  /** One pressed pointer's grab. */
+  interface PointerGrab {
+    /** The thumb this pointer grabbed, or the one its press on the track moved. */
+    thumb?: HTMLElement
+    /** Where on that thumb the pointer holds it (`contain` mode), measured on its first move. */
+    offset?: number
+  }
+  // One entry per pressed pointer, so a second pointer pressing or lifting
+  // leaves the first one's grab as it was. The browser can release capture
+  // before `pointerup` arrives, so either one ends a pointer's slide, once.
+  const grabs = new Map<number, PointerGrab>()
+  // Measured once per gesture, and again once no pointer is left pressed.
   let rect: DOMRect | undefined
-  // The browser can release capture before `pointerup` arrives, so either one ends a pointer's slide, once.
-  const slidingPointerIds = new Set<number>()
 
   function reset() {
     rect = undefined
-    offsetPosition = undefined
+    grabs.forEach(grab => grab.offset = undefined)
   }
 
   function getValue(event: PointerEvent, slideStart?: boolean) {
@@ -40,15 +49,17 @@ export function useSliderPointer(options: UseSliderPointerOptions) {
     const bounds = rect || (element() ?? event.currentTarget as HTMLElement).getBoundingClientRect()
     const contain = context.thumbAlignment.value === 'contain'
 
-    // Get the currently active thumb element
-    const thumb = [...context.thumbElements.value][context.valueIndexToChangeRef.value]
+    // This pointer's thumb; a thumb that has left the slider since falls back to the active one.
+    const grab = grabs.get(event.pointerId)
+    const thumbs = context.thumbElements.value
+    const thumb = grab?.thumb && thumbs.includes(grab.thumb) ? grab.thumb : thumbs[context.valueIndexToChangeRef.value]
     const thumbSize = contain ? (horizontal ? thumb.clientWidth : thumb.clientHeight) : 0
     const pointer = horizontal ? event.clientX : event.clientY
 
     // Calculate offset for dragging, but only when needed
-    if (!offsetPosition && !slideStart && contain) {
+    if (grab && grab.offset === undefined && !slideStart && contain) {
       const thumbBounds = thumb.getBoundingClientRect()
-      offsetPosition = pointer - (horizontal ? thumbBounds.left : thumbBounds.top)
+      grab.offset = pointer - (horizontal ? thumbBounds.left : thumbBounds.top)
     }
 
     // Define the input range (slider track size minus thumb size)
@@ -62,15 +73,16 @@ export function useSliderPointer(options: UseSliderPointerOptions) {
     const start = horizontal ? bounds.left : bounds.top
     const position = slideStart
       ? pointer - start - thumbSize / 2
-      : pointer - start - (offsetPosition ?? 0)
+      : pointer - start - (grab?.offset ?? 0)
 
     return linearScale(input, output)(position)
   }
 
   function endSlide(event: PointerEvent) {
-    if (!slidingPointerIds.delete(event.pointerId))
+    if (!grabs.delete(event.pointerId))
       return
-    reset()
+    if (!grabs.size)
+      rect = undefined
     emit('onSlideEnd', event)
   }
 
@@ -80,15 +92,21 @@ export function useSliderPointer(options: UseSliderPointerOptions) {
       onPointerdown(event: PointerEvent) {
         const target = event.target as HTMLElement
         target.setPointerCapture(event.pointerId)
-        slidingPointerIds.add(event.pointerId)
+        const grab: PointerGrab = {}
+        grabs.set(event.pointerId, grab)
         // Prevent browser focus behaviour because we focus a thumb manually when values change.
         event.preventDefault()
         // Touch devices have a delay before focusing so won't focus if touch immediately moves
         // away from target (sliding). We want thumb to focus regardless.
-        if (context.thumbElements.value.includes(target))
+        const thumbs = context.thumbElements.value
+        if (thumbs.includes(target)) {
           target.focus()
-        else if (!instance?.isUnmounted)
+          grab.thumb = target
+        }
+        else if (!instance?.isUnmounted) {
           emit('onSlideStart', getValue(event, true), event)
+          grab.thumb = thumbs[context.valueIndexToChangeRef.value]
+        }
       },
       onPointermove(event: PointerEvent) {
         const target = event.target as HTMLElement

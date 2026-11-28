@@ -183,7 +183,7 @@ const attrs = useAttrs()
 // Held for the emit recreated in a watcher, where there's no current instance.
 const instance = getCurrentInstance()
 const SLIDE_EVENTS = { props: {}, emits: ['slideStart', 'slideMove', 'slideEnd'] }
-const ownSlideListeners = { onSlideStart: startSlide, onSlideMove: moveSlide, onSlideEnd: () => endSlide() }
+const ownSlideListeners = { onSlideStart: startSlide, onSlideMove: moveSlide, onSlideEnd: endSlide }
 function createSlideEmit() {
   return createWrapperEmit(() => {
     const split = splitWrapperAttrs(attrs, SLIDE_EVENTS)
