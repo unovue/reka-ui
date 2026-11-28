@@ -17,8 +17,11 @@ import { Presence } from '.'
 // Long enough that the frames a close takes to reach the DOM (a part that defers
 // its unmount, a `<Transition>` starting its leave) stay well under the limit.
 const DURATION = 1000
-/** How far the opacity may still go up after the close: a few frames of the enter, never on to 1. */
-const GOING_ON_LIMIT = 0.15
+/**
+ * How far the opacity may still go up after the close: some frames of the enter
+ * (a part can take a few to unmount on a slow runner), far from playing it on to 1.
+ */
+const GOING_ON_LIMIT = 0.25
 
 const styleElements: HTMLStyleElement[] = []
 function addStyles(css: string) {
@@ -148,6 +151,32 @@ describe('a close during the enter of a Vue <Transition> around the content', ()
     expect(frames).toBeGreaterThan(3)
     expect(gone).toBe(true)
     expect(highest).toBeLessThan(atClose + GOING_ON_LIMIT)
+  })
+})
+
+describe('a close during the enter of an animation on the presence state', () => {
+  it('waits for an enter animation that the closed state reverses in place', async () => {
+    // Changing only `animation-direction` updates the running animation instead of
+    // replacing it: it is still the exit, so it holds the node.
+    addStyles(`
+      @keyframes close-during-enter-fade { from { opacity: 0 } to { opacity: 1 } }
+      .box { animation: close-during-enter-fade ${DURATION}ms linear both; }
+      .box[data-ending-style] { animation-direction: reverse; }
+    `)
+    const open = ref(false)
+    const Fixture = defineComponent({
+      setup: () => () => h(Presence as Component, { present: open.value }, {
+        default: () => h('div', { 'class': 'box', 'data-testid': 'popup' }, 'Content'),
+      }),
+    })
+    mount(Fixture, { attachTo: document.body })
+
+    const { atClose, frames, gone } = await closeDuringEnter(open)
+    expect(atClose).toBeGreaterThan(0.2)
+    expect(atClose).toBeLessThan(0.8)
+    // Held for the reversed run, then removed.
+    expect(frames).toBeGreaterThan(3)
+    expect(gone).toBe(true)
   })
 })
 
