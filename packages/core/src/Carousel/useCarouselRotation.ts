@@ -85,10 +85,13 @@ export function useCarouselRotation(context: CarouselRootContext, rootElement: R
     const last = context.modelValue.value >= context.snapCount.value - 1
     if (last && !context.loopActive.value) {
       if (options.stopOnLastSnap) {
-        context.setPlaying(false, 'end-reached')
-        return
+        // A cancelled stop keeps playing: wait for the next interval, as after a cancelled step.
+        if (context.setPlaying(false, 'end-reached'))
+          return
       }
-      context.changeModelValue(0, 'autoplay')
+      else {
+        context.changeModelValue(0, 'autoplay')
+      }
     }
     else {
       context.scrollNext('autoplay')

@@ -245,6 +245,17 @@ describe('given a Carousel with autoplay, the change details', () => {
     expect(c.slot().stop()).toBe(false)
   })
 
+  it('keep the interval running when beforeUpdate:playing cancels the end-reached stop', async () => {
+    const c = mountCarousel({ props: { autoplay: { delay: 100, stopOnLastSnap: true }, defaultValue: 4 }, cancel: ['playing'] })
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(100)
+    expect(c.of('beforeUpdate:playing').map(call => call[2]?.reason)).toEqual(['end-reached'])
+    await vi.advanceTimersByTimeAsync(100)
+    expect(c.of('beforeUpdate:playing')).toHaveLength(2)
+    expect(c.wrapper.attributes('data-playing')).toBe('')
+    expect(c.active()).toEqual([4])
+  })
+
   it('report reduced-motion when the user prefers it', async () => {
     const matchMedia = window.matchMedia
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
