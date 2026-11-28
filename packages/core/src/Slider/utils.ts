@@ -2,7 +2,7 @@ import type { ComputedRef } from 'vue'
 import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { Translate } from '@/shared/translations'
 import { clamp, createRekaContext } from '@/shared'
-import { defaultTranslate } from '@/shared/translations'
+import { messagesTranslate, sliderMessages } from '@/shared/translations'
 
 export function getNextSortedValues(prevValues: number[] = [], nextValue: number, atIndex: number) {
   const nextValues = [...prevValues]
@@ -20,7 +20,7 @@ export function convertValueToPercentage(value: number, min: number, max: number
 /**
  * Returns a label for each thumb when there are two or more thumbs
  */
-export function getLabel(index: number, totalValues: number, t: Translate = defaultTranslate) {
+export function getLabel(index: number, totalValues: number, t: Translate = messagesTranslate(sliderMessages)) {
   if (totalValues > 2)
     return t('sliderValue', { index: index + 1, total: totalValues })
 

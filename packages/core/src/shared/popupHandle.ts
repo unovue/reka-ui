@@ -101,6 +101,17 @@ export interface PopupRootStore<Payload = unknown> {
 }
 
 /**
+ * What only a Root with a handle runs: the full store and the attachment to
+ * the handle. The `PopupHandle` constructor installs it, and every path that
+ * needs it goes through a handle, so an app that never creates one does not
+ * bundle it.
+ */
+let handleRuntime: {
+  createFullStore: typeof createFullPopupRootStore
+  attachStore: typeof attachStore
+} | undefined
+
+/**
  * The shared implementation behind `createPopoverHandle()`,
  * `createDialogHandle()`, `createAlertDialogHandle()` and
  * `createDropdownMenuHandle()`. Family handles only narrow the public `open()`
@@ -127,6 +138,7 @@ export class PopupHandle<Payload = unknown> {
      */
     readonly requireTrigger: boolean,
   ) {
+    handleRuntime ??= { createFullStore: createFullPopupRootStore, attachStore }
     this.triggers = shallowReactive(new Map())
     this.stores = shallowRef([])
     // A handle is a plain object with reactive members; never proxy it (it is
@@ -156,7 +168,7 @@ export class PopupHandle<Payload = unknown> {
       // stay open behind triggers that now report the new Root's state.
       if (previous.open.value)
         previous.closePopup('none')
-      // eslint-disable-next-line node/prefer-global/process
+
       if (process.env.NODE_ENV !== 'production')
         this.warnOverlap()
     }
@@ -221,7 +233,7 @@ export class PopupHandle<Payload = unknown> {
           + 'that has this handle on its `handle` prop.',
         )
       }
-      // eslint-disable-next-line node/prefer-global/process
+
       if (process.env.NODE_ENV !== 'production')
         console.warn(`[reka-ui] ${this.componentName}Handle.open(): no trigger with id "${id}". The popup opens without a trigger.`)
       id = null
@@ -230,7 +242,6 @@ export class PopupHandle<Payload = unknown> {
   }
 
   private warnDetached(method: string) {
-    // eslint-disable-next-line node/prefer-global/process
     if (process.env.NODE_ENV !== 'production') {
       console.warn(
         `[reka-ui] ${this.componentName}Handle.${method}() was called while no ${this.componentName}Root `
@@ -299,7 +310,7 @@ class LazyPopupRootStore<Payload> implements PopupRootStore<Payload> {
 
   /** The full store, built once it is needed. */
   private ensure(): PopupRootStore<Payload> {
-    return this.full ??= createFullPopupRootStore(this.options)
+    return this.full ??= handleRuntime!.createFullStore(this.options)
   }
 
   /**
@@ -534,7 +545,7 @@ export function usePopupHandleAttachment<Payload>(store: PopupRootStore<Payload>
     let stopAttached: (() => void) | undefined
     const stopHandle = watch(store.handle, (handle) => {
       stopAttached?.()
-      stopAttached = handle ? attachStore(store, handle) : undefined
+      stopAttached = handle ? handleRuntime!.attachStore(store, handle) : undefined
     }, { immediate: true })
     return () => {
       stopHandle()
@@ -550,7 +561,7 @@ function attachStore<Payload>(store: PopupRootStore<Payload>, handle: PopupHandl
   const stopOwner = watch(store.activeTriggerId, id => id !== null && store.handle.value?.triggers.get(id)?.capture())
 
   let stopWarn = () => {}
-  // eslint-disable-next-line node/prefer-global/process
+
   if (process.env.NODE_ENV !== 'production') {
     const unanchored = () => !!store.handle.value?.requireTrigger && store.open.value && !store.anchor.value
     const warn = () => {

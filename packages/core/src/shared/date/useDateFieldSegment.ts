@@ -7,7 +7,7 @@ import { toValue } from 'vue'
 import { getDaysInMonth } from '@/date/comparators'
 import { cycleField, getFieldValue, setFields } from '@/date/temporal'
 import { getActiveElement, snapValueToStep, useKbd } from '@/shared'
-import { defaultTranslate } from '@/shared/translations'
+import { dateFieldMessages, messagesTranslate } from '@/shared/translations'
 import { isAcceptableSegmentKey, isNumberString, isSegmentNavigationKey } from './segment'
 
 const DIGIT_REG = /^\d$/
@@ -674,7 +674,7 @@ export class DateFieldSegmentController {
       hourCycle: props.hourCycle,
       segmentValues: props.segmentValues.value,
       formatter: props.formatter,
-      t: props.translate ?? defaultTranslate,
+      t: props.translate ?? messagesTranslate(dateFieldMessages),
     }) ?? {}
   }
 

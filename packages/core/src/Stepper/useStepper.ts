@@ -6,7 +6,7 @@ import type { Translate } from '@/shared/translations'
 import type { DataOrientation, Direction } from '@/shared/types'
 import { computed, nextTick, onScopeDispose, ref, shallowRef, toValue, watch } from 'vue'
 import { createPartSurface, getActiveElement, getterRef, useArrowNavigation, useControllableState, useKbd } from '@/shared'
-import { defaultTranslate } from '@/shared/translations'
+import { messagesTranslate, stepperMessages } from '@/shared/translations'
 import { resolveDirection } from '@/shared/useDirection'
 
 /**
@@ -346,7 +346,7 @@ export function useStepper(props: UseStepperProps = {}): UseStepperReturn {
   const totalStepperItemsArray = computed(() => Array.from(totalStepperItems.value))
   const itemDisabled = new WeakMap<HTMLElement, () => boolean>()
   const stepperItemValues = new Map<HTMLElement, Readonly<Ref<number>>>()
-  const t = props.translate ?? defaultTranslate
+  const t = props.translate ?? messagesTranslate(stepperMessages)
 
   const isFirstStep = computed(() => modelValue.value === 1)
   const isLastStep = computed(() => modelValue.value === totalStepperItemsArray.value.length)

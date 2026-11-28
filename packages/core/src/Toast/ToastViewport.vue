@@ -28,6 +28,7 @@ import { unrefElement } from '@vueuse/core'
 import { mergeProps, ref } from 'vue'
 import { DismissableLayerBranch } from '@/DismissableLayer'
 import { renderAs } from '@/Primitive/renderAs'
+import { toastMessages } from '@/shared/translations'
 import FocusProxy from './FocusProxy.vue'
 import { injectToastProviderContext } from './ToastProvider.vue'
 import { useToastViewport } from './useToast'
@@ -46,7 +47,7 @@ useCollectionSlot(currentElement)
 defineExpose(expose)
 const { getItems } = useCollection()
 const providerContext = injectToastProviderContext()
-const t = useTranslations()
+const t = useTranslations(toastMessages)
 const headFocusProxyRef = ref<HTMLElement>()
 const tailFocusProxyRef = ref<HTMLElement>()
 

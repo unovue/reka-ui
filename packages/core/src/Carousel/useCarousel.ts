@@ -6,6 +6,7 @@ import type { BaseChangeReason } from '@/shared'
 import type { DataOrientation, Direction } from '@/shared/types'
 import { computed, nextTick, ref, shallowRef, toValue, watch } from 'vue'
 import { chunk, useControllableState, useTranslations } from '@/shared'
+import { carouselMessages } from '@/shared/translations'
 import { compareDocumentOrder } from './dom'
 import { createSurface } from './surface'
 import { compactStyle, getFixedGroupSize, getSnapsByPosition, stepIndex } from './utils'
@@ -447,7 +448,7 @@ export function useCarouselContext(
   return {
     baseId,
     contentId: `${baseId}-content`,
-    t: useTranslations(),
+    t: useTranslations(carouselMessages),
     modelValue,
     changeModelValue,
     orientation,
