@@ -88,6 +88,15 @@ describe('useSlider — model', () => {
     expect(s.modelValue.value).toEqual([60])
   })
 
+  it('a standalone drag compares the release with the values when it started', () => {
+    const emit = vi.fn()
+    const s = useSlider({ defaultValue: [20, 80], emit })
+    s.updateValues(90, 1)
+    s.startSlide(20)
+    s.endSlide()
+    expect(emit.mock.calls.filter(call => call[0] === 'valueCommit')).toEqual([])
+  })
+
   it('a bare updateValues() reports "imperative-action" and snaps to the step', () => {
     const onUpdate = vi.fn()
     const s = useSlider({ defaultValue: [0], step: 5, onUpdate })

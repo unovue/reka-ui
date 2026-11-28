@@ -367,6 +367,8 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     if (stopBoundsWatch || (scope && !scope.active))
       return
     dragBounds = [min.value, max.value]
+    // A standalone drag can start without the root's pointerdown.
+    valuesBeforeSlideStart = currentModelValue.value
     const start = () => watch(() => [min.value, max.value], () => {
       clampModelToBounds()
     })
