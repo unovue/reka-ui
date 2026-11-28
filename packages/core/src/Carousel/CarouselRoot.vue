@@ -1,9 +1,9 @@
 <script lang="ts">
 import type { ComputedRef, Ref, ShallowRef } from 'vue'
-import type { CarouselAutoplayOptions, CarouselAutoScrollOptions } from './useCarousel'
+import type { CarouselAutoplayOptions, CarouselAutoScrollOptions, CarouselChangeReason, CarouselPlayingChangeReason } from './useCarousel'
 import type { CarouselAlign, CarouselContainScroll, CarouselItemSnapStyle, CarouselSlidesToScroll, CarouselSnap } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
-import type { Translate } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, Translate } from '@/shared'
 import type { DataOrientation, Direction } from '@/shared/types'
 import { createRekaContext, useDirection, useForwardExpose, useId } from '@/shared'
 
@@ -28,8 +28,8 @@ export interface CarouselRootContext {
   t: Translate
   /** The current snap index. Read-only: call `changeModelValue` to change it. */
   modelValue: ComputedRef<number>
-  /** Returns `false` when the index is unchanged or out of range. */
-  changeModelValue: (index: number) => boolean
+  /** Returns `false` when the index is unchanged, out of range or the change is cancelled. */
+  changeModelValue: (index: number, reason?: CarouselChangeReason | BaseChangeReason, event?: Event) => boolean
   orientation: Ref<DataOrientation>
   dir: Ref<Direction>
   options: ComputedRef<CarouselResolvedOptions>
@@ -38,8 +38,8 @@ export interface CarouselRootContext {
   /** Whether `autoplay` or `autoScroll` is set. */
   rotationEnabled: ComputedRef<boolean>
   playing: ComputedRef<boolean>
-  /** Returns `false` when the state is unchanged. */
-  setPlaying: (value: boolean) => boolean
+  /** Returns `false` when the state is unchanged or the change is cancelled. */
+  setPlaying: (value: boolean, reason?: CarouselPlayingChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Rotation is held, without changing `playing`: hover, a hidden page, the carousel out of view, a finger down. */
   paused: Ref<boolean>
   /** Written by the viewport: a finger is down on the track. */
@@ -84,8 +84,8 @@ export interface CarouselRootContext {
   loopFits: Ref<boolean>
   canScrollPrev: ComputedRef<boolean>
   canScrollNext: ComputedRef<boolean>
-  scrollPrev: () => boolean
-  scrollNext: () => boolean
+  scrollPrev: (reason?: CarouselChangeReason | BaseChangeReason, event?: Event) => boolean
+  scrollNext: (reason?: CarouselChangeReason | BaseChangeReason, event?: Event) => boolean
   dragging: Ref<boolean>
   viewportElement: Ref<HTMLElement | undefined>
   rootElement: Ref<HTMLElement | undefined>
@@ -93,7 +93,7 @@ export interface CarouselRootContext {
   notifySettle: (index: number) => void
   contentElement: Ref<HTMLElement | undefined>
   /** A user press, drag, key or wheel gesture: stops rotation when `stopOnInteraction` is set. */
-  reportInteraction: () => void
+  reportInteraction: (event?: Event) => void
 }
 
 export interface CarouselRootProps extends PrimitiveProps {
@@ -170,10 +170,14 @@ export interface CarouselRootProps extends PrimitiveProps {
 }
 
 export type CarouselRootEmits = {
-  /** Event handler called when the current snap changes. */
-  'update:modelValue': [value: number]
-  /** Event handler called when rotation starts or stops. */
-  'update:playing': [value: boolean]
+  /** Event handler called before the current snap changes. Call `details.cancel()` to keep the current one. */
+  'beforeUpdate:modelValue': [value: number, details: ChangeEventDetails<CarouselChangeReason>]
+  /** Event handler called when the current snap changes. `details.reason` tells what moved it. */
+  'update:modelValue': [value: number, details: ChangeEventDetails<CarouselChangeReason>]
+  /** Event handler called before rotation starts or stops. Call `details.cancel()` to keep the current state. */
+  'beforeUpdate:playing': [value: boolean, details: ChangeEventDetails<CarouselPlayingChangeReason>]
+  /** Event handler called when rotation starts or stops. `details.reason` tells what started or stopped it. */
+  'update:playing': [value: boolean, details: ChangeEventDetails<CarouselPlayingChangeReason>]
   /** Event handler called once the slides rest on the current snap after a change: after the scroll, drag or fade that moved them. */
   'settle': [value: number]
 }
@@ -240,6 +244,12 @@ provideCarouselRootContext(context)
 const rotation = useCarouselRotation(context, currentElement)
 const playing = computed(() => context.rotationEnabled.value && context.playing.value)
 const paused = computed(() => playing.value && context.paused.value)
+// The slot's functions take no arguments: `@click="scrollNext"` must not pass the event as a reason.
+const scrollPrev = () => context.scrollPrev()
+const scrollNext = () => context.scrollNext()
+const scrollTo = (index: number) => context.changeModelValue(index)
+const play = () => context.setPlaying(true)
+const stop = () => context.setPlaying(false)
 watch(currentElement, el => context.rootElement.value = (el as HTMLElement | undefined) ?? undefined, { immediate: true })
 </script>
 
@@ -262,13 +272,13 @@ watch(currentElement, el => context.rootElement.value = (el as HTMLElement | und
       :snap-count="context.snapCount.value"
       :can-scroll-prev="context.canScrollPrev.value"
       :can-scroll-next="context.canScrollNext.value"
-      :scroll-prev="context.scrollPrev"
-      :scroll-next="context.scrollNext"
-      :scroll-to="context.changeModelValue"
+      :scroll-prev="scrollPrev"
+      :scroll-next="scrollNext"
+      :scroll-to="scrollTo"
       :playing="playing"
       :paused="paused"
-      :play="() => context.setPlaying(true)"
-      :stop="() => context.setPlaying(false)"
+      :play="play"
+      :stop="stop"
     />
   </Primitive>
 </template>

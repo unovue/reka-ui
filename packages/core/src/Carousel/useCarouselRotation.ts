@@ -28,7 +28,7 @@ export function useCarouselRotation(context: CarouselRootContext, rootElement: R
 
   function stopForReducedMotion() {
     if (context.reducedMotion.value && context.rotationEnabled.value && context.playing.value)
-      context.setPlaying(false)
+      context.setPlaying(false, 'reduced-motion')
   }
 
   onMounted(() => {
@@ -85,13 +85,13 @@ export function useCarouselRotation(context: CarouselRootContext, rootElement: R
     const last = context.modelValue.value >= context.snapCount.value - 1
     if (last && !context.loopActive.value) {
       if (options.stopOnLastSnap) {
-        context.setPlaying(false)
+        context.setPlaying(false, 'end-reached')
         return
       }
-      context.changeModelValue(0)
+      context.changeModelValue(0, 'autoplay')
     }
     else {
-      context.scrollNext()
+      context.scrollNext('autoplay')
     }
     // A cancelled step, or a controlled parent that ignored it, leaves `modelValue`
     // as it was and the watcher below never restarts the timer. A step that did
@@ -128,7 +128,7 @@ export function useCarouselRotation(context: CarouselRootContext, rootElement: R
       if (from && rootElement.value && rootElement.value.contains(from))
         return
       // APG: keyboard focus inside the carousel stops rotation until the rotation control restarts it.
-      context.setPlaying(false)
+      context.setPlaying(false, 'keyboard-focus', event)
     },
   }
 
