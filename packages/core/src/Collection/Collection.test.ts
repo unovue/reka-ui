@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, reactive } from 'vue'
-import { useCollection } from './Collection'
+import { getCollectionComponents, useCollection } from './Collection'
 
 // Characterization tests for `useCollection`.
 // These assert on the RETURNED values/order of `getItems()`, `reactiveItems`
@@ -35,7 +35,7 @@ function createWrapper(initialItems: ItemConfig[]) {
   const Parent = defineComponent({
     setup() {
       collection = useCollection({ key: 'test', isProvider: true })
-      const { CollectionSlot, CollectionItem } = collection
+      const { CollectionSlot, CollectionItem } = getCollectionComponents('test')
 
       return () =>
         h(CollectionSlot, null, {
